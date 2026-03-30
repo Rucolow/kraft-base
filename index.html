@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スタッフ募集 | KRAFT BASE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2D4A3E;
+    --green-light: #3A6355;
+    --wood: #8B6914;
+    --wood-light: #C4A35A;
+    --wood-pale: #E8D5A3;
+    --orange: #C8703C;
+    --orange-light: #D4894F;
+    --cream: #F5F0E6;
+    --cream-dark: #EDE4D0;
+    --text: #2A2A25;
+    --text-light: #6B6555;
+    --white: #FDFBF6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    background: var(--white);
+    color: var(--text);
+    line-height: 1.8;
+    overflow-x: hidden;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 24px;
+    background:
+      radial-gradient(ellipse at 15% 10%, rgba(200,112,60,0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 90% 85%, rgba(196,163,90,0.12) 0%, transparent 40%),
+      radial-gradient(ellipse at 80% 20%, rgba(45,74,62,0.06) 0%, transparent 50%),
+      linear-gradient(175deg, var(--white) 0%, var(--cream) 100%);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--green), var(--orange), var(--wood-light));
+  }
+
+  .hero-badge {
+    display: inline-block;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid var(--green);
+    padding: 6px 20px;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  .hero-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 6vw, 4.5rem);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.4s forwards;
+  }
+
+  .hero-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    font-style: italic;
+    letter-spacing: 0.2em;
+    color: var(--text-light);
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.6s forwards;
+  }
+
+  .hero-title {
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.8s forwards;
+  }
+
+  .hero-sub {
+    font-size: 1rem;
+    color: var(--text-light);
+    max-width: 520px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s 1s forwards;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--green);
+    color: var(--cream);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 16px 40px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    animation: fadeUp 0.8s 1.2s forwards;
+  }
+
+  .hero-cta:hover {
+    background: var(--green-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(45,74,62,0.2);
+  }
+
+  .hero-cta svg {
+    width: 16px; height: 16px;
+    transition: transform 0.3s;
+  }
+
+  .hero-cta:hover svg { transform: translateY(3px); }
+
+  /* ===== SECTION COMMON ===== */
+  section { padding: 80px 24px; }
+
+  .section-inner {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: clamp(1.4rem, 3vw, 1.8rem);
+    font-weight: 700;
+    color: var(--orange);
+    margin-bottom: 40px;
+    position: relative;
+    padding-bottom: 20px;
+  }
+
+  .section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 40px; height: 2px;
+    background: var(--orange);
+  }
+
+  /* ===== ABOUT ===== */
+  .about {
+    background: var(--cream);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .about-text {
+    font-size: 0.95rem;
+    color: var(--text-light);
+    margin-bottom: 24px;
+  }
+
+  .about-gallery {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    margin-top: 36px;
+    height: 420px;
+  }
+
+  .about-gallery-left {
+    grid-row: 1 / 3;
+    overflow: hidden;
+  }
+
+  .about-gallery-right-top,
+  .about-gallery-right-bottom {
+    overflow: hidden;
+  }
+
+  .about-gallery img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+  }
+
+  .about-gallery img:hover {
+    transform: scale(1.03);
+  }
+
+  @media (max-width: 600px) {
+    .about-gallery {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      height: auto;
+    }
+    .about-gallery-left {
+      grid-row: auto;
+      height: 300px;
+    }
+    .about-gallery-right-top,
+    .about-gallery-right-bottom {
+      height: 200px;
+    }
+  }
+
+  /* ===== POSITIONS ===== */
+  .positions {
+    background: var(--white);
+    position: relative; overflow: hidden;
+  }
+
+  .position-cards {
+    display: grid;
+    gap: 20px;
+  }
+
+  .position-card {
+    border: 1px solid var(--cream-dark);
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: start;
+    transition: all 0.3s;
+  }
+
+  .position-card:hover {
+    border-color: var(--green);
+    box-shadow: 0 4px 20px rgba(45,74,62,0.06);
+  }
+
+  .position-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .position-detail {
+    font-size: 0.85rem;
+    color: var(--text-light);
+  }
+
+  .position-tag {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--green);
+    background: rgba(45,74,62,0.08);
+    padding: 6px 14px;
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  /* ===== CONDITIONS ===== */
+  .conditions {
+    background: var(--cream);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cond-grid {
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--cream-dark);
+    background: var(--white);
+  }
+
+  .cond-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    border-bottom: 1px solid var(--cream-dark);
+  }
+
+  .cond-row:last-child { border-bottom: none; }
+
+  .cond-label {
+    background: var(--green);
+    color: var(--cream);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.05em;
+  }
+
+  .cond-value {
+    padding: 16px 24px;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .cond-value .highlight {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--orange);
+    margin-right: 4px;
+  }
+
+  /* ===== APPEAL ===== */
+  .appeal {
+    background: var(--white);
+    position: relative; overflow: hidden;
+  }
+
+  .appeal-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+  }
+
+  .appeal-item {
+    padding: 28px;
+    background: var(--cream);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .appeal-item::before {
+    content: attr(data-num);
+    position: absolute;
+    top: -8px; right: 12px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 4rem;
+    font-weight: 600;
+    color: var(--orange);
+    opacity: 0.1;
+    line-height: 1;
+  }
+
+  .appeal-item-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .appeal-item-text {
+    font-size: 0.82rem;
+    color: var(--text-light);
+    line-height: 1.7;
+  }
+
+  /* ===== CTA ===== */
+  .cta-section {
+    background: var(--green);
+    color: var(--cream);
+    text-align: center;
+    padding: 80px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 50%, rgba(200,112,60,0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 50%, rgba(196,163,90,0.08) 0%, transparent 50%);
+  }
+
+  .cta-inner {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .cta-title {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .cta-text {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 40px;
+  }
+
+  .cta-contacts {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .cta-contact {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--cream);
+    text-decoration: none;
+    font-size: 0.95rem;
+    padding: 14px 32px;
+    border: 1px solid rgba(245,240,230,0.3);
+    min-width: 280px;
+    justify-content: center;
+    transition: all 0.3s;
+  }
+
+  .cta-contact:hover {
+    background: rgba(245,240,230,0.1);
+    border-color: rgba(245,240,230,0.5);
+  }
+
+  .cta-contact svg {
+    width: 18px; height: 18px;
+    flex-shrink: 0;
+  }
+
+  .cta-line {
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(245,240,230,0.06);
+    border: 1px solid rgba(245,240,230,0.15);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cta-line-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    opacity: 0.7;
+  }
+
+  .qr-placeholder {
+    width: 120px; height: 120px;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    background: var(--text);
+    color: rgba(245,240,230,0.5);
+    text-align: center;
+    padding: 32px 24px;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+
+  footer a {
+    color: rgba(245,240,230,0.5);
+    text-decoration: none;
+  }
+
+  .footer-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: rgba(245,240,230,0.7);
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes softFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-16px); }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    section { padding: 60px 20px; }
+
+    .cond-row {
+      grid-template-columns: 1fr;
+    }
+
+    .cond-label {
+      padding: 12px 16px;
+    }
+
+    .cond-value {
+      padding: 12px 16px;
+    }
+
+    .position-card {
+      grid-template-columns: 1fr;
+      padding: 24px;
+    }
+
+    .position-tag { justify-self: start; }
+
+    .cta-contact { min-width: auto; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Staff Wanted</div>
+  <h1 class="hero-brand">KRAFT BASE</h1>
+  <p class="hero-tagline">Unplug to recharge.</p>
+  <p class="hero-sub">2026年5月、熊野古道の中間地点・小口に<br>新しいゲストハウスがオープンします。</p>
+  <a href="#contact" class="hero-cta">
+    応募する
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </a>
+</section>
+
+<!-- ABOUT -->
+<section class="about">
+  <div class="section-inner">
+    <p class="section-label">About</p>
+    <h2 class="section-title">KRAFT BASEについて</h2>
+    <p class="about-text">KRAFT BASEは、和歌山県新宮市の小口地区にオープンする6名定員のゲストハウスです。熊野古道・中辺路ルートを歩く外国人トレッカーや、夏の川遊びを楽しむファミリーに、デジタルを離れたアナログな滞在体験を提供します。</p>
+    <p class="about-text">運営は、1952年創業の「肉のおくだ」。70年以上この土地で商いを続けてきた地元の精肉店と連携し、地域に根ざしたゲストハウスを目指します。</p>
+
+    <div class="about-gallery">
+      <div class="about-gallery-left">
+        <img src="image_1.jpg" alt="KRAFT BASE フロント">
+      </div>
+      <div class="about-gallery-right-top">
+        <img src="image_2.jpg" alt="KRAFT BASE キッチン">
+      </div>
+      <div class="about-gallery-right-bottom">
+        <img src="image_3.jpg" alt="KRAFT BASE 和室">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section class="positions">
+  <div class="section-inner">
+    <p class="section-label">Work</p>
+    <h2 class="section-title">業務内容</h2>
+    <div class="position-card" style="grid-template-columns:1fr;">
+      <div>
+        <div class="position-name">ゲストハウスの運営全般</div>
+        <div class="position-detail" style="margin-top:8px; line-height:2;">
+          客室の清掃・ベッドメイク、チェックイン対応、施設や周辺の案内など、小さなゲストハウスの運営に関わるお仕事です。6名定員の小さな宿なので、特別なスキルや経験は必要ありません。できることから少しずつお任せします。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONDITIONS -->
+<section class="conditions">
+  <div class="section-inner">
+    <p class="section-label">Details</p>
+    <h2 class="section-title">募集要項</h2>
+    <div class="cond-grid">
+      <div class="cond-row">
+        <div class="cond-label">雇用形態</div>
+        <div class="cond-value">アルバイト・パート</div>
+      </div>
+      <div class="cond-row">
+        <div class="cond-label">時給</div>
+        <div class="cond-value"><span class="highlight">1,100</span>円</div>
+      </div>
+      <div class="cond-row">
+        <div class="cond-label">勤務時間</div>
+        <div class="cond-value">シフト制（朝 9:00〜13:00 ／ 昼 14:00〜18:00）</div>
+      </div>
+      <div class="cond-row">
+        <div class="cond-label">出勤日数</div>
+        <div class="cond-value">週2日〜相談OK</div>
+      </div>
+      <div class="cond-row">
+        <div class="cond-label">応募条件</div>
+        <div class="cond-value">年齢不問・未経験OK・車通勤可</div>
+      </div>
+      <div class="cond-row">
+        <div class="cond-label">歓迎</div>
+        <div class="cond-value">人と話すのが好きな方、英語ができる方</div>
+      </div>
+      <div class="cond-row">
+        <div class="cond-label">勤務地</div>
+        <div class="cond-value">和歌山県新宮市熊野川町日足 小口地区</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- APPEAL -->
+<section class="appeal">
+  <div class="section-inner">
+    <p class="section-label">Why KRAFT BASE?</p>
+    <h2 class="section-title">この仕事の魅力</h2>
+    <div class="appeal-items">
+      <div class="appeal-item" data-num="01">
+        <div class="appeal-item-title">世界遺産の麓で働く</div>
+        <div class="appeal-item-text">職場は熊野古道の中間地点。世界中からの旅人と出会える、他にはないロケーションです。</div>
+      </div>
+      <div class="appeal-item" data-num="02">
+        <div class="appeal-item-title">オープニングスタッフ</div>
+        <div class="appeal-item-text">2026年5月の新規開業。一からゲストハウスをつくっていく過程に関われます。</div>
+      </div>
+      <div class="appeal-item" data-num="03">
+        <div class="appeal-item-title">柔軟なシフト</div>
+        <div class="appeal-item-text">午前・午後の選択制。週2日からOKなので、ライフスタイルに合わせた働き方が可能です。</div>
+      </div>
+      <div class="appeal-item" data-num="04">
+        <div class="appeal-item-title">地域とつながる</div>
+        <div class="appeal-item-text">70年以上続く「肉のおくだ」との連携。地域に根ざした、温かみのある運営です。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="contact">
+  <div class="cta-inner">
+    <h2 class="cta-title">ご応募・お問い合わせ</h2>
+    <p class="cta-text">お気軽にご連絡ください。<br>見学のみのお問い合わせも歓迎です。</p>
+    <div class="cta-contacts">
+      <a href="tel:0735-31-6479" class="cta-contact">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        0735-31-6479
+      </a>
+      <a href="mailto:info@nikuda.jp" class="cta-contact">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        info@nikuda.jp
+      </a>
+    </div>
+    <div class="cta-line">
+      <span class="cta-line-label">LINE でも受付中</span>
+      <img src="image_4.jpg" alt="LINE QR" style="width:120px;height:120px;object-fit:contain;">
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">KRAFT BASE</div>
+  <p>和歌山県新宮市熊野川町日足 小口地区 ／ 運営：肉のおくだ</p>
+</footer>
+
+</body>
+</html>
