@@ -10,6 +10,14 @@ body,
 
 body {
   font-family: var(--kb-font-body);
-  background: var(--kb-paper);
   color: var(--kb-ink);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  background: radial-gradient(ellipse at 12% 0%, rgba(200, 112, 60, 0.07) 0%, transparent 42%),
+    radial-gradient(ellipse at 88% 100%, rgba(45, 74, 62, 0.06) 0%, transparent 42%),
+    var(--kb-cream);
+}
+
+.font-heading {
+  font-family: var(--kb-font-heading);
 }
