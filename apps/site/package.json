@@ -1,0 +1,6 @@
+{
+  "name": "@kraft-base/site",
+  "version": "0.0.0",
+  "private": true,
+  "description": "KRAFT BASE 公開サイト（現行の静的サイト / kraft-base.vercel.app）。ビルド不要で index.html を配信する。"
+}

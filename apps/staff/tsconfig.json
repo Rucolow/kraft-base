@@ -1,0 +1,7 @@
+{
+  "extends": "@kraft-base/tsconfig/react.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vite-plugin-pwa/client"]
+  },
+  "include": ["src"]
+}
