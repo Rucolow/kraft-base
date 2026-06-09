@@ -1,0 +1,40 @@
+/**
+ * KRAFT BASE — design tokens (single source of truth)
+ * 2色パレット（teal/green × orange）＋ wood/cream の面・影。
+ * 既存マニュアル / 現行サイトの配色を踏襲。
+ */
+:root {
+  /* palette */
+  --kb-green: #2d4a3e;
+  --kb-green-light: #3a6355;
+  --kb-wood: #8b6914;
+  --kb-wood-light: #c4a35a;
+  --kb-wood-pale: #e8d5a3;
+  --kb-orange: #c8703c;
+  --kb-orange-light: #d4894f;
+  --kb-cream: #f5f0e6;
+  --kb-cream-dark: #ede4d0;
+
+  /* ink / surface */
+  --kb-ink: #2a2a25;
+  --kb-ink-light: #6b6555;
+  --kb-paper: #fdfbf6;
+
+  /* semantic surfaces */
+  --kb-surface: var(--kb-paper);
+  --kb-surface-muted: var(--kb-cream);
+  --kb-surface-strong: var(--kb-green);
+
+  /* shadows */
+  --kb-shadow-sm: 0 1px 2px rgba(42, 42, 37, 0.06);
+  --kb-shadow: 0 2px 8px rgba(42, 42, 37, 0.08);
+  --kb-shadow-lg: 0 8px 24px rgba(42, 42, 37, 0.12);
+
+  /* radii */
+  --kb-radius: 12px;
+  --kb-radius-lg: 20px;
+
+  /* type */
+  --kb-font-heading: "Cormorant Garamond", serif;
+  --kb-font-body: "Zen Kaku Gothic New", sans-serif;
+}
