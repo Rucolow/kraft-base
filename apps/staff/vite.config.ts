@@ -3,11 +3,22 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@powersync/web', '@journeyapps/wa-sqlite'],
+    include: ['@powersync/web > js-logger'],
+  },
+  worker: {
+    format: 'es',
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon.svg'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,wasm}'],
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+      },
       manifest: {
         name: 'KRAFT BASE Staff',
         short_name: 'KB Staff',
