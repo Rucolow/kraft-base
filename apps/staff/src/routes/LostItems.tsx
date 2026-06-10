@@ -61,7 +61,7 @@ export function LostItems() {
 
   return (
     <Screen>
-      <BackButton onClick={() => navigate('/manual')}>ナレッジ</BackButton>
+      <BackButton onClick={() => navigate('/records')}>台帳</BackButton>
       <SectionLabel>忘れ物を起票</SectionLabel>
       <input
         className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
@@ -96,7 +96,7 @@ export function LostItems() {
         </button>
       </div>
 
-      <SectionLabel>台帳</SectionLabel>
+      <SectionLabel>一覧</SectionLabel>
       {items.length === 0 ? (
         <EmptyState>忘れ物はありません。</EmptyState>
       ) : (

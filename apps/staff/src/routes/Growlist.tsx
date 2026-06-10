@@ -41,7 +41,7 @@ export function Growlist() {
 
   return (
     <Screen>
-      <BackButton onClick={() => navigate('/manual')}>ナレッジ</BackButton>
+      <BackButton onClick={() => navigate('/manual')}>辞書</BackButton>
       <div className="mb-2 px-1 text-[0.78rem] text-ink-light">
         運用で埋めるべきものの実行中リスト。「分からない／空」を起票して育てに参加できます。
       </div>

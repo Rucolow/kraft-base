@@ -1,16 +1,8 @@
 import { useQuery } from '@powersync/react';
-import { ChevronRight, CloudOff, Package, Search, Sprout, Wrench } from 'lucide-react';
+import { ChevronRight, CloudOff, Search, Sprout } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Badge,
-  Card,
-  CardHead,
-  EmptyState,
-  NeedsInputBadge,
-  Screen,
-  SectionLabel,
-} from '../components/ui';
+import { Badge, EmptyState, NeedsInputBadge, Screen, SectionLabel } from '../components/ui';
 import { KIND_META, KIND_ORDER } from '../content/kinds';
 import { useOpenFollowups } from '../data/queries';
 import type { ContentRow } from '../lib/powersync/schema';
@@ -44,13 +36,13 @@ export function ManualHub() {
 
   return (
     <Screen>
-      <div className="relative mb-4">
-        <Search size={16} className="-translate-y-1/2 absolute top-1/2 left-3 text-ink-mute" />
+      <div className="relative mb-5">
+        <Search size={18} className="-translate-y-1/2 absolute top-1/2 left-3.5 text-ink-mute" />
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="ナレッジを検索（例：火打石、バス、Wi-Fi）"
-          className="min-h-[48px] w-full rounded-[14px] border border-line bg-paper py-2.5 pr-3 pl-9 text-base shadow-kb-sm outline-none focus:border-green-light"
+          placeholder="辞書を検索（例：火打石、バス、Wi-Fi）"
+          className="min-h-[52px] w-full rounded-[14px] border border-line bg-paper py-3 pr-3 pl-11 text-base shadow-kb-sm outline-none focus:border-green-light"
         />
       </div>
 
@@ -61,7 +53,7 @@ export function ManualHub() {
           </SectionLabel>
           {results.length === 0 ? (
             <EmptyState>
-              見つかりませんでした。カテゴリから追加して、ナレッジを育てられます。
+              見つかりませんでした。カテゴリから追加して、辞書を育てられます。
             </EmptyState>
           ) : (
             <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3">
@@ -72,7 +64,7 @@ export function ManualHub() {
                     key={item.id}
                     type="button"
                     onClick={() => navigate(`/manual/c/${item.slug}`)}
-                    className="mb-1.5 flex w-full items-center gap-2 rounded-[11px] border border-line bg-paper px-3 py-2.5 text-left text-[0.88rem]"
+                    className="mb-1.5 flex w-full items-center gap-2 rounded-[11px] border border-line bg-paper px-3 py-3 text-left text-[0.88rem]"
                   >
                     <Badge tone="neutral">{meta?.label ?? item.kind}</Badge>
                     <span className="flex-1">{item.title}</span>
@@ -86,20 +78,27 @@ export function ManualHub() {
         </>
       ) : (
         <>
-          <Card primary onClick={() => navigate('/manual/grow')}>
-            <CardHead
-              icon={<Sprout size={17} />}
-              tone="orange"
-              title="育てる項目（要確認）"
-              trailing={<Badge tone="warn">{needsTotal + followups.length}件</Badge>}
-            />
-            <div className="text-[0.86rem] text-ink-light">
-              未確定・空欄のナレッジと未完の申し送り。気づいた人がその場で埋めて育てます。
-            </div>
-          </Card>
+          {needsTotal + followups.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => navigate('/manual/grow')}
+              className="mb-5 flex w-full items-center gap-3 rounded-kb border border-orange/40 bg-orange/[0.06] p-4 text-left"
+            >
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange/15 text-orange">
+                <Sprout size={20} />
+              </span>
+              <span className="flex-1">
+                <span className="font-bold text-[0.95rem] text-orange-deep">育てる項目</span>
+                <span className="mt-0.5 block text-[0.78rem] text-ink-light">
+                  未確定・空欄の項目があります。気づいた人がその場で埋めて育てます。
+                </span>
+              </span>
+              <Badge tone="warn">{needsTotal + followups.length}</Badge>
+            </button>
+          ) : null}
 
           <SectionLabel>カテゴリ</SectionLabel>
-          <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3 xl:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4">
             {KIND_ORDER.map((kind) => {
               const meta = KIND_META[kind];
               if (!meta) {
@@ -112,47 +111,28 @@ export function ManualHub() {
                   key={kind}
                   type="button"
                   onClick={() => navigate(`/manual/k/${kind}`)}
-                  className="mb-2 flex w-full items-center gap-2.5 rounded-[13px] border border-line bg-paper px-3.5 py-3.5 text-left shadow-kb-sm"
+                  className="relative flex aspect-[4/3] flex-col items-start justify-between rounded-kb border border-line bg-paper p-3.5 text-left shadow-kb-sm active:scale-[0.985]"
                 >
-                  <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[10px] bg-green/10 text-green">
-                    <Icon size={17} />
+                  <span className="grid h-10 w-10 place-items-center rounded-[11px] bg-green/10 text-green">
+                    <Icon size={20} />
                   </span>
-                  <span className="flex-1">
-                    <span className="block font-bold text-[0.92rem]">{meta.label}</span>
+                  <span>
+                    <span className="block font-bold text-[0.95rem]">{meta.label}</span>
                     <span className="block text-[0.72rem] text-ink-mute tabular-nums">
                       {count?.total ?? 0}件
                     </span>
                   </span>
-                  {(count?.needs ?? 0) > 0 ? <Badge tone="warn">{count?.needs}</Badge> : null}
-                  <ChevronRight size={15} className="text-ink-mute" />
+                  {(count?.needs ?? 0) > 0 ? (
+                    <span className="absolute top-3 right-3">
+                      <Badge tone="warn">{count?.needs}</Badge>
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
           </div>
 
-          <SectionLabel>台帳</SectionLabel>
-          <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3">
-            <button
-              type="button"
-              onClick={() => navigate('/manual/lost')}
-              className="mb-2 flex w-full items-center gap-2.5 rounded-[11px] border border-line bg-paper px-3 py-3 text-left text-[0.9rem]"
-            >
-              <Package size={16} className="text-green" />
-              <span className="flex-1">忘れ物</span>
-              <ChevronRight size={15} className="text-ink-mute" />
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/manual/equipment')}
-              className="mb-2 flex w-full items-center gap-2.5 rounded-[11px] border border-line bg-paper px-3 py-3 text-left text-[0.9rem]"
-            >
-              <Wrench size={16} className="text-green" />
-              <span className="flex-1">設備・備品</span>
-              <ChevronRight size={15} className="text-ink-mute" />
-            </button>
-          </div>
-
-          <div className="mt-4 flex items-center gap-1.5 px-1 text-[0.74rem] text-ink-mute">
+          <div className="mt-5 flex items-center gap-1.5 px-1 text-[0.74rem] text-ink-mute">
             <CloudOff size={13} /> すべて端末に保存され、電波ゼロでも開けます。
           </div>
         </>

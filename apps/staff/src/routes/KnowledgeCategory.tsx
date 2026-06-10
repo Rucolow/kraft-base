@@ -43,7 +43,7 @@ export function KnowledgeCategory() {
   if (!meta) {
     return (
       <Screen>
-        <BackButton onClick={() => navigate('/manual')}>ナレッジ</BackButton>
+        <BackButton onClick={() => navigate('/manual')}>辞書</BackButton>
         <EmptyState>カテゴリが見つかりません。</EmptyState>
       </Screen>
     );
@@ -51,7 +51,7 @@ export function KnowledgeCategory() {
 
   return (
     <Screen>
-      <BackButton onClick={() => navigate('/manual')}>ナレッジ</BackButton>
+      <BackButton onClick={() => navigate('/manual')}>辞書</BackButton>
       <div className="flex items-center justify-between">
         <SectionLabel>{meta.label}</SectionLabel>
         <button

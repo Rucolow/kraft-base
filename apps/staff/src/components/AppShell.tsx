@@ -1,4 +1,4 @@
-import { Bell, BookOpen, Home, ListChecks, ScrollText, Users } from 'lucide-react';
+import { Bell, BookOpen, Boxes, Home, ListChecks, ScrollText, Users } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useMentions } from '../data/queries';
 import { useSession } from '../lib/session';
@@ -10,7 +10,8 @@ const TABS = [
   { to: '/guests', label: 'ゲスト', icon: Users, end: false },
   { to: '/handover', label: '引き継ぎ', icon: ScrollText, end: false },
   { to: '/tasks', label: 'タスク', icon: ListChecks, end: false },
-  { to: '/manual', label: 'ナレッジ', icon: BookOpen, end: false },
+  { to: '/manual', label: '辞書', icon: BookOpen, end: false },
+  { to: '/records', label: '台帳', icon: Boxes, end: false },
 ];
 
 function TopBar() {
@@ -82,7 +83,7 @@ function SideNav() {
 
 function BottomNav() {
   return (
-    <nav className="grid shrink-0 grid-cols-5 border-line border-t bg-paper/95 px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+    <nav className="grid shrink-0 grid-cols-6 border-line border-t bg-paper/95 px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
       {TABS.map((tab) => {
         const Icon = tab.icon;
         return (

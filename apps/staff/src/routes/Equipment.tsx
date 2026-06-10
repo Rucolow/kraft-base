@@ -46,7 +46,7 @@ export function Equipment() {
 
   return (
     <Screen>
-      <BackButton onClick={() => navigate('/manual')}>ナレッジ</BackButton>
+      <BackButton onClick={() => navigate('/records')}>台帳</BackButton>
       <SectionLabel>設備・備品を起票</SectionLabel>
       <div className="mb-2 flex gap-2">
         {(['fault', 'restock'] as const).map((option) => (

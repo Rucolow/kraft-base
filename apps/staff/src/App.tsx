@@ -21,6 +21,7 @@ import { LinkAccount } from './routes/LinkAccount';
 import { Login } from './routes/Login';
 import { LostItems } from './routes/LostItems';
 import { ManualHub } from './routes/ManualHub';
+import { RecordsHub } from './routes/RecordsHub';
 import { Setup } from './routes/Setup';
 import { ShiftGate } from './routes/ShiftGate';
 import { Tasks } from './routes/Tasks';
@@ -105,8 +106,9 @@ function AppRoutes() {
           <Route path="manual" element={<ManualHub />} />
           <Route path="manual/k/:kind" element={<KnowledgeCategory />} />
           <Route path="manual/grow" element={<Growlist />} />
-          <Route path="manual/lost" element={<LostItems />} />
-          <Route path="manual/equipment" element={<Equipment />} />
+          <Route path="records" element={<RecordsHub />} />
+          <Route path="records/lost" element={<LostItems />} />
+          <Route path="records/equipment" element={<Equipment />} />
           <Route path="manual/c/:slug" element={<ContentReader />} />
           <Route path="comms" element={<Comms />} />
         </Route>
