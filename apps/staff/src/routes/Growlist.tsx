@@ -95,7 +95,7 @@ export function Growlist() {
           type="button"
           aria-label="起票"
           onClick={raise}
-          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
         >
           <Plus size={18} />
         </button>

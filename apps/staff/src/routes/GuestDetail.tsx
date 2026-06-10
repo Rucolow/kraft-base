@@ -144,7 +144,7 @@ export function GuestDetail() {
       <button
         type="button"
         onClick={() => navigate(`/checkin/${guest.id}`)}
-        className="mb-1 flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[13px] bg-orange font-bold text-[0.92rem] text-green-deep shadow-kb"
+        className="mb-1 flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[13px] bg-orange font-bold text-[0.92rem] text-ondark shadow-kb"
       >
         <ClipboardPen size={17} />
         チェックイン入力（iPadをゲストに渡す）
@@ -177,7 +177,7 @@ export function GuestDetail() {
           type="button"
           aria-label="メモを追加"
           onClick={() => addNote(memo, true, []).then(() => setMemo(''))}
-          className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
+          className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
         >
           <Pin size={17} />
         </button>
@@ -245,7 +245,7 @@ export function GuestDetail() {
               setMentionIds([]);
             })
           }
-          className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
+          className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
         >
           <Send size={17} />
         </button>

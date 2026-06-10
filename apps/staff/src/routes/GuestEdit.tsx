@@ -11,11 +11,81 @@ import {
   SectionLabel,
   TextField,
 } from '../components/ui';
+import { LANG_LABEL } from '../content/kinds';
 import { useGuest } from '../data/queries';
 import { jstDate, nowIso } from '../lib/date';
 import { insertRow, updateRow, uuid } from '../lib/db';
 import type { GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
+
+const FIELD =
+  'min-h-[48px] w-full rounded-[11px] border border-line bg-cream px-3 py-3 text-base text-ink outline-none focus:border-orange-light';
+const OTHER = '__other__';
+
+const COUNTRIES = [
+  '日本',
+  'ドイツ',
+  'イタリア',
+  'フランス',
+  'イギリス',
+  'アメリカ',
+  'オーストラリア',
+  'スペイン',
+  '中国',
+  '韓国',
+  '台湾',
+];
+const BEDS = ['1番', '2番', '3番', '4番', '5番', '6番', '和室'];
+const BENTO = ['焼肉弁当', 'ヴィーガン弁当', 'なし'];
+const TIMES = ['15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
+
+function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-3 block">
+      <span className="mb-1 block text-[0.82rem] text-ink-light">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function Choice({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  options: string[];
+}) {
+  const known = value === '' || options.includes(value);
+  return (
+    <Labeled label={label}>
+      <select
+        className={FIELD}
+        value={known ? value : OTHER}
+        onChange={(event) => onChange(event.target.value === OTHER ? '' : event.target.value)}
+      >
+        <option value="">選択してください</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+        <option value={OTHER}>その他（自由入力）</option>
+      </select>
+      {!known ? (
+        <input
+          className={`mt-2 ${FIELD}`}
+          placeholder="自由入力"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      ) : null}
+    </Labeled>
+  );
+}
 
 export function GuestEdit() {
   const { id } = useParams();
@@ -50,8 +120,8 @@ export function GuestEdit() {
     );
   }
 
-  const set = (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const set = (key: keyof typeof form) => (value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
 
   async function save() {
     if (!form.name.trim()) {
@@ -87,31 +157,76 @@ export function GuestEdit() {
       <BackButton onClick={() => navigate('/guests')}>本日のゲスト</BackButton>
       <SectionLabel>{editing ? 'ゲストを編集' : 'ゲストを追加'}</SectionLabel>
 
-      <TextField
-        label="宿泊日"
-        value={form.stay_date}
-        onChange={set('stay_date')}
-        placeholder="YYYY-MM-DD"
-      />
-      <TextField label="お名前" value={form.name} onChange={set('name')} />
-      <TextField label="国" value={form.country} onChange={set('country')} />
-      <TextField
-        label="言語コード（en / de / it …）"
-        value={form.language}
-        onChange={set('language')}
-      />
-      <TextField
-        label="人数"
-        type="number"
-        inputMode="numeric"
-        value={form.party_size}
-        onChange={set('party_size')}
-      />
-      <TextField label="チェックイン" value={form.checkin_time} onChange={set('checkin_time')} />
-      <TextField label="ベッド" value={form.bed} onChange={set('bed')} />
-      <TextField label="弁当" value={form.bento} onChange={set('bento')} />
+      <div className="md:grid md:grid-cols-2 md:gap-x-4">
+        <Labeled label="宿泊日">
+          <input
+            type="date"
+            className={FIELD}
+            value={form.stay_date}
+            onChange={(event) => set('stay_date')(event.target.value)}
+          />
+        </Labeled>
 
-      <PrimaryButton onClick={save}>{editing ? '保存' : '追加'}</PrimaryButton>
+        <TextField
+          label="お名前"
+          value={form.name}
+          onChange={(event) => set('name')(event.target.value)}
+        />
+
+        <Choice label="国" value={form.country} onChange={set('country')} options={COUNTRIES} />
+
+        <Labeled label="言語">
+          <select
+            className={FIELD}
+            value={form.language}
+            onChange={(event) => set('language')(event.target.value)}
+          >
+            {Object.entries(LANG_LABEL).map(([code, name]) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </Labeled>
+
+        <Labeled label="人数">
+          <select
+            className={FIELD}
+            value={form.party_size}
+            onChange={(event) => set('party_size')(event.target.value)}
+          >
+            {Array.from({ length: 8 }, (_, index) => String(index + 1)).map((value) => (
+              <option key={value} value={value}>
+                {value}名
+              </option>
+            ))}
+          </select>
+        </Labeled>
+
+        <Labeled label="チェックイン予定">
+          <input
+            type="time"
+            list="checkin-times"
+            className={FIELD}
+            value={form.checkin_time}
+            onChange={(event) => set('checkin_time')(event.target.value)}
+          />
+          <datalist id="checkin-times">
+            {TIMES.map((time) => (
+              <option key={time} value={time} />
+            ))}
+          </datalist>
+        </Labeled>
+
+        <Choice label="ベッド" value={form.bed} onChange={set('bed')} options={BEDS} />
+        <Choice label="弁当" value={form.bento} onChange={set('bento')} options={BENTO} />
+      </div>
+
+      <div className="mt-2">
+        <PrimaryButton onClick={save} disabled={!form.name.trim()}>
+          {editing ? '保存' : '追加'}
+        </PrimaryButton>
+      </div>
       <div className="mt-2">
         <GhostButton onClick={() => navigate('/guests')}>キャンセル</GhostButton>
       </div>
@@ -132,7 +247,7 @@ export function GuestEdit() {
                 <button
                   type="button"
                   onClick={() => updateRow('guest', guest.id, { review_sent_at: nowIso() })}
-                  className="rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-green-deep"
+                  className="rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-ondark"
                 >
                   送信済みにする
                 </button>

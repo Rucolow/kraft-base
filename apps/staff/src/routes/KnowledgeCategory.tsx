@@ -57,7 +57,7 @@ export function KnowledgeCategory() {
         <button
           type="button"
           onClick={add}
-          className="flex items-center gap-1 rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-green-deep"
+          className="flex items-center gap-1 rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-ondark"
         >
           <Plus size={14} /> 追加
         </button>

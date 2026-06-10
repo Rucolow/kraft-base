@@ -116,7 +116,7 @@ export function PrimaryButton({
   return (
     <button
       {...rest}
-      className={`flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[14px] bg-orange font-bold text-[1rem] text-green-deep tracking-wide shadow-kb active:translate-y-px disabled:opacity-50 ${className ?? ''}`}
+      className={`flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[14px] bg-orange font-bold text-[1rem] text-ondark tracking-wide shadow-kb active:translate-y-px disabled:opacity-50 ${className ?? ''}`}
     >
       {children}
     </button>
