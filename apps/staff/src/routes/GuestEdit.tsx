@@ -1,4 +1,5 @@
 import { useQuery } from '@powersync/react';
+import { Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -36,8 +37,39 @@ const COUNTRIES = [
   '台湾',
 ];
 const BEDS = ['1番', '2番', '3番', '4番', '5番', '6番', '和室'];
-const BENTO = ['焼肉弁当', 'ヴィーガン弁当', 'なし'];
+const BENTO_ITEMS = ['焼肉弁当', 'ヴィーガン弁当', 'おむすび弁当'];
 const TIMES = ['15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
+
+// Opens the native date/time picker wherever the field is tapped.
+function openPicker(event: React.SyntheticEvent<HTMLInputElement>) {
+  const element = event.currentTarget as HTMLInputElement & { showPicker?: () => void };
+  try {
+    element.showPicker?.();
+  } catch {
+    /* showPicker throws without user activation; ignore */
+  }
+}
+
+function parseBento(value: string | null): Record<string, number> {
+  const counts: Record<string, number> = {};
+  if (!value) {
+    return counts;
+  }
+  for (const part of value.split('・')) {
+    const match = part.match(/^(.*?)\s*×\s*(\d+)$/);
+    if (match?.[1]) {
+      counts[match[1].trim()] = Number.parseInt(match[2] ?? '0', 10);
+    }
+  }
+  return counts;
+}
+
+function bentoToString(counts: Record<string, number>): string {
+  return Object.entries(counts)
+    .filter(([, n]) => n > 0)
+    .map(([item, n]) => `${item} ×${n}`)
+    .join('・');
+}
 
 function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -108,9 +140,11 @@ export function GuestEdit() {
     party_size: String(existing?.party_size ?? 1),
     checkin_time: existing?.checkin_time ?? '',
     bed: existing?.bed ?? '',
-    bento: existing?.bento ?? '',
   });
   const [wholeHouse, setWholeHouse] = useState(existing?.whole_house === 1);
+  const [bento, setBento] = useState<Record<string, number>>(() =>
+    parseBento(existing?.bento ?? null),
+  );
 
   if (!isOwner) {
     return (
@@ -124,6 +158,14 @@ export function GuestEdit() {
   const set = (key: keyof typeof form) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  const bumpBento = (item: string, delta: number) =>
+    setBento((prev) => {
+      const next = Math.max(0, (prev[item] ?? 0) + delta);
+      return { ...prev, [item]: next };
+    });
+
+  const languageKnown = form.language === '' || form.language in LANG_LABEL;
+
   async function save() {
     if (!form.name.trim()) {
       return;
@@ -136,7 +178,7 @@ export function GuestEdit() {
       party_size: Number.parseInt(form.party_size, 10) || 1,
       checkin_time: form.checkin_time || null,
       bed: form.bed || null,
-      bento: form.bento || null,
+      bento: bentoToString(bento) || null,
       whole_house: boolToInt(wholeHouse),
     };
     if (editing && existing) {
@@ -186,6 +228,8 @@ export function GuestEdit() {
             type="date"
             className={FIELD}
             value={form.stay_date}
+            onFocus={openPicker}
+            onClick={openPicker}
             onChange={(event) => set('stay_date')(event.target.value)}
           />
         </Labeled>
@@ -201,15 +245,26 @@ export function GuestEdit() {
         <Labeled label="言語">
           <select
             className={FIELD}
-            value={form.language}
-            onChange={(event) => set('language')(event.target.value)}
+            value={languageKnown ? form.language : OTHER}
+            onChange={(event) =>
+              set('language')(event.target.value === OTHER ? '' : event.target.value)
+            }
           >
             {Object.entries(LANG_LABEL).map(([code, name]) => (
               <option key={code} value={code}>
                 {name}
               </option>
             ))}
+            <option value={OTHER}>その他（自由入力）</option>
           </select>
+          {!languageKnown ? (
+            <input
+              className={`mt-2 ${FIELD}`}
+              placeholder="言語（自由入力）"
+              value={form.language}
+              onChange={(event) => set('language')(event.target.value)}
+            />
+          ) : null}
         </Labeled>
 
         <Labeled label="人数">
@@ -232,6 +287,8 @@ export function GuestEdit() {
             list="checkin-times"
             className={FIELD}
             value={form.checkin_time}
+            onFocus={openPicker}
+            onClick={openPicker}
             onChange={(event) => set('checkin_time')(event.target.value)}
           />
           <datalist id="checkin-times">
@@ -242,7 +299,44 @@ export function GuestEdit() {
         </Labeled>
 
         <Choice label="ベッド" value={form.bed} onChange={set('bed')} options={BEDS} />
-        <Choice label="弁当" value={form.bento} onChange={set('bento')} options={BENTO} />
+
+        <Labeled label="弁当（必要な数だけ）">
+          <div className="rounded-[11px] border border-line">
+            {BENTO_ITEMS.map((item, index) => {
+              const count = bento[item] ?? 0;
+              return (
+                <div
+                  key={item}
+                  className={`flex items-center gap-2 px-3 py-2.5 ${index > 0 ? 'border-line border-t' : ''}`}
+                >
+                  <span className={`flex-1 text-[0.92rem] ${count > 0 ? 'font-bold' : ''}`}>
+                    {item}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`${item}を減らす`}
+                    onClick={() => bumpBento(item, -1)}
+                    className="grid h-9 w-9 place-items-center rounded-full border border-line text-ink disabled:opacity-40"
+                    disabled={count === 0}
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="w-6 text-center font-bold text-[1rem] tabular-nums">
+                    {count}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`${item}を増やす`}
+                    onClick={() => bumpBento(item, 1)}
+                    className="grid h-9 w-9 place-items-center rounded-full bg-orange text-ondark"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </Labeled>
       </div>
 
       <div className="mt-2">
