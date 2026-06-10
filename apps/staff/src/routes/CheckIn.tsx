@@ -14,15 +14,19 @@ function Field({
   value,
   onChange,
   required,
+  wide,
+  inputMode,
 }: {
   labelJa: string;
   labelEn: string;
   value: string;
   onChange: (next: string) => void;
   required?: boolean;
+  wide?: boolean;
+  inputMode?: 'text' | 'tel' | 'email';
 }) {
   return (
-    <label className="mb-4 block">
+    <label className={`mb-4 block ${wide ? 'md:col-span-2' : ''}`}>
       <span className="mb-1 block text-[0.92rem]">
         <span className="font-bold">{labelJa}</span>
         <span className="ml-2 text-[0.8rem] text-ink-light">{labelEn}</span>
@@ -30,6 +34,7 @@ function Field({
       </span>
       <input
         value={value}
+        inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
         className="min-h-[52px] w-full rounded-[12px] border border-line bg-cream px-4 py-3 text-[1.05rem] outline-none focus:border-green-light"
       />
@@ -50,7 +55,7 @@ export function CheckIn() {
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
-  const [occupation, setOccupation] = useState('');
+  const [contact, setContact] = useState('');
   const [nationality, setNationality] = useState('');
   const [passport, setPassport] = useState('');
   const [done, setDone] = useState(false);
@@ -63,16 +68,18 @@ export function CheckIn() {
     );
   }
 
+  const complete = name.trim() !== '' && address.trim() !== '' && contact.trim() !== '';
+
   async function submit() {
-    if (!name.trim()) {
+    if (!complete) {
       return;
     }
     await insertRow('checkin_record', {
       id: uuid(),
       guest_id: id,
       name: name.trim(),
-      address: address.trim() || null,
-      occupation: occupation.trim() || null,
+      address: address.trim(),
+      contact: contact.trim(),
       nationality: nationality.trim() || null,
       passport_number: passport.trim() || null,
       created_at: nowIso(),
@@ -115,32 +122,60 @@ export function CheckIn() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh max-w-xl flex-col overflow-y-auto bg-paper px-6 pt-9 pb-10">
-      <div className="font-heading text-[1.4rem] tracking-[0.22em] text-green">KRAFT BASE</div>
-      <h1 className="mt-5 font-bold text-[1.25rem]">チェックイン / Check-in</h1>
-      <p className="mt-1 mb-6 text-[0.86rem] text-ink-light">
-        法令により宿泊者名簿への記入をお願いしています。
-        <br />
-        Japanese law requires guests to fill in the registration form below.
-      </p>
+    <div className="flex min-h-dvh flex-col items-center overflow-y-auto bg-paper">
+      <div className="w-full max-w-xl px-6 pt-9 pb-10 md:max-w-3xl md:pt-14">
+        <div className="font-heading text-[1.4rem] tracking-[0.22em] text-green">KRAFT BASE</div>
+        <h1 className="mt-5 font-bold text-[1.25rem] md:text-[1.4rem]">チェックイン / Check-in</h1>
+        <p className="mt-1 mb-6 text-[0.86rem] text-ink-light">
+          法令により宿泊者名簿への記入をお願いしています。
+          <br />
+          Japanese law requires guests to fill in the registration form below.
+        </p>
 
-      <Field labelJa="氏名" labelEn="Full name" value={name} onChange={setName} required />
-      <Field labelJa="住所" labelEn="Home address" value={address} onChange={setAddress} />
-      <Field labelJa="職業" labelEn="Occupation" value={occupation} onChange={setOccupation} />
-      <Field labelJa="国籍" labelEn="Nationality" value={nationality} onChange={setNationality} />
-      <Field
-        labelJa="旅券番号"
-        labelEn="Passport number (required for foreign guests)"
-        value={passport}
-        onChange={setPassport}
-      />
+        <div className="md:grid md:grid-cols-2 md:gap-x-5">
+          <Field labelJa="氏名" labelEn="Full name" value={name} onChange={setName} required wide />
+          <Field
+            labelJa="住所"
+            labelEn="Home address"
+            value={address}
+            onChange={setAddress}
+            required
+            wide
+          />
+          <Field
+            labelJa="連絡先"
+            labelEn="Phone or email"
+            value={contact}
+            onChange={setContact}
+            required
+            inputMode="email"
+          />
+          <Field
+            labelJa="国籍"
+            labelEn="Nationality"
+            value={nationality}
+            onChange={setNationality}
+          />
+          <Field
+            labelJa="旅券番号"
+            labelEn="Passport number"
+            value={passport}
+            onChange={setPassport}
+            wide
+          />
+        </div>
+        <p className="mb-5 text-[0.76rem] text-ink-mute">
+          国籍・旅券番号は、日本国内に住所のない方は必須です。 / Nationality and passport number are
+          required if you do not have an address in Japan.
+        </p>
 
-      <PrimaryButton onClick={submit} disabled={!name.trim()}>
-        <Check size={18} /> 記入を完了 / Complete
-      </PrimaryButton>
-      <p className="mt-3 text-center text-[0.72rem] text-ink-mute">
-        記入内容は宿泊者名簿としてのみ利用します。 / Used only for the legal guest register.
-      </p>
+        <PrimaryButton onClick={submit} disabled={!complete}>
+          <Check size={18} /> 記入を完了 / Complete
+        </PrimaryButton>
+        <p className="mt-3 text-center text-[0.72rem] text-ink-mute">
+          記入内容は宿泊者名簿としてのみ利用します。 / Used only for the legal guest register.
+        </p>
+      </div>
     </div>
   );
 }

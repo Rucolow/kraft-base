@@ -8,7 +8,7 @@ create table if not exists public.checkin_record (
   guest_id uuid not null references public.guest (id) on delete cascade,
   name text not null,
   address text,
-  occupation text,
+  contact text,
   nationality text,
   passport_number text,
   created_at timestamptz not null default now()

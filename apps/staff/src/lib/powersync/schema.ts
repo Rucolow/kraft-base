@@ -145,7 +145,7 @@ const checkin_record = new Table(
     guest_id: column.text,
     name: column.text,
     address: column.text,
-    occupation: column.text,
+    contact: column.text,
     nationality: column.text,
     passport_number: column.text,
     created_at: column.text,
