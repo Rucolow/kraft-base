@@ -1,15 +1,16 @@
+import { useStatus } from '@powersync/react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
-import { EmptyState, Screen, SectionLabel } from '../components/ui';
+import { Badge, GhostButton, Screen, SectionLabel } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { updateRow } from '../lib/db';
 import { useSession } from '../lib/session';
 
 export function LinkAccount() {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, signOut } = useAuth();
   const { staff } = useSession();
-  const unlinked = staff.filter((member) => !member.auth_user_id);
+  const status = useStatus();
 
   async function link(staffId: string) {
     if (!session) {
@@ -19,30 +20,77 @@ export function LinkAccount() {
     navigate('/');
   }
 
+  const myId = session?.user.id;
+  const connectionNote = !status.connected
+    ? 'サーバーに接続中です…'
+    : !status.hasSynced
+      ? 'スタッフ情報を同期しています…'
+      : null;
+
   return (
     <Screen>
       <SectionLabel>アカウントの紐づけ</SectionLabel>
-      <p className="mb-3 px-1 text-[0.84rem] text-ink-light">
-        ログインしたあなたのアカウントを、スタッフに紐づけてください。
+      <p className="mb-2 px-1 text-[0.86rem] text-ink-light">
+        ログイン中のアカウントを、自分のスタッフ名に紐づけてください。
       </p>
-      {unlinked.length === 0 ? (
-        <EmptyState>紐づけ可能なスタッフがいません。</EmptyState>
+      {session ? (
+        <p className="mb-4 px-1 text-[0.78rem] text-ink-mute">
+          ログイン中：<span className="text-ink">{session.user.email}</span>
+        </p>
+      ) : null}
+
+      {staff.length === 0 ? (
+        <div className="rounded-kb border border-line bg-paper p-4">
+          <div className="flex items-center gap-2 font-bold text-[0.95rem] text-ink">
+            <span className="h-2.5 w-2.5 rounded-full bg-orange" />
+            {connectionNote ?? 'スタッフがまだ登録されていません'}
+          </div>
+          <p className="mt-2 text-[0.8rem] text-ink-light">
+            {connectionNote
+              ? '数秒待っても変わらない場合は、再読み込みしてください。'
+              : 'オーナーがスタッフを登録すると、ここに表示されます。'}
+          </p>
+          <div className="mt-3">
+            <GhostButton onClick={() => window.location.reload()}>再読み込み</GhostButton>
+          </div>
+        </div>
       ) : (
-        unlinked.map((member) => (
-          <button
-            key={member.id}
-            type="button"
-            onClick={() => link(member.id)}
-            className="mb-2 flex w-full items-center gap-3 rounded-[14px] border border-line bg-paper p-3 text-left"
-          >
-            <Avatar staff={member} size={36} />
-            <span className="flex-1 font-bold text-[0.92rem]">{member.name}</span>
-            <span className="text-[0.76rem] text-ink-light">
-              {member.role === 'owner' ? 'オーナー' : 'スタッフ'}
-            </span>
-          </button>
-        ))
+        staff.map((member) => {
+          const linkedToMe = member.auth_user_id === myId;
+          const linkedToOther = Boolean(member.auth_user_id) && !linkedToMe;
+          return (
+            <button
+              key={member.id}
+              type="button"
+              disabled={linkedToOther}
+              onClick={() => (linkedToMe ? navigate('/') : link(member.id))}
+              className="mb-2 flex w-full items-center gap-3 rounded-[14px] border border-line bg-paper p-3.5 text-left disabled:opacity-45"
+            >
+              <Avatar staff={member} size={40} />
+              <span className="flex-1 font-bold text-[0.96rem]">{member.name}</span>
+              {linkedToMe ? (
+                <Badge tone="ok">あなた</Badge>
+              ) : linkedToOther ? (
+                <Badge tone="neutral">登録済み</Badge>
+              ) : (
+                <span className="text-[0.78rem] text-ink-light">
+                  {member.role === 'owner' ? 'オーナー' : 'スタッフ'}
+                </span>
+              )}
+            </button>
+          );
+        })
       )}
+
+      <div className="mt-6">
+        <GhostButton
+          onClick={() => {
+            signOut().then(() => navigate('/login'));
+          }}
+        >
+          別のメールでログインし直す
+        </GhostButton>
+      </div>
     </Screen>
   );
 }
