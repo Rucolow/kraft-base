@@ -19,3 +19,4 @@ bucket_definitions:
       - SELECT * FROM lost_item
       - SELECT * FROM equipment_issue
       - SELECT * FROM daily_reset
+      - SELECT * FROM checkin_record

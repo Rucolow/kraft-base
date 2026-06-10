@@ -33,6 +33,15 @@ export const KIND_META: Record<string, KindMeta> = {
   },
 };
 
+export const LANG_LABEL: Record<string, string> = {
+  en: '英語',
+  de: 'ドイツ語',
+  it: 'イタリア語',
+  fr: 'フランス語',
+  es: 'スペイン語',
+  ja: '日本語',
+};
+
 export const KIND_ORDER = [
   'manual',
   'procedure',

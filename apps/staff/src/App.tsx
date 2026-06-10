@@ -7,6 +7,7 @@ import { ensureLocalSeed } from './lib/devSeed';
 import { PowerSyncProvider } from './lib/powersync/provider';
 import { SessionProvider, useSession } from './lib/session';
 import { closeStaleSessions, runDailyReset } from './lib/shiftOps';
+import { CheckIn } from './routes/CheckIn';
 import { Comms } from './routes/Comms';
 import { ContentReader } from './routes/ContentReader';
 import { Equipment } from './routes/Equipment';
@@ -92,6 +93,7 @@ function AppRoutes() {
       <Route path="/setup" element={<Setup />} />
       <Route path="/shift" element={<ShiftGate />} />
       <Route element={<RequireApp />}>
+        <Route path="/checkin/:id" element={<CheckIn />} />
         <Route element={<AppShell />}>
           <Route index element={<Today />} />
           <Route path="guests" element={<Guests />} />

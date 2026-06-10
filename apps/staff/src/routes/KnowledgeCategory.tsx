@@ -1,8 +1,8 @@
 import { ChevronRight, Plus } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PhraseRow } from '../components/PhraseRow';
 import { BackButton, EmptyState, NeedsInputBadge, Screen, SectionLabel } from '../components/ui';
-import { KIND_META } from '../content/kinds';
+import { KIND_META, LANG_LABEL } from '../content/kinds';
 import { useContentByKind } from '../data/queries';
 import { nowIso } from '../lib/date';
 import { insertRow, serializeList, uuid } from '../lib/db';
@@ -11,9 +11,16 @@ import { useSession } from '../lib/session';
 export function KnowledgeCategory() {
   const { kind = '' } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { currentStaff } = useSession();
-  const { data: items } = useContentByKind(kind);
+  const { data: allItems } = useContentByKind(kind);
   const meta = KIND_META[kind];
+  const langFilter = searchParams.get('lang');
+  const langs = [...new Set(allItems.map((item) => item.lang).filter(Boolean))] as string[];
+  const items =
+    kind === 'phrase' && langFilter
+      ? allItems.filter((item) => item.lang === langFilter)
+      : allItems;
 
   async function add() {
     const slug = `${kind}-${Date.now()}`;
@@ -57,6 +64,27 @@ export function KnowledgeCategory() {
       </div>
       {meta.hint ? (
         <div className="mb-2 px-1 text-[0.78rem] text-ink-light">{meta.hint}</div>
+      ) : null}
+      {kind === 'phrase' && langs.length > 1 ? (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setSearchParams({})}
+            className={`min-h-[36px] rounded-full border px-3 text-[0.78rem] ${langFilter === null ? 'border-green bg-green/10 font-bold text-green' : 'border-line text-ink-light'}`}
+          >
+            すべて
+          </button>
+          {langs.map((lang) => (
+            <button
+              key={lang}
+              type="button"
+              onClick={() => setSearchParams({ lang })}
+              className={`min-h-[36px] rounded-full border px-3 text-[0.78rem] ${langFilter === lang ? 'border-green bg-green/10 font-bold text-green' : 'border-line text-ink-light'}`}
+            >
+              {LANG_LABEL[lang] ?? lang}
+            </button>
+          ))}
+        </div>
       ) : null}
 
       {items.length === 0 ? (
