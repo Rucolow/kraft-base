@@ -7,6 +7,7 @@ import { ensureLocalSeed } from './lib/devSeed';
 import { PowerSyncProvider } from './lib/powersync/provider';
 import { SessionProvider, useSession } from './lib/session';
 import { closeStaleSessions, runDailyReset } from './lib/shiftOps';
+import { ThemeProvider } from './lib/theme';
 import { CheckIn } from './routes/CheckIn';
 import { Comms } from './routes/Comms';
 import { ContentReader } from './routes/ContentReader';
@@ -120,15 +121,17 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <PowerSyncProvider>
-      <AuthProvider>
-        <SessionProvider>
-          <BrowserRouter>
-            <RootBootstrap />
-            <AppRoutes />
-          </BrowserRouter>
-        </SessionProvider>
-      </AuthProvider>
-    </PowerSyncProvider>
+    <ThemeProvider>
+      <PowerSyncProvider>
+        <AuthProvider>
+          <SessionProvider>
+            <BrowserRouter>
+              <RootBootstrap />
+              <AppRoutes />
+            </BrowserRouter>
+          </SessionProvider>
+        </AuthProvider>
+      </PowerSyncProvider>
+    </ThemeProvider>
   );
 }

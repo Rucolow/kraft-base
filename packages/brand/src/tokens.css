@@ -1,43 +1,55 @@
 /**
- * KRAFT BASE — design tokens (single source of truth)
- * ダーク基調：深ティールの面 × 琥珀アクセント × 白抜きの文字。ロゴの世界観。
+ * KRAFT BASE — design tokens (single source of truth).
+ * ダークを既定、`.theme-light` でライトに切替。値は RGB チャンネル（/不透明度に対応）。
  */
 :root {
-  /* palette */
-  --kb-green: #15463e;
-  --kb-green-light: #1f564b;
-  --kb-green-deep: #0a2a25;
-  --kb-wood: #c9a24e;
-  --kb-wood-light: #ddbe7e;
-  --kb-wood-pale: #e8d5a3;
-  --kb-orange: #eb9a3c;
-  --kb-orange-light: #f4b366;
-  --kb-orange-deep: #c8772a;
-  --kb-cream: #0c332d;
-  --kb-cream-dark: #17443c;
+  /* palette — dark (default) */
+  --kb-green: 21 70 62;
+  --kb-green-light: 31 86 75;
+  --kb-green-deep: 10 42 37;
+  --kb-wood: 201 162 78;
+  --kb-wood-light: 221 190 126;
+  --kb-wood-pale: 232 213 163;
+  --kb-orange: 235 154 60;
+  --kb-orange-light: 244 179 102;
+  --kb-orange-deep: 200 119 42;
+  --kb-cream: 12 51 45;
+  --kb-cream-dark: 23 68 60;
+  --kb-ink: 243 237 221;
+  --kb-ink-light: 204 198 180;
+  --kb-ink-mute: 143 153 143;
+  --kb-paper: 17 64 58;
+  --kb-on-dark: 244 238 223;
 
-  /* ink / surface */
-  --kb-ink: #f3eddd;
-  --kb-ink-light: #ccc6b4;
-  --kb-ink-mute: #8f998f;
-  --kb-paper: #11403a;
   --kb-line: rgba(243, 237, 221, 0.13);
-
-  /* semantic surfaces */
-  --kb-surface: var(--kb-paper);
-  --kb-surface-muted: var(--kb-cream);
-  --kb-surface-strong: var(--kb-green);
-
-  /* shadows */
-  --kb-shadow-sm: 0 1px 2px rgba(42, 42, 37, 0.06);
-  --kb-shadow: 0 2px 8px rgba(42, 42, 37, 0.08);
-  --kb-shadow-lg: 0 8px 24px rgba(42, 42, 37, 0.12);
-
-  /* radii */
-  --kb-radius: 12px;
-  --kb-radius-lg: 20px;
+  --kb-app-bg: radial-gradient(ellipse at 12% 0%, rgba(235, 154, 60, 0.12) 0%, transparent 46%),
+    radial-gradient(ellipse at 88% 100%, rgba(31, 86, 75, 0.5) 0%, transparent 50%), rgb(10 42 37);
 
   /* type */
   --kb-font-heading: "Cormorant Garamond", serif;
   --kb-font-body: "Zen Kaku Gothic New", sans-serif;
+}
+
+:root.theme-light {
+  --kb-green: 15 61 54;
+  --kb-green-light: 45 74 62;
+  --kb-green-deep: 10 44 39;
+  --kb-wood: 154 116 22;
+  --kb-wood-light: 196 163 90;
+  --kb-wood-pale: 232 213 163;
+  --kb-orange: 224 138 46;
+  --kb-orange-light: 237 157 79;
+  --kb-orange-deep: 181 106 28;
+  --kb-cream: 244 238 223;
+  --kb-cream-dark: 233 222 199;
+  --kb-ink: 38 38 31;
+  --kb-ink-light: 97 91 76;
+  --kb-ink-mute: 147 141 125;
+  --kb-paper: 252 249 241;
+  --kb-on-dark: 244 238 223;
+
+  --kb-line: rgba(15, 61, 54, 0.12);
+  --kb-app-bg: radial-gradient(ellipse at 12% 0%, rgba(224, 138, 46, 0.1) 0%, transparent 44%),
+    radial-gradient(ellipse at 88% 100%, rgba(15, 61, 54, 0.08) 0%, transparent 46%),
+    rgb(244 238 223);
 }

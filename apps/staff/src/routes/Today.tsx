@@ -39,7 +39,7 @@ export function Today() {
 
   return (
     <Screen>
-      <div className="kb-grain-strong relative mb-4 flex items-center justify-between overflow-hidden rounded-kb bg-green p-4 text-ink md:p-6">
+      <div className="kb-grain-strong relative mb-4 flex items-center justify-between overflow-hidden rounded-kb bg-green p-4 text-ondark md:p-6">
         <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-orange/20 blur-2xl" />
         <div className="relative">
           <div className="flex items-baseline gap-3">

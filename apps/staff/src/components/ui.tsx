@@ -7,7 +7,7 @@ export function Screen({ children }: { children: ReactNode }) {
 
 export function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 mb-2 px-0.5 font-heading text-[0.7rem] uppercase tracking-[0.22em] text-ink-mute first:mt-0">
+    <div className="mt-6 mb-2 px-0.5 font-heading text-[0.8rem] uppercase tracking-[0.22em] text-ink-mute first:mt-0">
       {children}
     </div>
   );
@@ -74,7 +74,7 @@ export type BadgeTone = 'ok' | 'warn' | 'wood' | 'neutral';
 
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: BadgeTone }) {
   const styles: Record<BadgeTone, string> = {
-    ok: 'bg-green-light text-ink',
+    ok: 'bg-green-light text-ondark',
     warn: 'bg-orange/20 text-orange-light',
     wood: 'bg-wood/20 text-wood-light',
     neutral: 'bg-cream-dark text-ink-light',
@@ -116,7 +116,7 @@ export function PrimaryButton({
   return (
     <button
       {...rest}
-      className={`flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-orange font-bold text-[0.95rem] text-green-deep tracking-wide shadow-kb active:translate-y-px disabled:opacity-50 ${className ?? ''}`}
+      className={`flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[14px] bg-orange font-bold text-[1rem] text-green-deep tracking-wide shadow-kb active:translate-y-px disabled:opacity-50 ${className ?? ''}`}
     >
       {children}
     </button>
@@ -143,7 +143,7 @@ export function TextField({
       {label ? <span className="mb-1 block text-[0.78rem] text-ink-light">{label}</span> : null}
       <input
         {...rest}
-        className="min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base text-ink outline-none focus:border-orange-light"
+        className="min-h-[48px] w-full rounded-[11px] border border-line bg-cream px-3 py-3 text-base text-ink outline-none focus:border-orange-light"
       />
     </label>
   );

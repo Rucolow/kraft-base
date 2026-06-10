@@ -10,14 +10,35 @@ export const brandPreset = {
   theme: {
     extend: {
       colors: {
-        // Dark logo world: deep teal surfaces, amber accent, light ink.
-        green: { DEFAULT: '#15463e', light: '#1f564b', deep: '#0a2a25' },
-        wood: { DEFAULT: '#c9a24e', light: '#ddbe7e', pale: '#e8d5a3' },
-        orange: { DEFAULT: '#eb9a3c', light: '#f4b366', deep: '#c8772a' },
-        cream: { DEFAULT: '#0c332d', dark: '#17443c' },
-        ink: { DEFAULT: '#f3eddd', light: '#ccc6b4', mute: '#8f998f' },
-        paper: '#11403a',
-        line: 'rgba(243, 237, 221, 0.13)',
+        // Tokens resolve from CSS variables (packages/brand/src/tokens.css) so the
+        // theme can switch at runtime via the `.theme-light` class.
+        green: {
+          DEFAULT: 'rgb(var(--kb-green) / <alpha-value>)',
+          light: 'rgb(var(--kb-green-light) / <alpha-value>)',
+          deep: 'rgb(var(--kb-green-deep) / <alpha-value>)',
+        },
+        wood: {
+          DEFAULT: 'rgb(var(--kb-wood) / <alpha-value>)',
+          light: 'rgb(var(--kb-wood-light) / <alpha-value>)',
+          pale: 'rgb(var(--kb-wood-pale) / <alpha-value>)',
+        },
+        orange: {
+          DEFAULT: 'rgb(var(--kb-orange) / <alpha-value>)',
+          light: 'rgb(var(--kb-orange-light) / <alpha-value>)',
+          deep: 'rgb(var(--kb-orange-deep) / <alpha-value>)',
+        },
+        cream: {
+          DEFAULT: 'rgb(var(--kb-cream) / <alpha-value>)',
+          dark: 'rgb(var(--kb-cream-dark) / <alpha-value>)',
+        },
+        ink: {
+          DEFAULT: 'rgb(var(--kb-ink) / <alpha-value>)',
+          light: 'rgb(var(--kb-ink-light) / <alpha-value>)',
+          mute: 'rgb(var(--kb-ink-mute) / <alpha-value>)',
+        },
+        paper: 'rgb(var(--kb-paper) / <alpha-value>)',
+        ondark: 'rgb(var(--kb-on-dark) / <alpha-value>)',
+        line: 'var(--kb-line)',
       },
       fontFamily: {
         heading: [fontFamilies.heading],
