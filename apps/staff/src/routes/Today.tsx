@@ -39,8 +39,9 @@ export function Today() {
 
   return (
     <Screen>
-      <div className="mb-4 flex items-center justify-between overflow-hidden rounded-kb bg-green p-4 text-cream md:p-6">
-        <div>
+      <div className="kb-grain-strong relative mb-4 flex items-center justify-between overflow-hidden rounded-kb bg-green p-4 text-cream md:p-6">
+        <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-orange/20 blur-2xl" />
+        <div className="relative">
           <div className="flex items-baseline gap-3">
             <span className="font-bold font-sans text-[2.2rem] leading-none tabular-nums md:text-[2.6rem]">
               {clock}

@@ -110,7 +110,7 @@ function BottomNav() {
 
 export function AppShell() {
   return (
-    <div className="flex h-dvh bg-paper">
+    <div className="kb-grain flex h-dvh bg-paper">
       <SideNav />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
