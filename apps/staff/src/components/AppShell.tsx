@@ -19,7 +19,7 @@ function TopBar() {
   const { data: mentions } = useMentions(currentStaff?.id ?? null);
 
   return (
-    <header className="flex shrink-0 items-center justify-between gap-2.5 border-line border-b bg-paper/90 px-4 pt-3 pb-2.5 backdrop-blur">
+    <header className="flex shrink-0 items-center justify-between gap-2.5 border-line border-b bg-paper/90 px-4 pt-3 pb-2.5 backdrop-blur md:px-8">
       <button
         type="button"
         onClick={() => navigate('/shift')}
@@ -38,7 +38,7 @@ function TopBar() {
         >
           <Bell size={18} />
           {mentions.length > 0 ? (
-            <span className="absolute -top-0.5 -right-0.5 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-orange px-1 font-bold text-[0.6rem] text-paper">
+            <span className="-top-0.5 -right-0.5 absolute grid h-[17px] min-w-[17px] place-items-center rounded-full bg-orange px-1 font-bold text-[0.6rem] text-paper">
               {mentions.length}
             </span>
           ) : null}
@@ -48,9 +48,44 @@ function TopBar() {
   );
 }
 
+function SideNav() {
+  return (
+    <nav className="hidden shrink-0 border-line border-r bg-paper/95 px-3 pt-7 pb-4 md:flex md:w-60 md:flex-col md:gap-1.5">
+      <div className="mb-1 px-3 font-heading text-[1.15rem] tracking-[0.22em] text-green">
+        KRAFT BASE
+      </div>
+      <div className="mb-6 px-3 font-heading text-[0.78rem] text-orange italic">
+        Unplug to recharge.
+      </div>
+      {TABS.map((tab) => {
+        const Icon = tab.icon;
+        return (
+          <NavLink
+            key={tab.to}
+            to={tab.to}
+            end={tab.end}
+            className={({ isActive }) =>
+              `flex min-h-[48px] items-center gap-3 rounded-[12px] px-3 font-bold text-[0.92rem] ${
+                isActive ? 'bg-green/10 text-green' : 'text-ink-light'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Icon size={20} strokeWidth={isActive ? 2.2 : 1.7} />
+                {tab.label}
+              </>
+            )}
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+}
+
 function BottomNav() {
   return (
-    <nav className="grid shrink-0 grid-cols-5 border-line border-t bg-paper/95 px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] backdrop-blur">
+    <nav className="grid shrink-0 grid-cols-5 border-line border-t bg-paper/95 px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
       {TABS.map((tab) => {
         const Icon = tab.icon;
         return (
@@ -77,12 +112,17 @@ function BottomNav() {
 
 export function AppShell() {
   return (
-    <div className="mx-auto flex h-dvh max-w-[480px] flex-col bg-paper shadow-kb-lg">
-      <TopBar />
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
-      <BottomNav />
+    <div className="flex h-dvh bg-paper">
+      <SideNav />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[520px] md:max-w-3xl">
+            <Outlet />
+          </div>
+        </main>
+        <BottomNav />
+      </div>
     </div>
   );
 }

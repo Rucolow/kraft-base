@@ -38,44 +38,46 @@ export function Tasks() {
 
   return (
     <Screen>
-      {GROUPS.map((group) => {
-        const items = tasks.filter((task) => task.group === group.key);
-        return (
-          <div key={group.key}>
-            <SectionLabel>{group.label}</SectionLabel>
-            <Card>
-              {items.length === 0 ? (
-                <EmptyState>タスクはありません。</EmptyState>
-              ) : (
-                items.map((task) => {
-                  const checked = intToBool(task.done);
-                  const owner = staff.find((member) => member.id === task.owner_id) ?? null;
-                  return (
-                    <button
-                      key={task.id}
-                      type="button"
-                      onClick={() => setTaskDone(task, !checked)}
-                      className="flex min-h-[44px] w-full items-center gap-3 border-line border-b border-dashed py-2.5 text-left last:border-none"
-                    >
-                      <span
-                        className={`grid h-[21px] w-[21px] shrink-0 place-items-center rounded-md border-[1.6px] ${checked ? 'border-green bg-green' : 'border-green-light'}`}
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-4">
+        {GROUPS.map((group) => {
+          const items = tasks.filter((task) => task.group === group.key);
+          return (
+            <div key={group.key}>
+              <SectionLabel>{group.label}</SectionLabel>
+              <Card>
+                {items.length === 0 ? (
+                  <EmptyState>タスクはありません。</EmptyState>
+                ) : (
+                  items.map((task) => {
+                    const checked = intToBool(task.done);
+                    const owner = staff.find((member) => member.id === task.owner_id) ?? null;
+                    return (
+                      <button
+                        key={task.id}
+                        type="button"
+                        onClick={() => setTaskDone(task, !checked)}
+                        className="flex min-h-[44px] w-full items-center gap-3 border-line border-b border-dashed py-2.5 text-left last:border-none"
                       >
-                        {checked ? <Check size={14} className="text-paper" /> : null}
-                      </span>
-                      <span
-                        className={`flex-1 text-[0.9rem] ${checked ? 'text-ink-mute line-through' : ''}`}
-                      >
-                        {task.title}
-                      </span>
-                      {owner ? <Badge tone="wood">@{owner.name}</Badge> : null}
-                    </button>
-                  );
-                })
-              )}
-            </Card>
-          </div>
-        );
-      })}
+                        <span
+                          className={`grid h-[21px] w-[21px] shrink-0 place-items-center rounded-md border-[1.6px] ${checked ? 'border-green bg-green' : 'border-green-light'}`}
+                        >
+                          {checked ? <Check size={14} className="text-paper" /> : null}
+                        </span>
+                        <span
+                          className={`flex-1 text-[0.9rem] ${checked ? 'text-ink-mute line-through' : ''}`}
+                        >
+                          {task.title}
+                        </span>
+                        {owner ? <Badge tone="wood">@{owner.name}</Badge> : null}
+                      </button>
+                    );
+                  })
+                )}
+              </Card>
+            </div>
+          );
+        })}
+      </div>
 
       {isOwner ? (
         <div className="mt-2 flex items-center gap-2">

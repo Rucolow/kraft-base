@@ -2,7 +2,7 @@ import { ChevronLeft } from 'lucide-react';
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 
 export function Screen({ children }: { children: ReactNode }) {
-  return <div className="px-4 pt-4 pb-8">{children}</div>;
+  return <div className="px-4 pt-4 pb-8 md:px-8 md:pt-6 md:pb-12">{children}</div>;
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {

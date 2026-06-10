@@ -51,19 +51,21 @@ function KindList({ kind, label }: { kind: string; label: string }) {
   return (
     <>
       <SectionLabel>{label}</SectionLabel>
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => navigate(`/manual/c/${item.slug}`)}
-          className="mb-1.5 flex w-full items-center gap-2 rounded-[11px] border border-line bg-paper px-3 py-2.5 text-left text-[0.88rem]"
-        >
-          <BookOpen size={14} className="text-wood" />
-          <span className="flex-1">{item.title}</span>
-          {item.status === 'needs_input' ? <NeedsInputBadge /> : null}
-          <ChevronRight size={14} className="text-ink-mute" />
-        </button>
-      ))}
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => navigate(`/manual/c/${item.slug}`)}
+            className="mb-1.5 flex w-full items-center gap-2 rounded-[11px] border border-line bg-paper px-3 py-2.5 text-left text-[0.88rem]"
+          >
+            <BookOpen size={14} className="text-wood" />
+            <span className="flex-1">{item.title}</span>
+            {item.status === 'needs_input' ? <NeedsInputBadge /> : null}
+            <ChevronRight size={14} className="text-ink-mute" />
+          </button>
+        ))}
+      </div>
     </>
   );
 }
@@ -85,21 +87,23 @@ export function ManualHub() {
         </div>
       </Card>
 
-      <ToolRow icon={MapPin} label="物の置き場所" onClick={() => navigate('/manual/locations')} />
-      <ToolRow
-        icon={Sprout}
-        label="育てる項目（要確認）"
-        onClick={() => navigate('/manual/grow')}
-      />
-      <ToolRow icon={Package} label="忘れ物" onClick={() => navigate('/manual/lost')} />
-      <ToolRow icon={Wrench} label="設備・備品" onClick={() => navigate('/manual/equipment')} />
-      {isOwner ? (
+      <div className="md:grid md:grid-cols-2 md:gap-x-3">
+        <ToolRow icon={MapPin} label="物の置き場所" onClick={() => navigate('/manual/locations')} />
         <ToolRow
-          icon={PenSquare}
-          label="コンテンツ編集"
-          onClick={() => navigate('/manual/admin')}
+          icon={Sprout}
+          label="育てる項目（要確認）"
+          onClick={() => navigate('/manual/grow')}
         />
-      ) : null}
+        <ToolRow icon={Package} label="忘れ物" onClick={() => navigate('/manual/lost')} />
+        <ToolRow icon={Wrench} label="設備・備品" onClick={() => navigate('/manual/equipment')} />
+        {isOwner ? (
+          <ToolRow
+            icon={PenSquare}
+            label="コンテンツ編集"
+            onClick={() => navigate('/manual/admin')}
+          />
+        ) : null}
+      </div>
 
       <SectionLabel>
         <span className="flex items-center gap-1.5">
@@ -109,14 +113,16 @@ export function ManualHub() {
       {phrases.length === 0 ? (
         <EmptyState>フレーズが未登録です。</EmptyState>
       ) : (
-        phrases.map((phrase) => (
-          <PhraseRow
-            key={phrase.id}
-            label={phrase.title ?? ''}
-            text={phrase.body ?? ''}
-            lang={phrase.lang ?? 'en'}
-          />
-        ))
+        <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3">
+          {phrases.map((phrase) => (
+            <PhraseRow
+              key={phrase.id}
+              label={phrase.title ?? ''}
+              text={phrase.body ?? ''}
+              lang={phrase.lang ?? 'en'}
+            />
+          ))}
+        </div>
       )}
 
       {REFERENCE.map((reference) => (

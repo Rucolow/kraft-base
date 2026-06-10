@@ -1,8 +1,9 @@
 import { Bell, Check, ListChecks, ScrollText, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Card, CardHead, EmptyState, Screen } from '../components/ui';
 import { useManualTasks, useMentions, useOpenFollowups, useTodaysGuests } from '../data/queries';
-import { jstHour } from '../lib/date';
+import { formatClock, jstHour, nowIso } from '../lib/date';
 import { intToBool } from '../lib/db';
 import { useSession } from '../lib/session';
 import { cockpitPhases, shiftContextLabel } from '../lib/shift';
@@ -20,6 +21,12 @@ export function Today() {
   const { currentStaff } = useSession();
   const hour = jstHour();
   const phases = cockpitPhases(hour);
+  const [clock, setClock] = useState(() => formatClock(nowIso()));
+
+  useEffect(() => {
+    const timer = setInterval(() => setClock(formatClock(nowIso())), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const { data: tasks } = useManualTasks(phases);
   const { data: guests } = useTodaysGuests();
@@ -32,11 +39,13 @@ export function Today() {
 
   return (
     <Screen>
-      <div className="mb-4 overflow-hidden rounded-kb bg-green p-4 text-cream">
-        <div className="font-heading text-[2.5rem] leading-none tracking-wide">
-          {String(hour).padStart(2, '0')}:00
+      <div className="mb-4 overflow-hidden rounded-kb bg-green p-4 text-cream md:p-6">
+        <div className="flex items-baseline gap-3">
+          <span className="font-heading text-[2.5rem] leading-none tracking-wide md:text-[3rem]">
+            {clock}
+          </span>
+          <span className="text-[0.95rem] opacity-90">{shiftContextLabel(hour)}</span>
         </div>
-        <div className="mt-1 text-[0.95rem] opacity-90">{shiftContextLabel(hour)}</div>
         {currentStaff ? (
           <div className="mt-3 text-[0.8rem] opacity-90">{currentStaff.name} のシフト</div>
         ) : null}
@@ -81,50 +90,54 @@ export function Today() {
         )}
       </Card>
 
-      <Card onClick={() => navigate('/guests')}>
-        <CardHead
-          icon={<Users size={17} />}
-          title="本日のチェックイン"
-          trailing={
-            <Badge tone="ok">
-              {arrived} / {guests.length}
-            </Badge>
-          }
-        />
-        <div className="text-[0.86rem] text-ink-light">
-          {guests.length === 0
-            ? '本日のゲストは未登録です。'
-            : late.length > 0
-              ? `未着：${late.map((guest) => `${guest.name}様`).join('・')}`
-              : '全員到着済み'}
-        </div>
-      </Card>
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3">
+        <Card onClick={() => navigate('/guests')}>
+          <CardHead
+            icon={<Users size={17} />}
+            title="本日のチェックイン"
+            trailing={
+              <Badge tone="ok">
+                {arrived} / {guests.length}
+              </Badge>
+            }
+          />
+          <div className="text-[0.86rem] text-ink-light">
+            {guests.length === 0
+              ? '本日のゲストは未登録です。'
+              : late.length > 0
+                ? `未着：${late.map((guest) => `${guest.name}様`).join('・')}`
+                : '全員到着済み'}
+          </div>
+        </Card>
 
-      <Card onClick={() => navigate('/comms')}>
-        <CardHead
-          icon={<Bell size={17} />}
-          tone="orange"
-          title="あなた宛て"
-          trailing={
-            <Badge tone={mentions.length > 0 ? 'warn' : 'neutral'}>{mentions.length}件</Badge>
-          }
-        />
-        <div className="text-[0.86rem] text-ink-light">
-          {mentions.length > 0 ? '確認待ちの @メンションがあります。' : '新しい確認はありません。'}
-        </div>
-      </Card>
+        <Card onClick={() => navigate('/comms')}>
+          <CardHead
+            icon={<Bell size={17} />}
+            tone="orange"
+            title="あなた宛て"
+            trailing={
+              <Badge tone={mentions.length > 0 ? 'warn' : 'neutral'}>{mentions.length}件</Badge>
+            }
+          />
+          <div className="text-[0.86rem] text-ink-light">
+            {mentions.length > 0
+              ? '確認待ちの @メンションがあります。'
+              : '新しい確認はありません。'}
+          </div>
+        </Card>
 
-      <Card onClick={() => navigate('/handover')}>
-        <CardHead
-          icon={<ScrollText size={17} />}
-          tone="wood"
-          title="引き継ぎ"
-          trailing={<Badge tone="wood">{followups.length}件</Badge>}
-        />
-        <div className="text-[0.86rem] text-ink-light">
-          {followups.length > 0 ? '未完の申し送りがあります。' : '未完の申し送りはありません。'}
-        </div>
-      </Card>
+        <Card onClick={() => navigate('/handover')}>
+          <CardHead
+            icon={<ScrollText size={17} />}
+            tone="wood"
+            title="引き継ぎ"
+            trailing={<Badge tone="wood">{followups.length}件</Badge>}
+          />
+          <div className="text-[0.86rem] text-ink-light">
+            {followups.length > 0 ? '未完の申し送りがあります。' : '未完の申し送りはありません。'}
+          </div>
+        </Card>
+      </div>
     </Screen>
   );
 }

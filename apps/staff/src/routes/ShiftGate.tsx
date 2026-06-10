@@ -48,7 +48,7 @@ export function ShiftGate() {
 
   if (!selected) {
     return (
-      <div className="mx-auto flex h-dvh max-w-[480px] flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
+      <div className="mx-auto flex h-dvh max-w-[480px] md:max-w-xl flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
         <div className="font-heading text-[1.5rem] tracking-[0.22em] text-green">KRAFT BASE</div>
         <div className="mt-0.5 font-heading text-[0.9rem] text-orange italic">
           Unplug to recharge.
@@ -78,7 +78,7 @@ export function ShiftGate() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh max-w-[480px] flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
+    <div className="mx-auto flex h-dvh max-w-[480px] md:max-w-xl flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
       {device.mode === 'shared' ? (
         <BackButton onClick={() => setPicked(null)}>戻る</BackButton>
       ) : null}

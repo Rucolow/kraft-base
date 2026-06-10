@@ -27,7 +27,7 @@ export function Setup() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh max-w-[480px] flex-col overflow-y-auto bg-paper px-6 pt-10 pb-8">
+    <div className="mx-auto flex h-dvh max-w-[480px] md:max-w-xl flex-col overflow-y-auto bg-paper px-6 pt-10 pb-8">
       <div className="font-heading text-[1.5rem] tracking-[0.22em] text-green">KRAFT BASE</div>
       <h1 className="mt-6 font-bold text-[1.15rem]">この端末の設定</h1>
       <p className="mt-1 mb-5 text-[0.84rem] text-ink-light">
