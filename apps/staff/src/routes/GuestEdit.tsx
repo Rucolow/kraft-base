@@ -14,7 +14,7 @@ import {
 import { LANG_LABEL } from '../content/kinds';
 import { useGuest } from '../data/queries';
 import { jstDate, nowIso } from '../lib/date';
-import { insertRow, updateRow, uuid } from '../lib/db';
+import { boolToInt, insertRow, updateRow, uuid } from '../lib/db';
 import type { GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
 
@@ -110,6 +110,7 @@ export function GuestEdit() {
     bed: existing?.bed ?? '',
     bento: existing?.bento ?? '',
   });
+  const [wholeHouse, setWholeHouse] = useState(existing?.whole_house === 1);
 
   if (!isOwner) {
     return (
@@ -136,6 +137,7 @@ export function GuestEdit() {
       checkin_time: form.checkin_time || null,
       bed: form.bed || null,
       bento: form.bento || null,
+      whole_house: boolToInt(wholeHouse),
     };
     if (editing && existing) {
       await updateRow('guest', existing.id, values);
@@ -156,6 +158,27 @@ export function GuestEdit() {
     <Screen>
       <BackButton onClick={() => navigate('/guests')}>本日のゲスト</BackButton>
       <SectionLabel>{editing ? 'ゲストを編集' : 'ゲストを追加'}</SectionLabel>
+
+      <span className="mb-1 block text-[0.82rem] text-ink-light">予約タイプ</span>
+      <div className="mb-4 flex gap-2">
+        {[
+          { value: false, label: '相部屋' },
+          { value: true, label: '貸切' },
+        ].map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            onClick={() => setWholeHouse(option.value)}
+            className={`min-h-[52px] flex-1 rounded-[12px] border font-bold text-[0.95rem] ${
+              wholeHouse === option.value
+                ? 'border-orange bg-orange/15 text-orange'
+                : 'border-line text-ink-light'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
 
       <div className="md:grid md:grid-cols-2 md:gap-x-4">
         <Labeled label="宿泊日">

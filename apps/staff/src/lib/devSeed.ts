@@ -134,6 +134,7 @@ export async function ensureLocalSeed(): Promise<void> {
       bento: guest.bento,
       status: guest.status,
       review_sent_at: null,
+      whole_house: 0,
       created_by: STAFF.owner.id,
       created_at: at,
     });

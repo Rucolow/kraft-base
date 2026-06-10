@@ -45,6 +45,7 @@ const guest = new Table(
     bento: column.text,
     status: column.text,
     review_sent_at: column.text,
+    whole_house: column.integer,
     created_by: column.text,
     created_at: column.text,
   },

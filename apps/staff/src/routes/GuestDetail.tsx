@@ -85,6 +85,7 @@ export function GuestDetail() {
   }
 
   const info: Array<[string, string]> = [
+    ['予約タイプ', guest.whole_house === 1 ? '貸切' : '相部屋'],
     ['宿泊日', guest.stay_date ?? '—'],
     ['国', guest.country ?? '—'],
     ['言語', LANG_LABEL[guest.language ?? ''] ?? guest.language ?? '—'],
