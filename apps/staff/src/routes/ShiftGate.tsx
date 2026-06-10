@@ -50,9 +50,6 @@ export function ShiftGate() {
     return (
       <div className="mx-auto flex h-dvh max-w-[480px] md:max-w-xl flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
         <div className="font-heading text-[1.5rem] tracking-[0.22em] text-green">KRAFT BASE</div>
-        <div className="mt-0.5 font-heading text-[0.9rem] text-orange italic">
-          Unplug to recharge.
-        </div>
         <h1 className="mt-8 font-bold text-[1.15rem]">シフトを始めますか？</h1>
         <p className="mt-1 mb-5 text-[0.84rem] text-ink-light">
           あなたの名前を選んでください。交代は「引き継ぎを受け取る」ことから始まります。

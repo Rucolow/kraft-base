@@ -1,10 +1,9 @@
 import { Languages, Pencil, Pin, Send } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
-import { PhraseRow } from '../components/PhraseRow';
 import { BackButton, Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
-import { useContentByKind, useGuest, useGuestNotes } from '../data/queries';
+import { useGuest, useGuestNotes } from '../data/queries';
 import { nowIso } from '../lib/date';
 import { boolToInt, insertRow, parseList, serializeList, updateRow, uuid } from '../lib/db';
 import { useSession } from '../lib/session';
@@ -22,7 +21,6 @@ export function GuestDetail() {
   const { currentStaff, staff, isOwner } = useSession();
   const { data: guests } = useGuest(id);
   const { data: notes } = useGuestNotes(id);
-  const { data: phrases } = useContentByKind('phrase');
   const guest = guests[0] ?? null;
 
   const [memo, setMemo] = useState('');
@@ -44,11 +42,6 @@ export function GuestDetail() {
       }
     }
   }, [notes, currentStaff]);
-
-  const guestPhrases = useMemo(
-    () => phrases.filter((phrase) => phrase.lang === guest?.language || phrase.lang === 'en'),
-    [phrases, guest],
-  );
 
   if (!guest) {
     return (
@@ -156,23 +149,14 @@ export function GuestDetail() {
         </button>
       </div>
 
-      <SectionLabel>
-        <span className="flex items-center gap-1.5">
-          <Languages size={13} /> 見送りのことば
-        </span>
-      </SectionLabel>
-      {guestPhrases.length === 0 ? (
-        <EmptyState>フレーズが未登録です。</EmptyState>
-      ) : (
-        guestPhrases.map((phrase) => (
-          <PhraseRow
-            key={phrase.id}
-            label={phrase.title ?? ''}
-            text={phrase.body ?? ''}
-            lang={phrase.lang ?? 'en'}
-          />
-        ))
-      )}
+      <button
+        type="button"
+        onClick={() => navigate('/manual/k/phrase')}
+        className="mt-4 flex min-h-[44px] w-full items-center gap-2 rounded-[11px] border border-line bg-paper px-3 text-left text-[0.86rem]"
+      >
+        <Languages size={15} className="text-green" />
+        <span className="flex-1">見送り・接客のフレーズ集（ナレッジ）</span>
+      </button>
 
       <SectionLabel>スレッド</SectionLabel>
       {comments.length === 0 ? (

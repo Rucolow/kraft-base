@@ -51,11 +51,8 @@ function TopBar() {
 function SideNav() {
   return (
     <nav className="hidden shrink-0 border-line border-r bg-paper/95 px-3 pt-7 pb-4 md:flex md:w-60 md:flex-col md:gap-1.5">
-      <div className="mb-1 px-3 font-heading text-[1.15rem] tracking-[0.22em] text-green">
+      <div className="mb-7 px-3 font-heading text-[1.15rem] tracking-[0.22em] text-green">
         KRAFT BASE
-      </div>
-      <div className="mb-6 px-3 font-heading text-[0.78rem] text-orange italic">
-        Unplug to recharge.
       </div>
       {TABS.map((tab) => {
         const Icon = tab.icon;
