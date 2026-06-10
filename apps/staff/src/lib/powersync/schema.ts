@@ -154,6 +154,14 @@ const checkin_record = new Table(
   { indexes: { guest: ['guest_id'] } },
 );
 
+const product = new Table({
+  name: column.text,
+  sell_price: column.integer,
+  cost: column.integer,
+  sort: column.integer,
+  created_at: column.text,
+});
+
 export const AppSchema = new Schema({
   staff,
   device,
@@ -168,6 +176,7 @@ export const AppSchema = new Schema({
   equipment_issue,
   daily_reset,
   checkin_record,
+  product,
 });
 
 export type Database = (typeof AppSchema)['types'];
@@ -184,3 +193,4 @@ export type LostItemRow = Database['lost_item'];
 export type EquipmentIssueRow = Database['equipment_issue'];
 export type DailyResetRow = Database['daily_reset'];
 export type CheckinRecordRow = Database['checkin_record'];
+export type ProductRow = Database['product'];
