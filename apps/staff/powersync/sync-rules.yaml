@@ -20,3 +20,4 @@ bucket_definitions:
       - SELECT * FROM equipment_issue
       - SELECT * FROM daily_reset
       - SELECT * FROM checkin_record
+      - SELECT * FROM product

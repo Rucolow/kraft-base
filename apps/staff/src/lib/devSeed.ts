@@ -1,3 +1,4 @@
+import { SEED_PRODUCTS } from '../content/products';
 import { seedContent, seedTasks } from '../content/seed';
 import { jstDate, nowIso } from './date';
 import { boolToInt, insertRow, serializeList, uuid } from './db';
@@ -177,4 +178,15 @@ export async function ensureLocalSeed(): Promise<void> {
     created_at: at,
     resolved_at: null,
   });
+
+  for (const [index, [name, sell, cost]] of SEED_PRODUCTS.entries()) {
+    await insertRow('product', {
+      id: uuid(),
+      name,
+      sell_price: sell,
+      cost,
+      sort: index,
+      created_at: at,
+    });
+  }
 }

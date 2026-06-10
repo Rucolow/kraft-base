@@ -1,5 +1,5 @@
 import { useQuery } from '@powersync/react';
-import { ChevronRight, CloudOff, Search, Sprout } from 'lucide-react';
+import { ChevronRight, CloudOff, Search, ShoppingBag, Sprout } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, EmptyState, NeedsInputBadge, Screen, SectionLabel } from '../components/ui';
@@ -96,6 +96,23 @@ export function ManualHub() {
               <Badge tone="warn">{needsTotal + followups.length}</Badge>
             </button>
           ) : null}
+
+          <button
+            type="button"
+            onClick={() => navigate('/manual/products')}
+            className="mb-5 flex w-full items-center gap-3 rounded-kb border border-line bg-paper p-4 text-left shadow-kb-sm"
+          >
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange/15 text-orange">
+              <ShoppingBag size={20} />
+            </span>
+            <span className="flex-1">
+              <span className="font-bold text-[0.95rem]">商品一覧（館内販売）</span>
+              <span className="mt-0.5 block text-[0.78rem] text-ink-light">
+                売価・原価・粗利。価格はオーナーが編集できます。
+              </span>
+            </span>
+            <ChevronRight size={16} className="text-ink-mute" />
+          </button>
 
           <SectionLabel>カテゴリ</SectionLabel>
           <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4">
