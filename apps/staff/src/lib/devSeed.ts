@@ -11,19 +11,19 @@ const STAFF = {
     id: '00000000-0000-0000-0000-000000000001',
     name: 'ルッコロー',
     role: 'owner',
-    accent: '#8b6914',
+    accent: '#9a7416',
   },
   morley: {
     id: '00000000-0000-0000-0000-000000000002',
     name: 'モーリー',
     role: 'staff',
-    accent: '#c8703c',
+    accent: '#e08a2e',
   },
   day: {
     id: '00000000-0000-0000-0000-000000000003',
     name: '日中スタッフ',
     role: 'staff',
-    accent: '#2d4a3e',
+    accent: '#0f3d36',
   },
 };
 
@@ -134,6 +134,7 @@ export async function ensureLocalSeed(): Promise<void> {
       bento: guest.bento,
       status: guest.status,
       review_sent_at: null,
+      whole_house: 0,
       created_by: STAFF.owner.id,
       created_at: at,
     });

@@ -1,4 +1,5 @@
 import { useQuery } from '@powersync/react';
+import { Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -11,11 +12,112 @@ import {
   SectionLabel,
   TextField,
 } from '../components/ui';
+import { LANG_LABEL } from '../content/kinds';
 import { useGuest } from '../data/queries';
 import { jstDate, nowIso } from '../lib/date';
-import { insertRow, updateRow, uuid } from '../lib/db';
+import { boolToInt, insertRow, updateRow, uuid } from '../lib/db';
 import type { GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
+
+const FIELD =
+  'min-h-[48px] w-full rounded-[11px] border border-line bg-cream px-3 py-3 text-base text-ink outline-none focus:border-orange-light';
+const OTHER = '__other__';
+
+const COUNTRIES = [
+  '日本',
+  'ドイツ',
+  'イタリア',
+  'フランス',
+  'イギリス',
+  'アメリカ',
+  'オーストラリア',
+  'スペイン',
+  '中国',
+  '韓国',
+  '台湾',
+];
+const BEDS = ['1番', '2番', '3番', '4番', '5番', '6番', '和室'];
+const BENTO_ITEMS = ['焼肉弁当', 'ヴィーガン弁当', 'おむすび弁当'];
+const TIMES = ['15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
+
+// Opens the native date/time picker wherever the field is tapped.
+function openPicker(event: React.SyntheticEvent<HTMLInputElement>) {
+  const element = event.currentTarget as HTMLInputElement & { showPicker?: () => void };
+  try {
+    element.showPicker?.();
+  } catch {
+    /* showPicker throws without user activation; ignore */
+  }
+}
+
+function parseBento(value: string | null): Record<string, number> {
+  const counts: Record<string, number> = {};
+  if (!value) {
+    return counts;
+  }
+  for (const part of value.split('・')) {
+    const match = part.match(/^(.*?)\s*×\s*(\d+)$/);
+    if (match?.[1]) {
+      counts[match[1].trim()] = Number.parseInt(match[2] ?? '0', 10);
+    }
+  }
+  return counts;
+}
+
+function bentoToString(counts: Record<string, number>): string {
+  return Object.entries(counts)
+    .filter(([, n]) => n > 0)
+    .map(([item, n]) => `${item} ×${n}`)
+    .join('・');
+}
+
+function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-3 block">
+      <span className="mb-1 block text-[0.82rem] text-ink-light">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function Choice({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  options: string[];
+}) {
+  const known = value === '' || options.includes(value);
+  return (
+    <Labeled label={label}>
+      <select
+        className={FIELD}
+        value={known ? value : OTHER}
+        onChange={(event) => onChange(event.target.value === OTHER ? '' : event.target.value)}
+      >
+        <option value="">選択してください</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+        <option value={OTHER}>その他（自由入力）</option>
+      </select>
+      {!known ? (
+        <input
+          className={`mt-2 ${FIELD}`}
+          placeholder="自由入力"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      ) : null}
+    </Labeled>
+  );
+}
 
 export function GuestEdit() {
   const { id } = useParams();
@@ -38,8 +140,11 @@ export function GuestEdit() {
     party_size: String(existing?.party_size ?? 1),
     checkin_time: existing?.checkin_time ?? '',
     bed: existing?.bed ?? '',
-    bento: existing?.bento ?? '',
   });
+  const [wholeHouse, setWholeHouse] = useState(existing?.whole_house === 1);
+  const [bento, setBento] = useState<Record<string, number>>(() =>
+    parseBento(existing?.bento ?? null),
+  );
 
   if (!isOwner) {
     return (
@@ -50,8 +155,16 @@ export function GuestEdit() {
     );
   }
 
-  const set = (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const set = (key: keyof typeof form) => (value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const bumpBento = (item: string, delta: number) =>
+    setBento((prev) => {
+      const next = Math.max(0, (prev[item] ?? 0) + delta);
+      return { ...prev, [item]: next };
+    });
+
+  const languageKnown = form.language === '' || form.language in LANG_LABEL;
 
   async function save() {
     if (!form.name.trim()) {
@@ -65,7 +178,8 @@ export function GuestEdit() {
       party_size: Number.parseInt(form.party_size, 10) || 1,
       checkin_time: form.checkin_time || null,
       bed: form.bed || null,
-      bento: form.bento || null,
+      bento: bentoToString(bento) || null,
+      whole_house: boolToInt(wholeHouse),
     };
     if (editing && existing) {
       await updateRow('guest', existing.id, values);
@@ -87,31 +201,149 @@ export function GuestEdit() {
       <BackButton onClick={() => navigate('/guests')}>本日のゲスト</BackButton>
       <SectionLabel>{editing ? 'ゲストを編集' : 'ゲストを追加'}</SectionLabel>
 
-      <TextField
-        label="宿泊日"
-        value={form.stay_date}
-        onChange={set('stay_date')}
-        placeholder="YYYY-MM-DD"
-      />
-      <TextField label="お名前" value={form.name} onChange={set('name')} />
-      <TextField label="国" value={form.country} onChange={set('country')} />
-      <TextField
-        label="言語コード（en / de / it …）"
-        value={form.language}
-        onChange={set('language')}
-      />
-      <TextField
-        label="人数"
-        type="number"
-        inputMode="numeric"
-        value={form.party_size}
-        onChange={set('party_size')}
-      />
-      <TextField label="チェックイン" value={form.checkin_time} onChange={set('checkin_time')} />
-      <TextField label="ベッド" value={form.bed} onChange={set('bed')} />
-      <TextField label="弁当" value={form.bento} onChange={set('bento')} />
+      <span className="mb-1 block text-[0.82rem] text-ink-light">予約タイプ</span>
+      <div className="mb-4 flex gap-2">
+        {[
+          { value: false, label: '相部屋' },
+          { value: true, label: '貸切' },
+        ].map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            onClick={() => setWholeHouse(option.value)}
+            className={`min-h-[52px] flex-1 rounded-[12px] border font-bold text-[0.95rem] ${
+              wholeHouse === option.value
+                ? 'border-orange bg-orange/15 text-orange'
+                : 'border-line text-ink-light'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
 
-      <PrimaryButton onClick={save}>{editing ? '保存' : '追加'}</PrimaryButton>
+      <div className="md:grid md:grid-cols-2 md:gap-x-4">
+        <Labeled label="宿泊日">
+          <input
+            type="date"
+            className={FIELD}
+            value={form.stay_date}
+            onFocus={openPicker}
+            onClick={openPicker}
+            onChange={(event) => set('stay_date')(event.target.value)}
+          />
+        </Labeled>
+
+        <TextField
+          label="お名前"
+          value={form.name}
+          onChange={(event) => set('name')(event.target.value)}
+        />
+
+        <Choice label="国" value={form.country} onChange={set('country')} options={COUNTRIES} />
+
+        <Labeled label="言語">
+          <select
+            className={FIELD}
+            value={languageKnown ? form.language : OTHER}
+            onChange={(event) =>
+              set('language')(event.target.value === OTHER ? '' : event.target.value)
+            }
+          >
+            {Object.entries(LANG_LABEL).map(([code, name]) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
+            <option value={OTHER}>その他（自由入力）</option>
+          </select>
+          {!languageKnown ? (
+            <input
+              className={`mt-2 ${FIELD}`}
+              placeholder="言語（自由入力）"
+              value={form.language}
+              onChange={(event) => set('language')(event.target.value)}
+            />
+          ) : null}
+        </Labeled>
+
+        <Labeled label="人数">
+          <select
+            className={FIELD}
+            value={form.party_size}
+            onChange={(event) => set('party_size')(event.target.value)}
+          >
+            {Array.from({ length: 8 }, (_, index) => String(index + 1)).map((value) => (
+              <option key={value} value={value}>
+                {value}名
+              </option>
+            ))}
+          </select>
+        </Labeled>
+
+        <Labeled label="チェックイン予定">
+          <input
+            type="time"
+            list="checkin-times"
+            className={FIELD}
+            value={form.checkin_time}
+            onFocus={openPicker}
+            onClick={openPicker}
+            onChange={(event) => set('checkin_time')(event.target.value)}
+          />
+          <datalist id="checkin-times">
+            {TIMES.map((time) => (
+              <option key={time} value={time} />
+            ))}
+          </datalist>
+        </Labeled>
+
+        <Choice label="ベッド" value={form.bed} onChange={set('bed')} options={BEDS} />
+
+        <Labeled label="弁当（必要な数だけ）">
+          <div className="rounded-[11px] border border-line">
+            {BENTO_ITEMS.map((item, index) => {
+              const count = bento[item] ?? 0;
+              return (
+                <div
+                  key={item}
+                  className={`flex items-center gap-2 px-3 py-2.5 ${index > 0 ? 'border-line border-t' : ''}`}
+                >
+                  <span className={`flex-1 text-[0.92rem] ${count > 0 ? 'font-bold' : ''}`}>
+                    {item}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`${item}を減らす`}
+                    onClick={() => bumpBento(item, -1)}
+                    className="grid h-9 w-9 place-items-center rounded-full border border-line text-ink disabled:opacity-40"
+                    disabled={count === 0}
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="w-6 text-center font-bold text-[1rem] tabular-nums">
+                    {count}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`${item}を増やす`}
+                    onClick={() => bumpBento(item, 1)}
+                    className="grid h-9 w-9 place-items-center rounded-full bg-orange text-ondark"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </Labeled>
+      </div>
+
+      <div className="mt-2">
+        <PrimaryButton onClick={save} disabled={!form.name.trim()}>
+          {editing ? '保存' : '追加'}
+        </PrimaryButton>
+      </div>
       <div className="mt-2">
         <GhostButton onClick={() => navigate('/guests')}>キャンセル</GhostButton>
       </div>
@@ -132,7 +364,7 @@ export function GuestEdit() {
                 <button
                   type="button"
                   onClick={() => updateRow('guest', guest.id, { review_sent_at: nowIso() })}
-                  className="rounded-full bg-green px-3 py-1.5 font-bold text-[0.74rem] text-cream"
+                  className="rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-ondark"
                 >
                   送信済みにする
                 </button>

@@ -7,8 +7,9 @@ import { ensureLocalSeed } from './lib/devSeed';
 import { PowerSyncProvider } from './lib/powersync/provider';
 import { SessionProvider, useSession } from './lib/session';
 import { closeStaleSessions, runDailyReset } from './lib/shiftOps';
+import { ThemeProvider } from './lib/theme';
+import { CheckIn } from './routes/CheckIn';
 import { Comms } from './routes/Comms';
-import { ContentAdmin } from './routes/ContentAdmin';
 import { ContentReader } from './routes/ContentReader';
 import { Equipment } from './routes/Equipment';
 import { Growlist } from './routes/Growlist';
@@ -16,11 +17,12 @@ import { GuestDetail } from './routes/GuestDetail';
 import { GuestEdit } from './routes/GuestEdit';
 import { Guests } from './routes/Guests';
 import { Handover } from './routes/Handover';
+import { KnowledgeCategory } from './routes/KnowledgeCategory';
 import { LinkAccount } from './routes/LinkAccount';
-import { Locations } from './routes/Locations';
 import { Login } from './routes/Login';
 import { LostItems } from './routes/LostItems';
 import { ManualHub } from './routes/ManualHub';
+import { RecordsHub } from './routes/RecordsHub';
 import { Setup } from './routes/Setup';
 import { ShiftGate } from './routes/ShiftGate';
 import { Tasks } from './routes/Tasks';
@@ -93,6 +95,7 @@ function AppRoutes() {
       <Route path="/setup" element={<Setup />} />
       <Route path="/shift" element={<ShiftGate />} />
       <Route element={<RequireApp />}>
+        <Route path="/checkin/:id" element={<CheckIn />} />
         <Route element={<AppShell />}>
           <Route index element={<Today />} />
           <Route path="guests" element={<Guests />} />
@@ -102,11 +105,11 @@ function AppRoutes() {
           <Route path="handover" element={<Handover />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="manual" element={<ManualHub />} />
-          <Route path="manual/locations" element={<Locations />} />
+          <Route path="manual/k/:kind" element={<KnowledgeCategory />} />
           <Route path="manual/grow" element={<Growlist />} />
-          <Route path="manual/lost" element={<LostItems />} />
-          <Route path="manual/equipment" element={<Equipment />} />
-          <Route path="manual/admin" element={<ContentAdmin />} />
+          <Route path="records" element={<RecordsHub />} />
+          <Route path="records/lost" element={<LostItems />} />
+          <Route path="records/equipment" element={<Equipment />} />
           <Route path="manual/c/:slug" element={<ContentReader />} />
           <Route path="comms" element={<Comms />} />
         </Route>
@@ -118,15 +121,17 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <PowerSyncProvider>
-      <AuthProvider>
-        <SessionProvider>
-          <BrowserRouter>
-            <RootBootstrap />
-            <AppRoutes />
-          </BrowserRouter>
-        </SessionProvider>
-      </AuthProvider>
-    </PowerSyncProvider>
+    <ThemeProvider>
+      <PowerSyncProvider>
+        <AuthProvider>
+          <SessionProvider>
+            <BrowserRouter>
+              <RootBootstrap />
+              <AppRoutes />
+            </BrowserRouter>
+          </SessionProvider>
+        </AuthProvider>
+      </PowerSyncProvider>
+    </ThemeProvider>
   );
 }

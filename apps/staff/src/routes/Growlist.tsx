@@ -9,20 +9,11 @@ import {
   Screen,
   SectionLabel,
 } from '../components/ui';
+import { KIND_META } from '../content/kinds';
 import { useGrowItems, useOpenFollowups } from '../data/queries';
 import { nowIso } from '../lib/date';
 import { boolToInt, insertRow, uuid } from '../lib/db';
 import { useSession } from '../lib/session';
-
-const KIND_LABEL: Record<string, string> = {
-  manual: 'マニュアル',
-  location: '物の置き場所',
-  procedure: '手順',
-  area: '周辺案内',
-  emergency: '緊急・防災',
-  price: '価格',
-  phrase: 'フレーズ',
-};
 
 export function Growlist() {
   const navigate = useNavigate();
@@ -50,7 +41,7 @@ export function Growlist() {
 
   return (
     <Screen>
-      <BackButton onClick={() => navigate('/manual')}>ナレッジ</BackButton>
+      <BackButton onClick={() => navigate('/manual')}>辞書</BackButton>
       <div className="mb-2 px-1 text-[0.78rem] text-ink-light">
         運用で埋めるべきものの実行中リスト。「分からない／空」を起票して育てに参加できます。
       </div>
@@ -66,7 +57,7 @@ export function Growlist() {
             onClick={() => navigate(`/manual/c/${item.slug}`)}
             className="mb-1.5 flex w-full items-center gap-2 rounded-[11px] border border-line bg-paper px-3 py-2.5 text-left text-[0.88rem]"
           >
-            <Badge tone="neutral">{KIND_LABEL[item.kind ?? ''] ?? item.kind}</Badge>
+            <Badge tone="neutral">{KIND_META[item.kind ?? '']?.label ?? item.kind}</Badge>
             <span className="flex-1">{item.title}</span>
             <NeedsInputBadge />
             <ChevronRight size={14} className="text-ink-mute" />
@@ -95,7 +86,7 @@ export function Growlist() {
 
       <div className="mt-3 flex items-center gap-2">
         <input
-          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
           placeholder="分からない／空を起票…"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -104,7 +95,7 @@ export function Growlist() {
           type="button"
           aria-label="起票"
           onClick={raise}
-          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
         >
           <Plus size={18} />
         </button>

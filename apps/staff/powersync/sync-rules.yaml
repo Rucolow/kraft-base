@@ -1,0 +1,22 @@
+# PowerSync sync rules (upload to the PowerSync instance).
+# Small trusted team: every authenticated org member syncs the full operational
+# data set. API-side access is still constrained by Supabase RLS (migrations
+# 0003 / 0006). The replication role reads via the `powersync` publication
+# (migration 0005).
+
+bucket_definitions:
+  global:
+    data:
+      - SELECT * FROM staff
+      - SELECT * FROM device
+      - SELECT * FROM shift_session
+      - SELECT * FROM guest
+      - SELECT * FROM guest_note
+      - SELECT * FROM timeline_entry
+      - SELECT * FROM followup
+      - SELECT * FROM task
+      - SELECT * FROM content
+      - SELECT * FROM lost_item
+      - SELECT * FROM equipment_issue
+      - SELECT * FROM daily_reset
+      - SELECT * FROM checkin_record

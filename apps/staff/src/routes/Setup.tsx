@@ -27,8 +27,8 @@ export function Setup() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh max-w-[480px] flex-col overflow-y-auto bg-paper px-6 pt-10 pb-8">
-      <div className="font-heading text-[1.5rem] tracking-[0.22em] text-green">KRAFT BASE</div>
+    <div className="mx-auto flex h-dvh max-w-[480px] md:max-w-xl flex-col overflow-y-auto bg-paper px-6 pt-10 pb-8">
+      <div className="font-heading text-[1.5rem] tracking-[0.22em] text-orange">KRAFT BASE</div>
       <h1 className="mt-6 font-bold text-[1.15rem]">この端末の設定</h1>
       <p className="mt-1 mb-5 text-[0.84rem] text-ink-light">
         端末ごとに一度だけ設定します。あとから変更できます。
@@ -40,7 +40,7 @@ export function Setup() {
             key={option}
             type="button"
             onClick={() => setMode(option)}
-            className={`min-h-[60px] flex-1 rounded-[14px] border text-[0.9rem] ${mode === option ? 'border-green bg-green/10 text-green' : 'border-line text-ink-light'}`}
+            className={`min-h-[60px] flex-1 rounded-[14px] border text-[0.9rem] ${mode === option ? 'border-orange bg-orange/15 text-orange' : 'border-line text-ink-light'}`}
           >
             <span className="block font-bold">
               {option === 'shared' ? '共有（受付iPad）' : '個人端末'}
@@ -60,7 +60,7 @@ export function Setup() {
               key={member.id}
               type="button"
               onClick={() => setBoundStaffId(member.id)}
-              className={`mb-2 flex w-full items-center gap-3 rounded-[14px] border p-3 text-left ${boundStaffId === member.id ? 'border-green bg-green/10' : 'border-line'}`}
+              className={`mb-2 flex w-full items-center gap-3 rounded-[14px] border p-3 text-left ${boundStaffId === member.id ? 'border-orange bg-orange/15' : 'border-line'}`}
             >
               <Avatar staff={member} size={36} />
               <span className="font-bold text-[0.92rem]">{member.name}</span>

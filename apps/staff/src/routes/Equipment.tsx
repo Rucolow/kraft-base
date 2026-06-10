@@ -6,7 +6,7 @@ import { useEquipmentIssues } from '../data/queries';
 import { nowIso } from '../lib/date';
 import { insertRow, updateRow, uuid } from '../lib/db';
 import { useSession } from '../lib/session';
-import { uploadPhoto } from '../lib/storage';
+import { photoSrc, storePhoto } from '../lib/storage';
 
 const FLOW: Record<string, string> = { open: 'ordered', ordered: 'resolved', resolved: 'open' };
 const LABEL: Record<string, string> = { open: '未対応', ordered: '発注済', resolved: '解決' };
@@ -22,7 +22,7 @@ export function Equipment() {
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) {
-      setPhotoPath(await uploadPhoto(file));
+      setPhotoPath(await storePhoto(file));
     }
   }
 
@@ -46,7 +46,7 @@ export function Equipment() {
 
   return (
     <Screen>
-      <BackButton onClick={() => navigate('/manual')}>ナレッジ</BackButton>
+      <BackButton onClick={() => navigate('/records')}>台帳</BackButton>
       <SectionLabel>設備・備品を起票</SectionLabel>
       <div className="mb-2 flex gap-2">
         {(['fault', 'restock'] as const).map((option) => (
@@ -54,14 +54,14 @@ export function Equipment() {
             key={option}
             type="button"
             onClick={() => setKind(option)}
-            className={`min-h-[44px] flex-1 rounded-[11px] border text-[0.84rem] ${kind === option ? 'border-green bg-green/10 text-green' : 'border-line text-ink-light'}`}
+            className={`min-h-[44px] flex-1 rounded-[11px] border text-[0.84rem] ${kind === option ? 'border-orange bg-orange/15 text-orange' : 'border-line text-ink-light'}`}
           >
             {option === 'fault' ? '不具合' : '補充・発注'}
           </button>
         ))}
       </div>
       <input
-        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
         placeholder={kind === 'fault' ? '不具合の内容' : '補充・発注するもの'}
         value={title}
         onChange={(event) => setTitle(event.target.value)}
@@ -81,7 +81,7 @@ export function Equipment() {
           type="button"
           aria-label="起票"
           onClick={add}
-          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
         >
           <Plus size={18} />
         </button>
@@ -94,6 +94,13 @@ export function Equipment() {
         issues.map((issue) => (
           <Card key={issue.id}>
             <div className="flex items-center gap-2.5">
+              {photoSrc(issue.photo_path) ? (
+                <img
+                  src={photoSrc(issue.photo_path) ?? ''}
+                  alt={issue.title ?? ''}
+                  className="h-12 w-12 shrink-0 rounded-[9px] border border-line object-cover"
+                />
+              ) : null}
               <div className="flex-1">
                 <div className="font-bold text-[0.92rem]">{issue.title}</div>
                 <div className="text-[0.74rem] text-ink-light">

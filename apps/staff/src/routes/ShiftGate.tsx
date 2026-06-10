@@ -48,11 +48,8 @@ export function ShiftGate() {
 
   if (!selected) {
     return (
-      <div className="mx-auto flex h-dvh max-w-[480px] flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
-        <div className="font-heading text-[1.5rem] tracking-[0.22em] text-green">KRAFT BASE</div>
-        <div className="mt-0.5 font-heading text-[0.9rem] text-orange italic">
-          Unplug to recharge.
-        </div>
+      <div className="mx-auto flex h-dvh max-w-[480px] md:max-w-xl flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
+        <div className="font-heading text-[1.5rem] tracking-[0.22em] text-orange">KRAFT BASE</div>
         <h1 className="mt-8 font-bold text-[1.15rem]">シフトを始めますか？</h1>
         <p className="mt-1 mb-5 text-[0.84rem] text-ink-light">
           あなたの名前を選んでください。交代は「引き継ぎを受け取る」ことから始まります。
@@ -78,7 +75,7 @@ export function ShiftGate() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh max-w-[480px] flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
+    <div className="mx-auto flex h-dvh max-w-[480px] md:max-w-xl flex-col overflow-y-auto bg-paper px-6 pt-9 pb-8">
       {device.mode === 'shared' ? (
         <BackButton onClick={() => setPicked(null)}>戻る</BackButton>
       ) : null}
@@ -116,7 +113,7 @@ export function ShiftGate() {
               key={entry.id}
               className="border-line border-b py-2 text-[0.84rem] last:border-none"
             >
-              <span className="mr-2 font-heading font-semibold text-[0.78rem] text-wood">
+              <span className="mr-2 font-semibold text-[0.74rem] text-wood tabular-nums">
                 {entry.created_at ? formatClock(entry.created_at) : ''}
               </span>
               {entry.body}

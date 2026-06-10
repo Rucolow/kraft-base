@@ -20,13 +20,32 @@ const BCP47: Record<string, string> = {
   ja: 'ja-JP',
 };
 
-export function PhraseRow({ label, text, lang }: { label: string; text: string; lang: string }) {
+export function PhraseRow({
+  label,
+  text,
+  lang,
+  onOpen,
+}: {
+  label: string;
+  text: string;
+  lang: string;
+  onOpen?: () => void;
+}) {
+  const body = (
+    <>
+      <div className="text-[0.68rem] tracking-wide text-ink-mute">{label}</div>
+      <div className="font-medium text-[0.98rem]">{text}</div>
+    </>
+  );
   return (
     <div className="mb-2 flex items-center gap-2.5 rounded-[12px] border border-line bg-paper px-3 py-2.5">
-      <div className="flex-1">
-        <div className="text-[0.68rem] tracking-wide text-ink-mute">{label}</div>
-        <div className="font-medium text-[0.98rem]">{text}</div>
-      </div>
+      {onOpen ? (
+        <button type="button" onClick={onOpen} className="min-h-[44px] flex-1 text-left">
+          {body}
+        </button>
+      ) : (
+        <div className="flex-1">{body}</div>
+      )}
       <button
         type="button"
         aria-label="発音"

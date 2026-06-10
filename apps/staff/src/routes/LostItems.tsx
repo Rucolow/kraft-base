@@ -6,7 +6,7 @@ import { useLostItems } from '../data/queries';
 import { jstDate, nowIso } from '../lib/date';
 import { insertRow, updateRow, uuid } from '../lib/db';
 import { useSession } from '../lib/session';
-import { uploadPhoto } from '../lib/storage';
+import { photoSrc, storePhoto } from '../lib/storage';
 
 const FLOW: Record<string, string> = {
   held: 'contacted',
@@ -34,7 +34,7 @@ export function LostItems() {
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) {
-      setPhotoPath(await uploadPhoto(file));
+      setPhotoPath(await storePhoto(file));
     }
   }
 
@@ -61,16 +61,16 @@ export function LostItems() {
 
   return (
     <Screen>
-      <BackButton onClick={() => navigate('/manual')}>ナレッジ</BackButton>
+      <BackButton onClick={() => navigate('/records')}>台帳</BackButton>
       <SectionLabel>忘れ物を起票</SectionLabel>
       <input
-        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
         placeholder="品名"
         value={item}
         onChange={(event) => setItem(event.target.value)}
       />
       <input
-        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
         placeholder="発見場所"
         value={place}
         onChange={(event) => setPlace(event.target.value)}
@@ -90,19 +90,26 @@ export function LostItems() {
           type="button"
           aria-label="起票"
           onClick={add}
-          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
         >
           <Plus size={18} />
         </button>
       </div>
 
-      <SectionLabel>台帳</SectionLabel>
+      <SectionLabel>一覧</SectionLabel>
       {items.length === 0 ? (
         <EmptyState>忘れ物はありません。</EmptyState>
       ) : (
         items.map((lost) => (
           <Card key={lost.id}>
             <div className="flex items-center gap-2.5">
+              {photoSrc(lost.photo_path) ? (
+                <img
+                  src={photoSrc(lost.photo_path) ?? ''}
+                  alt={lost.item ?? ''}
+                  className="h-12 w-12 shrink-0 rounded-[9px] border border-line object-cover"
+                />
+              ) : null}
               <div className="flex-1">
                 <div className="font-bold text-[0.92rem]">{lost.item}</div>
                 <div className="text-[0.74rem] text-ink-light">

@@ -2,12 +2,12 @@ import { ChevronLeft } from 'lucide-react';
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 
 export function Screen({ children }: { children: ReactNode }) {
-  return <div className="px-4 pt-4 pb-8">{children}</div>;
+  return <div className="px-4 pt-4 pb-8 md:px-8 md:pt-6 md:pb-12">{children}</div>;
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 mb-2 px-0.5 font-heading text-[0.7rem] uppercase tracking-[0.22em] text-ink-mute first:mt-0">
+    <div className="mt-6 mb-2 px-0.5 font-heading text-[0.8rem] uppercase tracking-[0.22em] text-ink-mute first:mt-0">
       {children}
     </div>
   );
@@ -53,9 +53,9 @@ export function CardHead({
   tone?: 'green' | 'orange' | 'wood';
 }) {
   const bubble = {
-    green: 'bg-green/10 text-green',
-    orange: 'bg-orange/10 text-orange',
-    wood: 'bg-wood/10 text-wood',
+    green: 'bg-orange/15 text-orange',
+    orange: 'bg-orange/15 text-orange',
+    wood: 'bg-wood/20 text-wood-light',
   }[tone];
   return (
     <div className="mb-2 flex items-center gap-2.5">
@@ -64,7 +64,7 @@ export function CardHead({
       >
         {icon}
       </span>
-      <span className="font-bold text-[0.95rem] text-green">{title}</span>
+      <span className="font-bold text-[0.95rem] text-ink">{title}</span>
       {trailing ? <span className="ml-auto">{trailing}</span> : null}
     </div>
   );
@@ -74,9 +74,9 @@ export type BadgeTone = 'ok' | 'warn' | 'wood' | 'neutral';
 
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: BadgeTone }) {
   const styles: Record<BadgeTone, string> = {
-    ok: 'bg-green/10 text-green',
-    warn: 'bg-orange/15 text-orange-deep',
-    wood: 'bg-wood/10 text-wood',
+    ok: 'bg-green-light text-ondark',
+    warn: 'bg-orange/20 text-orange-light',
+    wood: 'bg-wood/20 text-wood-light',
     neutral: 'bg-cream-dark text-ink-light',
   };
   return (
@@ -101,7 +101,7 @@ export function BackButton({ children, onClick }: { children: ReactNode; onClick
     <button
       type="button"
       onClick={onClick}
-      className="mb-1.5 inline-flex items-center gap-0.5 py-0.5 font-sans text-[0.86rem] text-green"
+      className="mb-1.5 inline-flex items-center gap-0.5 py-0.5 font-sans text-[0.86rem] text-orange"
     >
       <ChevronLeft size={18} /> {children}
     </button>
@@ -116,7 +116,7 @@ export function PrimaryButton({
   return (
     <button
       {...rest}
-      className={`flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-green font-bold text-cream text-[0.95rem] tracking-wide shadow-kb active:translate-y-px disabled:opacity-50 ${className ?? ''}`}
+      className={`flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[14px] bg-orange font-bold text-[1rem] text-ondark tracking-wide shadow-kb active:translate-y-px disabled:opacity-50 ${className ?? ''}`}
     >
       {children}
     </button>
@@ -143,43 +143,8 @@ export function TextField({
       {label ? <span className="mb-1 block text-[0.78rem] text-ink-light">{label}</span> : null}
       <input
         {...rest}
-        className="min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base text-ink outline-none focus:border-green-light"
+        className="min-h-[48px] w-full rounded-[11px] border border-line bg-cream px-3 py-3 text-base text-ink outline-none focus:border-orange-light"
       />
     </label>
-  );
-}
-
-export function Sheet({
-  title,
-  subtitle,
-  onClose,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end">
-      <button
-        type="button"
-        aria-label="閉じる"
-        onClick={onClose}
-        className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
-      />
-      <div className="relative max-h-[86%] w-full overflow-y-auto rounded-t-[24px] bg-paper px-4 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto mb-3.5 h-1 w-9 rounded-sm bg-line" />
-        <div className="text-center font-heading text-[1.1rem] tracking-wide text-green">
-          {title}
-        </div>
-        {subtitle ? (
-          <div className="mb-4 text-center text-[0.76rem] text-ink-mute">{subtitle}</div>
-        ) : (
-          <div className="mb-2" />
-        )}
-        {children}
-      </div>
-    </div>
   );
 }

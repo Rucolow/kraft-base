@@ -45,6 +45,7 @@ const guest = new Table(
     bento: column.text,
     status: column.text,
     review_sent_at: column.text,
+    whole_house: column.integer,
     created_by: column.text,
     created_at: column.text,
   },
@@ -140,6 +141,19 @@ const daily_reset = new Table({
   created_at: column.text,
 });
 
+const checkin_record = new Table(
+  {
+    guest_id: column.text,
+    name: column.text,
+    address: column.text,
+    contact: column.text,
+    nationality: column.text,
+    passport_number: column.text,
+    created_at: column.text,
+  },
+  { indexes: { guest: ['guest_id'] } },
+);
+
 export const AppSchema = new Schema({
   staff,
   device,
@@ -153,6 +167,7 @@ export const AppSchema = new Schema({
   lost_item,
   equipment_issue,
   daily_reset,
+  checkin_record,
 });
 
 export type Database = (typeof AppSchema)['types'];
@@ -168,3 +183,4 @@ export type ContentRow = Database['content'];
 export type LostItemRow = Database['lost_item'];
 export type EquipmentIssueRow = Database['equipment_issue'];
 export type DailyResetRow = Database['daily_reset'];
+export type CheckinRecordRow = Database['checkin_record'];
