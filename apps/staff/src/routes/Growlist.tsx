@@ -9,20 +9,11 @@ import {
   Screen,
   SectionLabel,
 } from '../components/ui';
+import { KIND_META } from '../content/kinds';
 import { useGrowItems, useOpenFollowups } from '../data/queries';
 import { nowIso } from '../lib/date';
 import { boolToInt, insertRow, uuid } from '../lib/db';
 import { useSession } from '../lib/session';
-
-const KIND_LABEL: Record<string, string> = {
-  manual: 'マニュアル',
-  location: '物の置き場所',
-  procedure: '手順',
-  area: '周辺案内',
-  emergency: '緊急・防災',
-  price: '価格',
-  phrase: 'フレーズ',
-};
 
 export function Growlist() {
   const navigate = useNavigate();
@@ -66,7 +57,7 @@ export function Growlist() {
             onClick={() => navigate(`/manual/c/${item.slug}`)}
             className="mb-1.5 flex w-full items-center gap-2 rounded-[11px] border border-line bg-paper px-3 py-2.5 text-left text-[0.88rem]"
           >
-            <Badge tone="neutral">{KIND_LABEL[item.kind ?? ''] ?? item.kind}</Badge>
+            <Badge tone="neutral">{KIND_META[item.kind ?? '']?.label ?? item.kind}</Badge>
             <span className="flex-1">{item.title}</span>
             <NeedsInputBadge />
             <ChevronRight size={14} className="text-ink-mute" />

@@ -148,38 +148,3 @@ export function TextField({
     </label>
   );
 }
-
-export function Sheet({
-  title,
-  subtitle,
-  onClose,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end">
-      <button
-        type="button"
-        aria-label="閉じる"
-        onClick={onClose}
-        className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
-      />
-      <div className="relative max-h-[86%] w-full overflow-y-auto rounded-t-[24px] bg-paper px-4 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto mb-3.5 h-1 w-9 rounded-sm bg-line" />
-        <div className="text-center font-heading text-[1.1rem] tracking-wide text-green">
-          {title}
-        </div>
-        {subtitle ? (
-          <div className="mb-4 text-center text-[0.76rem] text-ink-mute">{subtitle}</div>
-        ) : (
-          <div className="mb-2" />
-        )}
-        {children}
-      </div>
-    </div>
-  );
-}
