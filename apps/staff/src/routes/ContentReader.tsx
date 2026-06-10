@@ -62,12 +62,12 @@ export function ContentReader() {
     <Screen>
       <BackButton onClick={() => navigate(-1)}>戻る</BackButton>
       <div className="flex items-start gap-2">
-        <h1 className="flex-1 font-bold text-[1.2rem] text-green">{item.title || '（無題）'}</h1>
+        <h1 className="flex-1 font-bold text-[1.2rem] text-orange">{item.title || '（無題）'}</h1>
         {item.status === 'needs_input' ? <NeedsInputBadge /> : null}
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="flex min-h-[36px] items-center gap-1 rounded-full border border-line px-3 font-bold text-[0.74rem] text-green"
+          className="flex min-h-[36px] items-center gap-1 rounded-full border border-line px-3 font-bold text-[0.74rem] text-orange"
         >
           <Pencil size={13} /> 編集
         </button>
@@ -161,7 +161,7 @@ function Editor({
           {isPhrase ? 'フレーズ（読み上げる文）' : '本文'}
         </span>
         <textarea
-          className="min-h-[160px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+          className="min-h-[160px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
           value={body}
           onChange={(event) => setBody(event.target.value)}
         />
@@ -220,7 +220,7 @@ function Editor({
       <button
         type="button"
         onClick={() => setReady((prev) => !prev)}
-        className={`mb-3 min-h-[44px] w-full rounded-[11px] border text-[0.84rem] ${ready ? 'border-green bg-green/10 text-green' : 'border-orange bg-orange/10 text-orange-deep'}`}
+        className={`mb-3 min-h-[44px] w-full rounded-[11px] border text-[0.84rem] ${ready ? 'border-orange bg-orange/15 text-orange' : 'border-orange bg-orange/10 text-orange-deep'}`}
       >
         {ready ? '確定（みんなに公開してOK）' : '要確認（まだ育て中）'}
       </button>

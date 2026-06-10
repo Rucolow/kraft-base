@@ -132,7 +132,7 @@ export function GuestEdit() {
                 <button
                   type="button"
                   onClick={() => updateRow('guest', guest.id, { review_sent_at: nowIso() })}
-                  className="rounded-full bg-green px-3 py-1.5 font-bold text-[0.74rem] text-cream"
+                  className="rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-green-deep"
                 >
                   送信済みにする
                 </button>

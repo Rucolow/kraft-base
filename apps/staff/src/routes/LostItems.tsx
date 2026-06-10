@@ -64,13 +64,13 @@ export function LostItems() {
       <BackButton onClick={() => navigate('/records')}>台帳</BackButton>
       <SectionLabel>忘れ物を起票</SectionLabel>
       <input
-        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
         placeholder="品名"
         value={item}
         onChange={(event) => setItem(event.target.value)}
       />
       <input
-        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
         placeholder="発見場所"
         value={place}
         onChange={(event) => setPlace(event.target.value)}
@@ -90,7 +90,7 @@ export function LostItems() {
           type="button"
           aria-label="起票"
           onClick={add}
-          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
         >
           <Plus size={18} />
         </button>

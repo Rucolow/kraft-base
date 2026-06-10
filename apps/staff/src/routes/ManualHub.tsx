@@ -42,7 +42,7 @@ export function ManualHub() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="辞書を検索（例：火打石、バス、Wi-Fi）"
-          className="min-h-[52px] w-full rounded-[14px] border border-line bg-paper py-3 pr-3 pl-11 text-base shadow-kb-sm outline-none focus:border-green-light"
+          className="min-h-[52px] w-full rounded-[14px] border border-line bg-paper py-3 pr-3 pl-11 text-base shadow-kb-sm outline-none focus:border-orange-light"
         />
       </div>
 
@@ -113,7 +113,7 @@ export function ManualHub() {
                   onClick={() => navigate(`/manual/k/${kind}`)}
                   className="relative flex aspect-[4/3] flex-col items-start justify-between rounded-kb border border-line bg-paper p-3.5 text-left shadow-kb-sm active:scale-[0.985]"
                 >
-                  <span className="grid h-10 w-10 place-items-center rounded-[11px] bg-green/10 text-green">
+                  <span className="grid h-10 w-10 place-items-center rounded-[11px] bg-orange/15 text-orange">
                     <Icon size={20} />
                   </span>
                   <span>

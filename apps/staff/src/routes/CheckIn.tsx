@@ -38,7 +38,7 @@ function Field({
         value={value}
         inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-[52px] w-full rounded-[12px] border border-line bg-cream px-4 py-3 text-[1.05rem] outline-none focus:border-green-light"
+        className="min-h-[52px] w-full rounded-[12px] border border-line bg-cream px-4 py-3 text-[1.05rem] outline-none focus:border-orange-light"
       />
     </label>
   );
@@ -108,7 +108,7 @@ export function CheckIn() {
   if (done || record) {
     return (
       <div className="mx-auto flex h-dvh max-w-xl flex-col items-center justify-center bg-paper px-6 text-center">
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-green/10 text-green">
+        <span className="grid h-16 w-16 place-items-center rounded-full bg-orange/15 text-orange">
           <Check size={32} />
         </span>
         <h1 className="mt-5 font-bold text-[1.3rem]">ありがとうございました</h1>
@@ -133,7 +133,7 @@ export function CheckIn() {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-paper px-6">
         <div className="w-full max-w-xl text-center">
-          <div className="font-heading text-[1.4rem] tracking-[0.22em] text-green">KRAFT BASE</div>
+          <div className="font-heading text-[1.4rem] tracking-[0.22em] text-orange">KRAFT BASE</div>
           <h1 className="mt-5 font-bold text-[1.25rem]">チェックイン / Check-in</h1>
           <p className="mt-1 mb-8 text-[0.86rem] text-ink-light">
             ようこそ。あてはまる方を選んでください。
@@ -145,7 +145,7 @@ export function CheckIn() {
             onClick={() => setResidence('japan')}
             className="mb-3.5 flex min-h-[76px] w-full items-center gap-4 rounded-[16px] border border-line bg-paper px-5 text-left shadow-kb-sm active:scale-[0.985]"
           >
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-green/10 text-green">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange/15 text-orange">
               <House size={22} />
             </span>
             <span>
@@ -174,7 +174,7 @@ export function CheckIn() {
   return (
     <div className="flex min-h-dvh flex-col items-center overflow-y-auto bg-paper">
       <div className="w-full max-w-xl px-6 pt-9 pb-10 md:max-w-3xl md:pt-12">
-        <div className="font-heading text-[1.4rem] tracking-[0.22em] text-green">KRAFT BASE</div>
+        <div className="font-heading text-[1.4rem] tracking-[0.22em] text-orange">KRAFT BASE</div>
         <div className="mt-4">
           <BackButton onClick={() => setResidence(null)}>{abroad ? 'Back' : '戻る'}</BackButton>
         </div>

@@ -54,14 +54,14 @@ export function Equipment() {
             key={option}
             type="button"
             onClick={() => setKind(option)}
-            className={`min-h-[44px] flex-1 rounded-[11px] border text-[0.84rem] ${kind === option ? 'border-green bg-green/10 text-green' : 'border-line text-ink-light'}`}
+            className={`min-h-[44px] flex-1 rounded-[11px] border text-[0.84rem] ${kind === option ? 'border-orange bg-orange/15 text-orange' : 'border-line text-ink-light'}`}
           >
             {option === 'fault' ? '不具合' : '補充・発注'}
           </button>
         ))}
       </div>
       <input
-        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+        className="mb-2 min-h-[44px] w-full rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
         placeholder={kind === 'fault' ? '不具合の内容' : '補充・発注するもの'}
         value={title}
         onChange={(event) => setTitle(event.target.value)}
@@ -81,7 +81,7 @@ export function Equipment() {
           type="button"
           aria-label="起票"
           onClick={add}
-          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
         >
           <Plus size={18} />
         </button>

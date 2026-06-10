@@ -13,8 +13,9 @@ body {
   color: var(--kb-ink);
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
-  background: radial-gradient(ellipse at 12% 0%, rgba(224, 138, 46, 0.1) 0%, transparent 44%),
-    radial-gradient(ellipse at 88% 100%, rgba(15, 61, 54, 0.1) 0%, transparent 46%), var(--kb-cream);
+  background: radial-gradient(ellipse at 12% 0%, rgba(235, 154, 60, 0.12) 0%, transparent 46%),
+    radial-gradient(ellipse at 88% 100%, rgba(31, 86, 75, 0.5) 0%, transparent 50%),
+    var(--kb-green-deep);
 }
 
 .font-heading {
@@ -39,12 +40,12 @@ body {
 }
 
 .kb-grain::after {
-  opacity: 0.035;
-  mix-blend-mode: multiply;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
 }
 
 .kb-grain-strong::after {
-  opacity: 0.12;
+  opacity: 0.14;
   mix-blend-mode: overlay;
 }
 

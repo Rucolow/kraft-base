@@ -35,7 +35,7 @@ function TopBar() {
           type="button"
           aria-label="あなた宛て"
           onClick={() => navigate('/comms')}
-          className="relative grid h-10 w-10 place-items-center rounded-full border border-line bg-cream text-green"
+          className="relative grid h-10 w-10 place-items-center rounded-full border border-line bg-cream text-orange"
         >
           <Bell size={18} />
           {mentions.length > 0 ? (
@@ -52,7 +52,7 @@ function TopBar() {
 function SideNav() {
   return (
     <nav className="hidden shrink-0 border-line border-r bg-paper/95 px-3 pt-7 pb-4 md:flex md:w-60 md:flex-col md:gap-1.5">
-      <div className="mb-7 px-3 font-heading text-[1.15rem] tracking-[0.22em] text-green">
+      <div className="mb-7 px-3 font-heading text-[1.15rem] tracking-[0.22em] text-orange">
         KRAFT BASE
       </div>
       {TABS.map((tab) => {
@@ -64,7 +64,7 @@ function SideNav() {
             end={tab.end}
             className={({ isActive }) =>
               `flex min-h-[48px] items-center gap-3 rounded-[12px] px-3 font-bold text-[0.92rem] ${
-                isActive ? 'bg-green/10 text-green' : 'text-ink-light'
+                isActive ? 'bg-orange/15 text-orange' : 'text-ink-light'
               }`
             }
           >
@@ -92,7 +92,7 @@ function BottomNav() {
             to={tab.to}
             end={tab.end}
             className={({ isActive }) =>
-              `flex min-h-[44px] flex-col items-center gap-1 py-1.5 ${isActive ? 'text-green' : 'text-ink-mute'}`
+              `flex min-h-[44px] flex-col items-center gap-1 py-1.5 ${isActive ? 'text-orange' : 'text-ink-mute'}`
             }
           >
             {({ isActive }) => (

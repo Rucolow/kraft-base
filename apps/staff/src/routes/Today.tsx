@@ -39,7 +39,7 @@ export function Today() {
 
   return (
     <Screen>
-      <div className="kb-grain-strong relative mb-4 flex items-center justify-between overflow-hidden rounded-kb bg-green p-4 text-cream md:p-6">
+      <div className="kb-grain-strong relative mb-4 flex items-center justify-between overflow-hidden rounded-kb bg-green p-4 text-ink md:p-6">
         <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-orange/20 blur-2xl" />
         <div className="relative">
           <div className="flex items-baseline gap-3">
@@ -80,9 +80,9 @@ export function Today() {
                     className="flex min-h-[44px] w-full items-center gap-3 border-line border-b border-dashed py-2.5 text-left last:border-none"
                   >
                     <span
-                      className={`grid h-[21px] w-[21px] shrink-0 place-items-center rounded-md border-[1.6px] ${checked ? 'border-green bg-green' : 'border-green-light'}`}
+                      className={`grid h-[21px] w-[21px] shrink-0 place-items-center rounded-md border-[1.6px] ${checked ? 'border-orange bg-orange' : 'border-orange-light'}`}
                     >
-                      {checked ? <Check size={14} className="text-paper" /> : null}
+                      {checked ? <Check size={14} className="text-green-deep" /> : null}
                     </span>
                     <span
                       className={`flex-1 text-[0.9rem] ${checked ? 'text-ink-mute line-through' : ''}`}

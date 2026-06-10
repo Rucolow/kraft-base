@@ -117,7 +117,7 @@ export function GuestDetail() {
             <button
               type="button"
               onClick={() => navigate(`/guests/${guest.id}/edit`)}
-              className="text-green"
+              className="text-orange"
             >
               <Pencil size={16} />
             </button>
@@ -129,13 +129,13 @@ export function GuestDetail() {
       <div className="mb-3 grid grid-cols-[110px_1fr] overflow-hidden rounded-[13px] border border-line md:grid-cols-[110px_1fr_110px_1fr]">
         {info.map(([key, value]) => (
           <div key={key} className="contents">
-            <div className="border-line border-b bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-green">
+            <div className="border-line border-b bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-orange">
               {key}
             </div>
             <div className="border-line border-b px-3 py-2.5 text-[0.88rem]">{value}</div>
           </div>
         ))}
-        <div className="bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-green">名簿</div>
+        <div className="bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-orange">名簿</div>
         <div className="px-3 py-2.5 text-[0.88rem] md:col-span-3">
           {registered ? <Badge tone="ok">記入済み</Badge> : <Badge tone="warn">未記入</Badge>}
         </div>
@@ -144,7 +144,7 @@ export function GuestDetail() {
       <button
         type="button"
         onClick={() => navigate(`/checkin/${guest.id}`)}
-        className="mb-1 flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[13px] bg-green font-bold text-[0.92rem] text-cream shadow-kb"
+        className="mb-1 flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[13px] bg-orange font-bold text-[0.92rem] text-green-deep shadow-kb"
       >
         <ClipboardPen size={17} />
         チェックイン入力（iPadをゲストに渡す）
@@ -168,7 +168,7 @@ export function GuestDetail() {
       </Card>
       <div className="flex items-center gap-2">
         <input
-          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
           placeholder="メモを追加…"
           value={memo}
           onChange={(event) => setMemo(event.target.value)}
@@ -177,7 +177,7 @@ export function GuestDetail() {
           type="button"
           aria-label="メモを追加"
           onClick={() => addNote(memo, true, []).then(() => setMemo(''))}
-          className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+          className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
         >
           <Pin size={17} />
         </button>
@@ -199,7 +199,7 @@ export function GuestDetail() {
               </div>
               <div className="text-[0.86rem]">{note.body}</div>
               {readers.length > 0 ? (
-                <div className="mt-1 text-[0.64rem] text-green-light">
+                <div className="mt-1 text-[0.64rem] text-orange-light">
                   既読 {readers.join('・')}
                 </div>
               ) : null}
@@ -231,7 +231,7 @@ export function GuestDetail() {
       </div>
       <div className="mt-2 flex items-center gap-2">
         <input
-          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
           placeholder="このゲストについて残す…"
           value={comment}
           onChange={(event) => setComment(event.target.value)}
@@ -245,7 +245,7 @@ export function GuestDetail() {
               setMentionIds([]);
             })
           }
-          className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+          className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
         >
           <Send size={17} />
         </button>
@@ -265,7 +265,7 @@ export function GuestDetail() {
               key={lang}
               type="button"
               onClick={() => navigate(`/manual/k/phrase?lang=${lang}`)}
-              className={`min-h-[40px] rounded-full border px-4 text-[0.84rem] ${lang === guest.language ? 'border-green bg-green/10 font-bold text-green' : 'border-line text-ink-light'}`}
+              className={`min-h-[40px] rounded-full border px-4 text-[0.84rem] ${lang === guest.language ? 'border-orange bg-orange/15 font-bold text-orange' : 'border-line text-ink-light'}`}
             >
               {LANG_LABEL[lang] ?? lang}
             </button>

@@ -87,7 +87,7 @@ export function Handover() {
                   onClick={() =>
                     updateRow('followup', followup.id, { status: 'done', resolved_at: nowIso() })
                   }
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-line text-green"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-line text-orange"
                 >
                   <Check size={15} />
                 </button>
@@ -100,7 +100,7 @@ export function Handover() {
 
           <div className="mb-2 flex items-center gap-2">
             <input
-              className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+              className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
               placeholder="申し送りを追加…"
               value={followupText}
               onChange={(event) => setFollowupText(event.target.value)}
@@ -116,7 +116,7 @@ export function Handover() {
               type="button"
               aria-label="申し送りを追加"
               onClick={addFollowup}
-              className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+              className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
             >
               <Plus size={18} />
             </button>
@@ -153,7 +153,7 @@ export function Handover() {
 
           <div className="mt-2 flex items-center gap-2">
             <input
-              className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+              className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
               placeholder="記録を残す…"
               value={entryText}
               onChange={(event) => setEntryText(event.target.value)}
@@ -162,7 +162,7 @@ export function Handover() {
               type="button"
               aria-label="記録を追加"
               onClick={addEntry}
-              className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+              className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
             >
               <Plus size={18} />
             </button>

@@ -1,27 +1,27 @@
 /**
  * KRAFT BASE — design tokens (single source of truth)
- * 2色パレット（deep teal × amber）＋ wood/cream の面・影。ロゴの配色に対応。
+ * ダーク基調：深ティールの面 × 琥珀アクセント × 白抜きの文字。ロゴの世界観。
  */
 :root {
   /* palette */
-  --kb-green: #0f3d36;
-  --kb-green-light: #2d4a3e;
-  --kb-green-deep: #0a2c27;
-  --kb-wood: #9a7416;
-  --kb-wood-light: #c4a35a;
+  --kb-green: #15463e;
+  --kb-green-light: #1f564b;
+  --kb-green-deep: #0a2a25;
+  --kb-wood: #c9a24e;
+  --kb-wood-light: #ddbe7e;
   --kb-wood-pale: #e8d5a3;
-  --kb-orange: #e08a2e;
-  --kb-orange-light: #ed9d4f;
-  --kb-orange-deep: #b56a1c;
-  --kb-cream: #f4eedf;
-  --kb-cream-dark: #e9dec7;
+  --kb-orange: #eb9a3c;
+  --kb-orange-light: #f4b366;
+  --kb-orange-deep: #c8772a;
+  --kb-cream: #0c332d;
+  --kb-cream-dark: #17443c;
 
   /* ink / surface */
-  --kb-ink: #26261f;
-  --kb-ink-light: #615b4c;
-  --kb-ink-mute: #938d7d;
-  --kb-paper: #fcf9f1;
-  --kb-line: rgba(15, 61, 54, 0.12);
+  --kb-ink: #f3eddd;
+  --kb-ink-light: #ccc6b4;
+  --kb-ink-mute: #8f998f;
+  --kb-paper: #11403a;
+  --kb-line: rgba(243, 237, 221, 0.13);
 
   /* semantic surfaces */
   --kb-surface: var(--kb-paper);

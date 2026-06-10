@@ -47,7 +47,7 @@ export function RecordsHub() {
               onClick={() => navigate(section.to)}
               className="mb-3 flex w-full items-center gap-3.5 rounded-kb border border-line bg-paper p-4 text-left shadow-kb-sm"
             >
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px] bg-green/10 text-green">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px] bg-orange/15 text-orange">
                 <Icon size={22} />
               </span>
               <span className="flex-1">

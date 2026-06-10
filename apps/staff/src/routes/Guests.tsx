@@ -19,7 +19,7 @@ export function Guests() {
           <button
             type="button"
             onClick={() => navigate('/guests/new')}
-            className="flex items-center gap-1 rounded-full bg-green px-3 py-1.5 font-bold text-[0.74rem] text-cream"
+            className="flex items-center gap-1 rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-green-deep"
           >
             <Plus size={14} /> 追加
           </button>

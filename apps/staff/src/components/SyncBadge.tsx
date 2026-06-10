@@ -13,13 +13,13 @@ export function SyncBadge() {
   }
   if (status.dataFlowStatus.uploading || status.dataFlowStatus.downloading) {
     return (
-      <span className="flex items-center gap-1 text-[0.62rem] text-green-light">
+      <span className="flex items-center gap-1 text-[0.62rem] text-orange-light">
         <RefreshCw size={12} className="animate-spin" /> 同期中
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-[0.62rem] text-green-light">
+    <span className="flex items-center gap-1 text-[0.62rem] text-orange-light">
       <Cloud size={12} /> 同期済み
     </span>
   );

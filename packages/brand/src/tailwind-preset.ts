@@ -10,14 +10,14 @@ export const brandPreset = {
   theme: {
     extend: {
       colors: {
-        // Logo palette: deep teal field + warm amber mark.
-        green: { DEFAULT: '#0f3d36', light: '#2d4a3e', deep: '#0a2c27' },
-        wood: { DEFAULT: '#9a7416', light: '#c4a35a', pale: '#e8d5a3' },
-        orange: { DEFAULT: '#e08a2e', light: '#ed9d4f', deep: '#b56a1c' },
-        cream: { DEFAULT: '#f4eedf', dark: '#e9dec7' },
-        ink: { DEFAULT: '#26261f', light: '#615b4c', mute: '#938d7d' },
-        paper: '#fcf9f1',
-        line: 'rgba(15, 61, 54, 0.12)',
+        // Dark logo world: deep teal surfaces, amber accent, light ink.
+        green: { DEFAULT: '#15463e', light: '#1f564b', deep: '#0a2a25' },
+        wood: { DEFAULT: '#c9a24e', light: '#ddbe7e', pale: '#e8d5a3' },
+        orange: { DEFAULT: '#eb9a3c', light: '#f4b366', deep: '#c8772a' },
+        cream: { DEFAULT: '#0c332d', dark: '#17443c' },
+        ink: { DEFAULT: '#f3eddd', light: '#ccc6b4', mute: '#8f998f' },
+        paper: '#11403a',
+        line: 'rgba(243, 237, 221, 0.13)',
       },
       fontFamily: {
         heading: [fontFamilies.heading],

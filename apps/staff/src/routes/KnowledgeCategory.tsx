@@ -57,7 +57,7 @@ export function KnowledgeCategory() {
         <button
           type="button"
           onClick={add}
-          className="flex items-center gap-1 rounded-full bg-green px-3 py-1.5 font-bold text-[0.74rem] text-cream"
+          className="flex items-center gap-1 rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-green-deep"
         >
           <Plus size={14} /> 追加
         </button>
@@ -70,7 +70,7 @@ export function KnowledgeCategory() {
           <button
             type="button"
             onClick={() => setSearchParams({})}
-            className={`min-h-[36px] rounded-full border px-3 text-[0.78rem] ${langFilter === null ? 'border-green bg-green/10 font-bold text-green' : 'border-line text-ink-light'}`}
+            className={`min-h-[36px] rounded-full border px-3 text-[0.78rem] ${langFilter === null ? 'border-orange bg-orange/15 font-bold text-orange' : 'border-line text-ink-light'}`}
           >
             すべて
           </button>
@@ -79,7 +79,7 @@ export function KnowledgeCategory() {
               key={lang}
               type="button"
               onClick={() => setSearchParams({ lang })}
-              className={`min-h-[36px] rounded-full border px-3 text-[0.78rem] ${langFilter === lang ? 'border-green bg-green/10 font-bold text-green' : 'border-line text-ink-light'}`}
+              className={`min-h-[36px] rounded-full border px-3 text-[0.78rem] ${langFilter === lang ? 'border-orange bg-orange/15 font-bold text-orange' : 'border-line text-ink-light'}`}
             >
               {LANG_LABEL[lang] ?? lang}
             </button>

@@ -86,7 +86,7 @@ export function Growlist() {
 
       <div className="mt-3 flex items-center gap-2">
         <input
-          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-green-light"
+          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
           placeholder="分からない／空を起票…"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -95,7 +95,7 @@ export function Growlist() {
           type="button"
           aria-label="起票"
           onClick={raise}
-          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-green text-paper"
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-green-deep"
         >
           <Plus size={18} />
         </button>
