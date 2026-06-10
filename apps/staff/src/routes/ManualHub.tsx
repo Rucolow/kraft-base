@@ -51,7 +51,7 @@ function KindList({ kind, label }: { kind: string; label: string }) {
   return (
     <>
       <SectionLabel>{label}</SectionLabel>
-      <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3">
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3 xl:grid-cols-3">
         {items.map((item) => (
           <button
             key={item.id}
@@ -87,7 +87,7 @@ export function ManualHub() {
         </div>
       </Card>
 
-      <div className="md:grid md:grid-cols-2 md:gap-x-3">
+      <div className="md:grid md:grid-cols-2 md:gap-x-3 xl:grid-cols-3">
         <ToolRow icon={MapPin} label="物の置き場所" onClick={() => navigate('/manual/locations')} />
         <ToolRow
           icon={Sprout}
@@ -113,7 +113,7 @@ export function ManualHub() {
       {phrases.length === 0 ? (
         <EmptyState>フレーズが未登録です。</EmptyState>
       ) : (
-        <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3">
+        <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3 xl:grid-cols-3">
           {phrases.map((phrase) => (
             <PhraseRow
               key={phrase.id}

@@ -12,7 +12,9 @@ export function Guests() {
   return (
     <Screen>
       <div className="flex items-center justify-between">
-        <SectionLabel>本日のゲスト — {guests.length}名</SectionLabel>
+        <SectionLabel>
+          本日のゲスト — <span className="font-sans tabular-nums">{guests.length}</span>名
+        </SectionLabel>
         {isOwner ? (
           <button
             type="button"
@@ -27,7 +29,7 @@ export function Guests() {
       {guests.length === 0 ? (
         <EmptyState>本日のゲストは未登録です。予約は9–13にオーナーがOTAから確定します。</EmptyState>
       ) : (
-        <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3">
+        <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3 xl:grid-cols-3">
           {guests.map((guest) => (
             <Card key={guest.id} onClick={() => navigate(`/guests/${guest.id}`)}>
               <div className="flex items-center gap-2.5">

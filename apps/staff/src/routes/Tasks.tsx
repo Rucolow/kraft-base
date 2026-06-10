@@ -38,7 +38,7 @@ export function Tasks() {
 
   return (
     <Screen>
-      <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-4">
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-4 xl:grid-cols-3">
         {GROUPS.map((group) => {
           const items = tasks.filter((task) => task.group === group.key);
           return (

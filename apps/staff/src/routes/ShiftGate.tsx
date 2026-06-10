@@ -116,7 +116,7 @@ export function ShiftGate() {
               key={entry.id}
               className="border-line border-b py-2 text-[0.84rem] last:border-none"
             >
-              <span className="mr-2 font-heading font-semibold text-[0.78rem] text-wood">
+              <span className="mr-2 font-semibold text-[0.74rem] text-wood tabular-nums">
                 {entry.created_at ? formatClock(entry.created_at) : ''}
               </span>
               {entry.body}

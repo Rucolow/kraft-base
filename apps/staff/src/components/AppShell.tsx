@@ -117,7 +117,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[520px] md:max-w-3xl">
+          <div className="mx-auto w-full max-w-[520px] md:max-w-4xl xl:max-w-6xl">
             <Outlet />
           </div>
         </main>
