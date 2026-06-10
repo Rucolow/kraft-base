@@ -6,7 +6,7 @@ import { useEquipmentIssues } from '../data/queries';
 import { nowIso } from '../lib/date';
 import { insertRow, updateRow, uuid } from '../lib/db';
 import { useSession } from '../lib/session';
-import { uploadPhoto } from '../lib/storage';
+import { photoSrc, storePhoto } from '../lib/storage';
 
 const FLOW: Record<string, string> = { open: 'ordered', ordered: 'resolved', resolved: 'open' };
 const LABEL: Record<string, string> = { open: '未対応', ordered: '発注済', resolved: '解決' };
@@ -22,7 +22,7 @@ export function Equipment() {
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) {
-      setPhotoPath(await uploadPhoto(file));
+      setPhotoPath(await storePhoto(file));
     }
   }
 
@@ -94,6 +94,13 @@ export function Equipment() {
         issues.map((issue) => (
           <Card key={issue.id}>
             <div className="flex items-center gap-2.5">
+              {photoSrc(issue.photo_path) ? (
+                <img
+                  src={photoSrc(issue.photo_path) ?? ''}
+                  alt={issue.title ?? ''}
+                  className="h-12 w-12 shrink-0 rounded-[9px] border border-line object-cover"
+                />
+              ) : null}
               <div className="flex-1">
                 <div className="font-bold text-[0.92rem]">{issue.title}</div>
                 <div className="text-[0.74rem] text-ink-light">

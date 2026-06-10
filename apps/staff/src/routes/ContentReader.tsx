@@ -1,7 +1,6 @@
-import { Pencil } from 'lucide-react';
+import { Camera, Pencil, X } from 'lucide-react';
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PhraseRow } from '../components/PhraseRow';
 import {
   BackButton,
@@ -16,9 +15,10 @@ import {
 import { KIND_META } from '../content/kinds';
 import { useContentBySlug } from '../data/queries';
 import { nowIso } from '../lib/date';
-import { updateRow } from '../lib/db';
+import { parseList, serializeList, updateRow } from '../lib/db';
 import type { ContentRow, StaffRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
+import { photoSrc, storePhoto } from '../lib/storage';
 
 export function ContentReader() {
   const { slug = '' } = useParams();
@@ -54,6 +54,9 @@ export function ContentReader() {
   const updatedDate = item.updated_at
     ? new Date(item.updated_at).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })
     : null;
+  const photos = parseList(item.photo_paths)
+    .map((value) => photoSrc(value))
+    .filter((src): src is string => src !== null);
 
   return (
     <Screen>
@@ -79,15 +82,28 @@ export function ContentReader() {
         ) : null}
       </div>
 
+      {photos.length > 0 ? (
+        <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3">
+          {photos.map((src) => (
+            <img
+              key={src.slice(-40)}
+              src={src}
+              alt={item.title ?? ''}
+              className="aspect-[4/3] w-full rounded-[12px] border border-line object-cover"
+            />
+          ))}
+        </div>
+      ) : null}
+
       {item.kind === 'phrase' ? (
         <div className="mt-4">
           <PhraseRow label={item.title ?? ''} text={item.body ?? ''} lang={item.lang ?? 'en'} />
         </div>
       ) : item.body ? (
         <p className="mt-3 whitespace-pre-wrap text-[0.92rem] leading-relaxed">{item.body}</p>
-      ) : (
+      ) : photos.length === 0 ? (
         <EmptyState>本文は未入力です。「編集」から、気づいた人がその場で書き足せます。</EmptyState>
-      )}
+      ) : null}
     </Screen>
   );
 }
@@ -105,13 +121,27 @@ function Editor({
   const [body, setBody] = useState(item.body ?? '');
   const [lang, setLang] = useState(item.lang ?? 'en');
   const [ready, setReady] = useState(item.status === 'ready');
+  const [photos, setPhotos] = useState<string[]>(() => parseList(item.photo_paths));
+  const [saving, setSaving] = useState(false);
   const isPhrase = item.kind === 'phrase';
 
+  async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) {
+      return;
+    }
+    const value = await storePhoto(file);
+    setPhotos((prev) => [...prev, value]);
+  }
+
   async function save() {
+    setSaving(true);
     await updateRow('content', item.id, {
       title: title.trim(),
       body,
       lang: isPhrase ? lang.trim() || 'en' : item.lang,
+      photo_paths: serializeList(photos),
       status: ready ? 'ready' : 'needs_input',
       updated_by: staffId,
       updated_at: nowIso(),
@@ -143,6 +173,50 @@ function Editor({
           onChange={(event) => setLang(event.target.value)}
         />
       ) : null}
+
+      <span className="mb-1 block text-[0.78rem] text-ink-light">写真</span>
+      <div className="mb-3 grid grid-cols-3 gap-2 md:grid-cols-4">
+        {photos.map((value, index) => {
+          const src = photoSrc(value);
+          return (
+            <div key={value.slice(-40)} className="relative">
+              {src ? (
+                <img
+                  src={src}
+                  alt={`添付 ${index + 1}`}
+                  className="aspect-[4/3] w-full rounded-[10px] border border-line object-cover"
+                />
+              ) : (
+                <div className="grid aspect-[4/3] w-full place-items-center rounded-[10px] border border-line bg-cream text-[0.7rem] text-ink-mute">
+                  同期後に表示
+                </div>
+              )}
+              <button
+                type="button"
+                aria-label="写真を削除"
+                onClick={() => setPhotos((prev) => prev.filter((_, i) => i !== index))}
+                className="-top-1.5 -right-1.5 absolute grid h-6 w-6 place-items-center rounded-full bg-ink text-paper"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          );
+        })}
+        <label className="grid aspect-[4/3] w-full cursor-pointer place-items-center rounded-[10px] border border-line border-dashed text-ink-light">
+          <span className="flex flex-col items-center gap-1 text-[0.7rem]">
+            <Camera size={18} />
+            撮る／選ぶ
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={onPick}
+          />
+        </label>
+      </div>
+
       <button
         type="button"
         onClick={() => setReady((prev) => !prev)}
@@ -150,7 +224,9 @@ function Editor({
       >
         {ready ? '確定（みんなに公開してOK）' : '要確認（まだ育て中）'}
       </button>
-      <PrimaryButton onClick={save}>保存</PrimaryButton>
+      <PrimaryButton onClick={save} disabled={saving}>
+        保存
+      </PrimaryButton>
       <div className="mt-2">
         <GhostButton onClick={onClose}>キャンセル</GhostButton>
       </div>

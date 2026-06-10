@@ -6,7 +6,7 @@ import { useLostItems } from '../data/queries';
 import { jstDate, nowIso } from '../lib/date';
 import { insertRow, updateRow, uuid } from '../lib/db';
 import { useSession } from '../lib/session';
-import { uploadPhoto } from '../lib/storage';
+import { photoSrc, storePhoto } from '../lib/storage';
 
 const FLOW: Record<string, string> = {
   held: 'contacted',
@@ -34,7 +34,7 @@ export function LostItems() {
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) {
-      setPhotoPath(await uploadPhoto(file));
+      setPhotoPath(await storePhoto(file));
     }
   }
 
@@ -103,6 +103,13 @@ export function LostItems() {
         items.map((lost) => (
           <Card key={lost.id}>
             <div className="flex items-center gap-2.5">
+              {photoSrc(lost.photo_path) ? (
+                <img
+                  src={photoSrc(lost.photo_path) ?? ''}
+                  alt={lost.item ?? ''}
+                  className="h-12 w-12 shrink-0 rounded-[9px] border border-line object-cover"
+                />
+              ) : null}
               <div className="flex-1">
                 <div className="font-bold text-[0.92rem]">{lost.item}</div>
                 <div className="text-[0.74rem] text-ink-light">
