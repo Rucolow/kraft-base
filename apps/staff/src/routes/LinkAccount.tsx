@@ -1,4 +1,5 @@
 import { useStatus } from '@powersync/react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { Badge, GhostButton, Screen, SectionLabel } from '../components/ui';
@@ -12,6 +13,17 @@ export function LinkAccount() {
   const { staff } = useSession();
   const status = useStatus();
 
+  const myId = session?.user.id;
+  const alreadyLinked = Boolean(myId) && staff.some((member) => member.auth_user_id === myId);
+
+  // A linked account (including the shared device account) should never sit on
+  // this screen — send it on so the app guard can route to setup/shift/home.
+  useEffect(() => {
+    if (alreadyLinked) {
+      navigate('/', { replace: true });
+    }
+  }, [alreadyLinked, navigate]);
+
   async function link(staffId: string) {
     if (!session) {
       return;
@@ -20,7 +32,6 @@ export function LinkAccount() {
     navigate('/');
   }
 
-  const myId = session?.user.id;
   const people = staff.filter((member) => !member.is_device);
   const connectionNote = !status.connected
     ? 'サーバーに接続中です…'
@@ -39,19 +50,6 @@ export function LinkAccount() {
           ログイン中：<span className="text-ink">{session.user.email}</span>
         </p>
       ) : null}
-
-      <pre className="mb-4 overflow-x-auto whitespace-pre-wrap rounded-kb border border-orange/50 bg-paper p-2 text-[0.62rem] text-ink">
-        {[
-          'DEBUG build-v2',
-          `connected=${status.connected} synced=${status.hasSynced}`,
-          `session.uid=${session?.user.id ?? 'none'}`,
-          `staff.count=${staff.length}`,
-          ...staff.map(
-            (m) =>
-              `- ${m.name} | dev=${m.is_device} | uid=${m.auth_user_id ?? 'null'} | me=${m.auth_user_id === session?.user.id}`,
-          ),
-        ].join('\n')}
-      </pre>
 
       {people.length === 0 ? (
         <div className="rounded-kb border border-line bg-paper p-4">
