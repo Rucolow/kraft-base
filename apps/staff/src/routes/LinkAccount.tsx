@@ -40,6 +40,19 @@ export function LinkAccount() {
         </p>
       ) : null}
 
+      <pre className="mb-4 overflow-x-auto whitespace-pre-wrap rounded-kb border border-orange/50 bg-paper p-2 text-[0.62rem] text-ink">
+        {[
+          'DEBUG build-v2',
+          `connected=${status.connected} synced=${status.hasSynced}`,
+          `session.uid=${session?.user.id ?? 'none'}`,
+          `staff.count=${staff.length}`,
+          ...staff.map(
+            (m) =>
+              `- ${m.name} | dev=${m.is_device} | uid=${m.auth_user_id ?? 'null'} | me=${m.auth_user_id === session?.user.id}`,
+          ),
+        ].join('\n')}
+      </pre>
+
       {people.length === 0 ? (
         <div className="rounded-kb border border-line bg-paper p-4">
           <div className="flex items-center gap-2 font-bold text-[0.95rem] text-ink">
