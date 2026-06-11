@@ -22,6 +22,7 @@ export function ShiftGate() {
     [device?.deviceId ?? ''],
   );
 
+  const people = staff.filter((member) => !member.is_device);
   const personalStaff =
     device?.mode === 'personal'
       ? (staff.find((member) => member.id === device.boundStaffId) ?? null)
@@ -54,7 +55,7 @@ export function ShiftGate() {
         <p className="mt-1 mb-5 text-[0.84rem] text-ink-light">
           あなたの名前を選んでください。交代は「引き継ぎを受け取る」ことから始まります。
         </p>
-        {staff.map((member) => (
+        {people.map((member) => (
           <button
             key={member.id}
             type="button"

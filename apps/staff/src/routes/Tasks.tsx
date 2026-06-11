@@ -14,7 +14,7 @@ const GROUPS: Array<{ key: string; label: string }> = [
 ];
 
 export function Tasks() {
-  const { isOwner, staff } = useSession();
+  const { staff } = useSession();
   const { data: tasks } = useTasks();
   const [draft, setDraft] = useState('');
 
@@ -79,24 +79,22 @@ export function Tasks() {
         })}
       </div>
 
-      {isOwner ? (
-        <div className="mt-2 flex items-center gap-2">
-          <input
-            className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
-            placeholder="単発タスクを追加…"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-          <button
-            type="button"
-            aria-label="タスクを追加"
-            onClick={addTask}
-            className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
-          >
-            <Plus size={18} />
-          </button>
-        </div>
-      ) : null}
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          className="min-h-[44px] flex-1 rounded-[11px] border border-line bg-cream px-3 py-2.5 text-base outline-none focus:border-orange-light"
+          placeholder="単発タスクを追加…"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+        />
+        <button
+          type="button"
+          aria-label="タスクを追加"
+          onClick={addTask}
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
+        >
+          <Plus size={18} />
+        </button>
+      </div>
     </Screen>
   );
 }
