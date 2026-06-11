@@ -22,7 +22,9 @@ export function ShiftGate() {
     [device?.deviceId ?? ''],
   );
 
-  const people = staff.filter((member) => !member.is_device);
+  // The shared reception roster lists staff who work shifts. Owners manage from
+  // their own device, so they are not tappable shift identities here.
+  const people = staff.filter((member) => !member.is_device && member.role === 'staff');
   const personalStaff =
     device?.mode === 'personal'
       ? (staff.find((member) => member.id === device.boundStaffId) ?? null)
