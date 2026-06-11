@@ -21,6 +21,7 @@ export function LinkAccount() {
   }
 
   const myId = session?.user.id;
+  const people = staff.filter((member) => !member.is_device);
   const connectionNote = !status.connected
     ? 'サーバーに接続中です…'
     : !status.hasSynced
@@ -39,7 +40,7 @@ export function LinkAccount() {
         </p>
       ) : null}
 
-      {staff.length === 0 ? (
+      {people.length === 0 ? (
         <div className="rounded-kb border border-line bg-paper p-4">
           <div className="flex items-center gap-2 font-bold text-[0.95rem] text-ink">
             <span className="h-2.5 w-2.5 rounded-full bg-orange" />
@@ -55,7 +56,7 @@ export function LinkAccount() {
           </div>
         </div>
       ) : (
-        staff.map((member) => {
+        people.map((member) => {
           const linkedToMe = member.auth_user_id === myId;
           const linkedToOther = Boolean(member.auth_user_id) && !linkedToMe;
           return (

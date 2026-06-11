@@ -10,6 +10,7 @@ const staff = new Table({
   shift_label: column.text,
   accent: column.text,
   auth_user_id: column.text,
+  is_device: column.integer,
   created_at: column.text,
 });
 
