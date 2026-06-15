@@ -7,6 +7,7 @@ interface AuthValue {
   loading: boolean;
   session: Session | null;
   signInWithEmail: (email: string) => Promise<{ error: string | null }>;
+  verifyCode: (email: string, code: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -42,6 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         options: { emailRedirectTo: window.location.origin },
       });
+      return { error: error?.message ?? null };
+    },
+    verifyCode: async (email, code) => {
+      if (!supabase) {
+        return { error: 'auth is not configured' };
+      }
+      const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
       return { error: error?.message ?? null };
     },
     signOut: async () => {
