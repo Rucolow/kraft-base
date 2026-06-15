@@ -1,15 +1,17 @@
-import { PowerSyncDatabase } from '@powersync/web';
+import { PowerSyncDatabase, WASQLiteOpenFactory, WASQLiteVFS } from '@powersync/web';
 import { SupabaseConnector, canConnect } from './connector';
 import { AppSchema } from './schema';
 
 export const db = new PowerSyncDatabase({
   schema: AppSchema,
-  database: { dbFilename: 'kraftbase.db' },
-  // Run SQLite on the main thread instead of a dedicated worker. The bundled
-  // worker can fail to start on iOS Safari, leaving the client connected but
-  // never completing the initial sync. The dataset is small, so the main-thread
-  // cost is negligible and this is reliable across browsers.
-  flags: { useWebWorker: false },
+  // OPFS-based storage for Safari/iOS reliability. The default IndexedDB VFS can
+  // fail to persist on iOS Safari, leaving the client connected but stuck before
+  // the initial sync completes. OPFSCoopSyncVFS works on Safari without needing
+  // cross-origin isolation headers.
+  database: new WASQLiteOpenFactory({
+    dbFilename: 'kraftbase.db',
+    vfs: WASQLiteVFS.OPFSCoopSyncVFS,
+  }),
 });
 
 let started = false;
