@@ -3,16 +3,21 @@ import { PrimaryButton, TextField } from '../components/ui';
 import { useAuth } from '../lib/auth';
 
 export function Login() {
-  const { signInWithEmail } = useAuth();
+  const { signInWithEmail, verifyCode } = useAuth();
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  async function submit() {
+  async function send() {
     if (!email.trim()) {
       return;
     }
+    setBusy(true);
+    setError(null);
     const result = await signInWithEmail(email.trim());
+    setBusy(false);
     if (result.error) {
       setError(result.error);
       return;
@@ -20,16 +25,56 @@ export function Login() {
     setSent(true);
   }
 
+  async function verify() {
+    if (code.trim().length < 6) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const result = await verifyCode(email.trim(), code.trim());
+    setBusy(false);
+    if (result.error) {
+      setError(result.error);
+    }
+    // On success the session updates via onAuthStateChange and the app routes on.
+  }
+
   return (
-    <div className="mx-auto flex h-dvh max-w-[480px] md:max-w-xl flex-col justify-center bg-paper px-6 pb-8">
-      <div className="font-heading text-[1.5rem] tracking-[0.22em] text-orange">KRAFT BASE</div>
+    <div className="mx-auto flex h-dvh max-w-[480px] flex-col justify-center bg-paper px-6 pb-8 md:max-w-xl">
+      <div className="font-heading text-[1.5rem] text-orange tracking-[0.22em]">KRAFT BASE</div>
       <div className="mt-0.5 mb-8 font-heading text-[0.9rem] text-orange italic">
         Unplug to recharge.
       </div>
       {sent ? (
-        <p className="text-[0.9rem] text-ink-light">
-          ログイン用のリンクを {email} に送りました。メールのリンクを開いてください。
-        </p>
+        <>
+          <h1 className="mb-2 font-bold text-[1.1rem]">確認コードを入力</h1>
+          <p className="mb-4 text-[0.86rem] text-ink-light">
+            <span className="text-ink">{email}</span> に届いた6桁のコードを入力してください。
+          </p>
+          <TextField
+            label="確認コード"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="123456"
+          />
+          {error ? <p className="mb-2 text-[0.8rem] text-orange-deep">{error}</p> : null}
+          <PrimaryButton onClick={verify} disabled={busy || code.length < 6}>
+            ログイン
+          </PrimaryButton>
+          <button
+            type="button"
+            onClick={() => {
+              setSent(false);
+              setCode('');
+              setError(null);
+            }}
+            className="mt-4 text-[0.8rem] text-ink-mute underline"
+          >
+            メールアドレスを入力し直す
+          </button>
+        </>
       ) : (
         <>
           <h1 className="mb-4 font-bold text-[1.1rem]">ログイン</h1>
@@ -37,12 +82,15 @@ export function Login() {
             label="メールアドレス"
             type="email"
             inputMode="email"
+            autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
           />
           {error ? <p className="mb-2 text-[0.8rem] text-orange-deep">{error}</p> : null}
-          <PrimaryButton onClick={submit}>マジックリンクを送る</PrimaryButton>
+          <PrimaryButton onClick={send} disabled={busy || !email.trim()}>
+            確認コードを送る
+          </PrimaryButton>
         </>
       )}
     </div>
