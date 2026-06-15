@@ -5,6 +5,11 @@ import { AppSchema } from './schema';
 export const db = new PowerSyncDatabase({
   schema: AppSchema,
   database: { dbFilename: 'kraftbase.db' },
+  // Run SQLite on the main thread instead of a dedicated worker. The bundled
+  // worker can fail to start on iOS Safari, leaving the client connected but
+  // never completing the initial sync. The dataset is small, so the main-thread
+  // cost is negligible and this is reliable across browsers.
+  flags: { useWebWorker: false },
 });
 
 let started = false;
