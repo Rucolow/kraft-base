@@ -31,3 +31,13 @@ export function formatClock(iso: string): string {
     minute: '2-digit',
   });
 }
+
+// 'YYYY-MM-DD' -> e.g. '6/18(水)' in JST, for grouping upcoming stays by date.
+export function formatStayDate(date: string): string {
+  return new Date(`${date}T00:00:00+09:00`).toLocaleDateString('ja-JP', {
+    timeZone: JST,
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+  });
+}
