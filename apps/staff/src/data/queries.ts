@@ -23,6 +23,13 @@ export function useTodaysGuests() {
   );
 }
 
+export function useUpcomingGuests() {
+  return useQuery<GuestRow>(
+    "SELECT * FROM guest WHERE stay_date > ? ORDER BY stay_date, COALESCE(checkin_time, '~~')",
+    [jstDate()],
+  );
+}
+
 export function useGuest(id: string) {
   return useQuery<GuestRow>('SELECT * FROM guest WHERE id = ?', [id]);
 }
