@@ -63,6 +63,9 @@ export function Login() {
           <PrimaryButton onClick={verify} disabled={busy || code.length < 6}>
             ログイン
           </PrimaryButton>
+          <p className="mt-3 text-[0.78rem] text-ink-light">
+            メールに番号が無く、リンクが届いた場合は、そのリンクを開いてもログインできます。
+          </p>
           <button
             type="button"
             onClick={() => {
@@ -70,7 +73,7 @@ export function Login() {
               setCode('');
               setError(null);
             }}
-            className="mt-4 text-[0.8rem] text-ink-mute underline"
+            className="mt-3 text-[0.8rem] text-ink-mute underline"
           >
             メールアドレスを入力し直す
           </button>

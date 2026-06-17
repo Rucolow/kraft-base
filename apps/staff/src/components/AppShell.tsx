@@ -2,6 +2,7 @@ import {
   Bell,
   BookOpen,
   Boxes,
+  Clock,
   Home,
   ListChecks,
   Moon,
@@ -16,7 +17,14 @@ import { useTheme } from '../lib/theme';
 import { Avatar } from './Avatar';
 import { SyncBadge } from './SyncBadge';
 
-const TABS = [
+interface Tab {
+  to: string;
+  label: string;
+  icon: typeof Home;
+  end: boolean;
+}
+
+const TABS: Tab[] = [
   { to: '/', label: '本日', icon: Home, end: true },
   { to: '/guests', label: 'ゲスト', icon: Users, end: false },
   { to: '/handover', label: '引き継ぎ', icon: ScrollText, end: false },
@@ -24,6 +32,9 @@ const TABS = [
   { to: '/manual', label: '辞書', icon: BookOpen, end: false },
   { to: '/records', label: '台帳', icon: Boxes, end: false },
 ];
+
+// Owners get an extra tab for the payroll-oriented work-time view.
+const OWNER_TAB: Tab = { to: '/worktime', label: '勤務', icon: Clock, end: false };
 
 function TopBar() {
   const { currentStaff } = useSession();
@@ -69,13 +80,13 @@ function TopBar() {
   );
 }
 
-function SideNav() {
+function SideNav({ tabs }: { tabs: Tab[] }) {
   return (
     <nav className="hidden shrink-0 border-line border-r bg-paper/95 px-3 pt-7 pb-4 md:flex md:w-60 md:flex-col md:gap-1.5">
       <div className="mb-7 px-3 font-heading text-[1.15rem] tracking-[0.22em] text-orange">
         KRAFT BASE
       </div>
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const Icon = tab.icon;
         return (
           <NavLink
@@ -101,10 +112,13 @@ function SideNav() {
   );
 }
 
-function BottomNav() {
+function BottomNav({ tabs }: { tabs: Tab[] }) {
   return (
-    <nav className="grid shrink-0 grid-cols-6 border-line border-t bg-paper/95 px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
-      {TABS.map((tab) => {
+    <nav
+      className="grid shrink-0 border-line border-t bg-paper/95 px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden"
+      style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+    >
+      {tabs.map((tab) => {
         const Icon = tab.icon;
         return (
           <NavLink
@@ -129,9 +143,11 @@ function BottomNav() {
 }
 
 export function AppShell() {
+  const { isOwner } = useSession();
+  const tabs = isOwner ? [...TABS, OWNER_TAB] : TABS;
   return (
     <div className="kb-grain flex h-dvh bg-paper">
-      <SideNav />
+      <SideNav tabs={tabs} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
         <main className="flex-1 overflow-y-auto">
@@ -139,7 +155,7 @@ export function AppShell() {
             <Outlet />
           </div>
         </main>
-        <BottomNav />
+        <BottomNav tabs={tabs} />
       </div>
     </div>
   );
