@@ -46,22 +46,31 @@ export function WorkTime() {
   const { data: staff } = useStaff();
   const [month, setMonth] = useState(() => jstDate().slice(0, 7));
 
-  const nameOf = useMemo(() => {
-    const map = new Map(staff.map((s) => [s.id, s.name]));
-    return (id: string | null) => (id ? (map.get(id) ?? '不明') : '不明');
+  // Only paid staff (role 'staff', excluding the shared device account). Owners
+  // are not time-tracked, and orphaned/old ids simply drop out.
+  const payable = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of staff) {
+      if (s.role === 'staff' && !s.is_device) {
+        map.set(s.id, s.name ?? '');
+      }
+    }
+    return map;
   }, [staff]);
 
   const now = Date.now();
   const rows = sessions
-    .filter((s) => s.started_at && ymOf(s.started_at) === month)
+    .filter(
+      (s) => s.started_at && s.staff_id && payable.has(s.staff_id) && ymOf(s.started_at) === month,
+    )
     .map((s) => {
       const startIso = s.started_at as string;
       const start = new Date(startIso).getTime();
       const end = s.ended_at ? new Date(s.ended_at).getTime() : now;
       return {
         id: s.id,
-        staffId: s.staff_id ?? '',
-        name: nameOf(s.staff_id),
+        staffId: s.staff_id as string,
+        name: payable.get(s.staff_id as string) ?? '',
         day: dayOf(startIso),
         startIso,
         endIso: s.ended_at,
