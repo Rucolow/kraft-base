@@ -7,6 +7,7 @@ import type {
   GuestNoteRow,
   GuestRow,
   LostItemRow,
+  ShiftSessionRow,
   StaffRow,
   TaskRow,
   TimelineEntryRow,
@@ -14,6 +15,10 @@ import type {
 
 export function useStaff() {
   return useQuery<StaffRow>('SELECT * FROM staff ORDER BY role, name');
+}
+
+export function useShiftSessions() {
+  return useQuery<ShiftSessionRow>('SELECT * FROM shift_session ORDER BY started_at DESC');
 }
 
 export function useTodaysGuests() {

@@ -28,6 +28,7 @@ import { Setup } from './routes/Setup';
 import { ShiftGate } from './routes/ShiftGate';
 import { Tasks } from './routes/Tasks';
 import { Today } from './routes/Today';
+import { WorkTime } from './routes/WorkTime';
 
 function RootBootstrap() {
   const { device } = useSession();
@@ -112,6 +113,7 @@ function AppRoutes() {
           <Route path="records" element={<RecordsHub />} />
           <Route path="records/lost" element={<LostItems />} />
           <Route path="records/equipment" element={<Equipment />} />
+          <Route path="worktime" element={<WorkTime />} />
           <Route path="manual/c/:slug" element={<ContentReader />} />
           <Route path="comms" element={<Comms />} />
         </Route>
