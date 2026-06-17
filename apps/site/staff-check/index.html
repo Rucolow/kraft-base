@@ -1,0 +1,1996 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <title>KRAFT BASE スタッフ把握度チェック</title>
+    <style>
+      :root {
+        --orange: #d67a2e;
+        --teal: #0f3d3d;
+        --cream: #f5f0e6;
+        --ink: #23332f;
+        --ink-soft: #5b6863;
+        --line: #ddd5c4;
+        --paper: #fffdf8;
+        --high-bg: #f6e1da;
+        --high-ink: #b23a26;
+        --mid-bg: #f4ebcf;
+        --mid-ink: #9a6b15;
+        --low-bg: #ebe9e0;
+        --low-ink: #6c6c62;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN",
+          "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+        color: var(--ink);
+        background: var(--cream);
+        line-height: 1.6;
+        -webkit-text-size-adjust: 100%;
+      }
+      header.app {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--teal);
+        color: #fdf7ec;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0));
+        box-shadow: 0 2px 10px rgba(15, 61, 61, 0.18);
+      }
+      .brand {
+        font-size: 1.02rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+      }
+      .brand .accent {
+        color: var(--orange);
+      }
+      .sub {
+        font-size: 0.74rem;
+        opacity: 0.82;
+        margin-top: 2px;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+        align-items: center;
+      }
+      .seg {
+        display: inline-flex;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        padding: 3px;
+      }
+      .seg button {
+        border: 0;
+        background: transparent;
+        color: #fdf7ec;
+        font-weight: 700;
+        font-size: 0.82rem;
+        padding: 7px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .seg button.active {
+        background: var(--orange);
+        color: #fff;
+      }
+      .tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-left: auto;
+      }
+      .tool {
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        background: transparent;
+        color: #fdf7ec;
+        font-size: 0.74rem;
+        font-weight: 600;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .tool:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .progress-wrap {
+        margin-top: 10px;
+      }
+      .progress-track {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--orange);
+        width: 0%;
+        transition: width 0.2s;
+      }
+      .progress-label {
+        font-size: 0.72rem;
+        opacity: 0.85;
+        margin-top: 4px;
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 16px 14px 80px;
+      }
+      .chapter {
+        margin-bottom: 26px;
+      }
+      .chapter-head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        border-bottom: 2px solid var(--teal);
+        padding-bottom: 6px;
+        margin-bottom: 12px;
+      }
+      .chapter-id {
+        font-weight: 800;
+        color: var(--teal);
+        font-size: 1.05rem;
+      }
+      .chapter-title {
+        font-weight: 700;
+        flex: 1;
+      }
+      .chapter-prog {
+        font-size: 0.74rem;
+        color: var(--ink-soft);
+        white-space: nowrap;
+      }
+      .item {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 13px;
+        margin-bottom: 10px;
+      }
+      .item-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .item-id {
+        font-weight: 700;
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+        font-variant-numeric: tabular-nums;
+      }
+      .badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .sev-high {
+        background: var(--high-bg);
+        color: var(--high-ink);
+      }
+      .sev-mid {
+        background: var(--mid-bg);
+        color: var(--mid-ink);
+      }
+      .sev-low {
+        background: var(--low-bg);
+        color: var(--low-ink);
+      }
+      .who {
+        font-size: 0.7rem;
+        color: var(--ink-soft);
+        background: #eef1ec;
+        border-radius: 999px;
+        padding: 2px 8px;
+      }
+      .q {
+        font-size: 0.95rem;
+        margin: 2px 0 10px;
+      }
+      .aw {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 9px;
+      }
+      .aw button {
+        flex: 1;
+        min-width: 92px;
+        border: 1.5px solid var(--line);
+        background: #fff;
+        color: var(--ink-soft);
+        font-weight: 700;
+        font-size: 0.84rem;
+        padding: 9px 6px;
+        border-radius: 9px;
+        cursor: pointer;
+      }
+      .aw button[data-val="known"].on {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+      }
+      .aw button[data-val="vague"].on {
+        background: var(--orange);
+        border-color: var(--orange);
+        color: #fff;
+      }
+      .aw button[data-val="unknown"].on {
+        background: var(--high-ink);
+        border-color: var(--high-ink);
+        color: #fff;
+      }
+      textarea {
+        width: 100%;
+        min-height: 64px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 9px 10px;
+        font: inherit;
+        font-size: 0.9rem;
+        background: #fff;
+        color: var(--ink);
+        resize: vertical;
+      }
+      textarea:focus {
+        outline: none;
+        border-color: var(--orange);
+      }
+      .saved {
+        font-size: 0.66rem;
+        color: var(--ink-soft);
+        margin-top: 3px;
+        min-height: 0.9em;
+      }
+      /* review */
+      .summary {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+      .summary h2 {
+        margin: 0 0 10px;
+        font-size: 0.95rem;
+        color: var(--teal);
+      }
+      .counts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .count {
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 7px 11px;
+        font-size: 0.8rem;
+        background: #fff;
+      }
+      .count b {
+        font-size: 1.05rem;
+        font-variant-numeric: tabular-nums;
+      }
+      table.cross {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+      }
+      table.cross th,
+      table.cross td {
+        border: 1px solid var(--line);
+        padding: 6px 8px;
+        text-align: center;
+      }
+      table.cross th {
+        background: #eef1ec;
+        font-weight: 700;
+      }
+      table.cross td.rowhead {
+        font-weight: 700;
+        background: #f7f4ec;
+        text-align: left;
+      }
+      table.cross td.alert {
+        background: var(--high-bg);
+        color: var(--high-ink);
+        font-weight: 800;
+      }
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 14px;
+        align-items: center;
+      }
+      .filters .group {
+        display: inline-flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .filters .glabel {
+        font-size: 0.72rem;
+        color: var(--ink-soft);
+        margin-right: 2px;
+      }
+      .chip {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink-soft);
+        font-size: 0.74rem;
+        font-weight: 600;
+        padding: 4px 9px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .chip.on {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+      }
+      .ritem {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-left-width: 5px;
+        border-radius: 10px;
+        padding: 11px 12px;
+        margin-bottom: 9px;
+      }
+      .ritem.aw-unknown {
+        border-left-color: var(--high-ink);
+      }
+      .ritem.aw-vague {
+        border-left-color: var(--orange);
+      }
+      .ritem.aw-none {
+        border-left-color: #b9b2a0;
+      }
+      .ritem.aw-known {
+        border-left-color: var(--teal);
+      }
+      .rstate {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+      .st-unknown {
+        background: var(--high-bg);
+        color: var(--high-ink);
+      }
+      .st-vague {
+        background: var(--mid-bg);
+        color: var(--mid-ink);
+      }
+      .st-none {
+        background: #e7e3d8;
+        color: #6c6c62;
+      }
+      .st-known {
+        background: #dceae2;
+        color: #1f6b4d;
+      }
+      .answer {
+        margin-top: 7px;
+        font-size: 0.88rem;
+        white-space: pre-wrap;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+      .answer.empty {
+        color: #a59c8a;
+        font-style: italic;
+      }
+      .empty-list {
+        text-align: center;
+        color: var(--ink-soft);
+        padding: 30px 10px;
+      }
+      .foot {
+        text-align: center;
+        font-size: 0.7rem;
+        color: var(--ink-soft);
+        margin-top: 24px;
+      }
+      @media (max-width: 520px) {
+        .tools {
+          margin-left: 0;
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="app">
+      <div class="brand">KRAFT <span class="accent">BASE</span> ・ スタッフ把握度チェック</div>
+      <div class="sub">運用上の想定問題・ゲストからの質問の把握度を炙り出す調査ツール</div>
+      <div class="bar">
+        <div class="seg">
+          <button id="mode-input" class="active" type="button">入力モード</button>
+          <button id="mode-review" type="button">レビューモード</button>
+        </div>
+        <div class="tools">
+          <button class="tool" id="btn-export-json" type="button">JSONを書き出す</button>
+          <button class="tool" id="btn-import-json" type="button">JSONを読み込む</button>
+          <button class="tool" id="btn-export-md" type="button">Markdownで書き出す</button>
+          <input
+            id="file-input"
+            type="file"
+            accept="application/json,.json"
+            style="display: none"
+          />
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+        <div class="progress-label" id="prog-label"></div>
+      </div>
+    </header>
+
+    <main id="view"></main>
+
+    <!-- 質問データ（questions.json を一字一句そのまま埋め込み） -->
+    <script id="questions-data" type="application/json">
+{
+  "chapters": [
+    {
+      "id": "A",
+      "title": "チェックイン（到着・受付）"
+    },
+    {
+      "id": "B",
+      "title": "チェックアウト・朝"
+    },
+    {
+      "id": "C",
+      "title": "弁当・食事（肉のおくだ連携）"
+    },
+    {
+      "id": "D",
+      "title": "設備・館内トラブル"
+    },
+    {
+      "id": "E",
+      "title": "言語・コミュニケーション"
+    },
+    {
+      "id": "F",
+      "title": "予約・支払い・OTA"
+    },
+    {
+      "id": "G",
+      "title": "周辺・観光案内（熊野古道）"
+    },
+    {
+      "id": "H",
+      "title": "安全・緊急・医療"
+    },
+    {
+      "id": "I",
+      "title": "クレーム・期待値ギャップ"
+    },
+    {
+      "id": "J",
+      "title": "スタッフ運用・引き継ぎ・アプリ"
+    },
+    {
+      "id": "K",
+      "title": "日本人ファミリー（夏・川遊び）特有"
+    },
+    {
+      "id": "L",
+      "title": "ワーケーション（オフシーズン・長期）特有"
+    }
+  ],
+  "items": [
+    {
+      "id": "A-01",
+      "chapter": "A",
+      "severity": "low",
+      "who": [
+        "day",
+        "night"
+      ],
+      "question": "予定どおりの時間にゲストが到着した。標準の受付の流れは？"
+    },
+    {
+      "id": "A-02",
+      "chapter": "A",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "受付スタッフが不在の時間帯（13時前・17時台のすきま）に到着された。"
+    },
+    {
+      "id": "A-03",
+      "chapter": "A",
+      "severity": "high",
+      "who": [
+        "night"
+      ],
+      "question": "20時以降・深夜の到着。スタッフ退勤後。鍵・部屋案内・本人確認をどうするか。"
+    },
+    {
+      "id": "A-04",
+      "chapter": "A",
+      "severity": "mid",
+      "who": [
+        "night"
+      ],
+      "question": "「遅着 ~19:30」の連絡があったが、19:30を過ぎても現れない。どこまで待つ・何時に連絡。"
+    },
+    {
+      "id": "A-05",
+      "chapter": "A",
+      "severity": "mid",
+      "who": [
+        "day"
+      ],
+      "question": "予定より大幅に早く到着（チェックイン開始前）。荷物だけ預かるか、入れるか。"
+    },
+    {
+      "id": "A-06",
+      "chapter": "A",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "OTA予約はあるが本人確認書類（パスポート）が未提出。撮影・確認の手順と、出さない人への対応。"
+    },
+    {
+      "id": "A-07",
+      "chapter": "A",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "予約人数と実際の人数が違う（多い／少ない）。料金・ベッド数どうする。"
+    },
+    {
+      "id": "A-08",
+      "chapter": "A",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "飛び込み（予約なし）で「空いてないか」と来た。受けるか断るか、誰が判断。"
+    },
+    {
+      "id": "A-09",
+      "chapter": "A",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "OTAに予約が見当たらない／名前が一致しないのに「予約した」と主張。"
+    },
+    {
+      "id": "A-10",
+      "chapter": "A",
+      "severity": "low",
+      "who": [
+        "day",
+        "night"
+      ],
+      "question": "チェックイン時に渡すもの一式（鍵、Wi-Fi、館内説明、弁当確認）の標準セット。"
+    },
+    {
+      "id": "A-11",
+      "chapter": "A",
+      "severity": "mid",
+      "who": [
+        "day"
+      ],
+      "question": "同日複数組が同時刻にチェックインで受付が渋滞。優先順位と捌き方。"
+    },
+    {
+      "id": "A-12",
+      "chapter": "A",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "ゲストが道に迷って「場所がわからない」と電話／メッセージ。小口までの案内。"
+    },
+    {
+      "id": "A-13",
+      "chapter": "A",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "最寄りバス停・駅からの送迎は可能か聞かれた。可否と回答。"
+    },
+    {
+      "id": "A-14",
+      "chapter": "A",
+      "severity": "low",
+      "who": [
+        "night"
+      ],
+      "question": "チェックイン時刻を過ぎる見込みだが連絡が取れているゲストへの対応。"
+    },
+    {
+      "id": "A-15",
+      "chapter": "A",
+      "severity": "high",
+      "who": [
+        "night"
+      ],
+      "question": "酩酊・体調不良など、明らかに様子のおかしいゲストが到着。受け入れ可否。"
+    },
+    {
+      "id": "B-01",
+      "chapter": "B",
+      "severity": "low",
+      "who": [
+        "morning"
+      ],
+      "question": "標準のチェックアウトの流れ（鍵返却、清算確認、見送り）。"
+    },
+    {
+      "id": "B-02",
+      "chapter": "B",
+      "severity": "mid",
+      "who": [
+        "morning",
+        "day"
+      ],
+      "question": "チェックアウト時刻を過ぎても部屋にいる／出発しない。"
+    },
+    {
+      "id": "B-03",
+      "chapter": "B",
+      "severity": "mid",
+      "who": [
+        "night",
+        "morning"
+      ],
+      "question": "早朝（スタッフ出勤前）に出発したいと言われた。鍵の返却・施錠。"
+    },
+    {
+      "id": "B-04",
+      "chapter": "B",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "忘れ物が見つかった。連絡・保管・返送の手順と費用負担。"
+    },
+    {
+      "id": "B-05",
+      "chapter": "B",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "「もう一泊したい」と延泊希望。空き確認・料金・OTA処理は誰が。"
+    },
+    {
+      "id": "B-06",
+      "chapter": "B",
+      "severity": "low",
+      "who": [
+        "night"
+      ],
+      "question": "翌朝の出発が早いゲストへ、朝食（バナナ）や弁当をどうするか。"
+    },
+    {
+      "id": "B-07",
+      "chapter": "B",
+      "severity": "mid",
+      "who": [
+        "morning",
+        "day"
+      ],
+      "question": "チェックアウト後に部屋の備品破損・汚損が発覚。請求するか、どう伝えるか。"
+    },
+    {
+      "id": "B-08",
+      "chapter": "B",
+      "severity": "low",
+      "who": [
+        "day"
+      ],
+      "question": "連泊ゲストの中日の清掃・リネン交換はどうするか。"
+    },
+    {
+      "id": "C-01",
+      "chapter": "C",
+      "severity": "high",
+      "who": [
+        "night"
+      ],
+      "question": "ヴィーガン弁当と焼肉弁当を取り違えて渡した／渡しそうになった。気づいた後のリカバリー。"
+    },
+    {
+      "id": "C-02",
+      "chapter": "C",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "アレルギー（特定食材）の申告があるゲストへの弁当対応と確認責任。"
+    },
+    {
+      "id": "C-03",
+      "chapter": "C",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "当日「弁当を追加したい」「やっぱりキャンセル」。受付の締め時間と肉のおくだへの連絡。"
+    },
+    {
+      "id": "C-04",
+      "chapter": "C",
+      "severity": "mid",
+      "who": [
+        "night"
+      ],
+      "question": "弁当の配達が予定時間（17〜18時）に間に合わない／届かない。"
+    },
+    {
+      "id": "C-05",
+      "chapter": "C",
+      "severity": "mid",
+      "who": [
+        "night"
+      ],
+      "question": "注文数と届いた数が合わない。"
+    },
+    {
+      "id": "C-06",
+      "chapter": "C",
+      "severity": "low",
+      "who": [
+        "night"
+      ],
+      "question": "弁当の受け渡し場所・方法（小口エリアのハブとしての役割）。他施設ゲスト分の扱い。"
+    },
+    {
+      "id": "C-07",
+      "chapter": "C",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "「夕食はどこで食べられるか」「近くに店はあるか」と聞かれた。"
+    },
+    {
+      "id": "C-08",
+      "chapter": "C",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "ベジタリアン／ハラル／グルテンフリーなど、用意のない食事制限を求められた。"
+    },
+    {
+      "id": "C-09",
+      "chapter": "C",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "朝食の有無・内容（バナナ・コーヒー）を聞かれた。提供範囲。"
+    },
+    {
+      "id": "C-10",
+      "chapter": "C",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "弁当代の支払い方法・タイミング（現金／OTA／別会計）。"
+    },
+    {
+      "id": "C-11",
+      "chapter": "C",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "食物の保管（冷蔵庫の利用、共用キッチンの使い方、持ち込み）。"
+    },
+    {
+      "id": "D-01",
+      "chapter": "D",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "お湯／シャワーが出ない・冷たい。応急対応と復旧の連絡先。"
+    },
+    {
+      "id": "D-02",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "Wi-Fiがつながらない。パスワード・再起動・圏外時の説明。"
+    },
+    {
+      "id": "D-03",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "洗濯機／乾燥機が動かない・使い方がわからない（Free Laundry）。"
+    },
+    {
+      "id": "D-04",
+      "chapter": "D",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "停電した。ブレーカー・夜間・ゲスト案内。"
+    },
+    {
+      "id": "D-05",
+      "chapter": "D",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "断水した。飲み水・トイレ・シャワー。"
+    },
+    {
+      "id": "D-06",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "エアコン／暖房が効かない・使い方。"
+    },
+    {
+      "id": "D-07",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "トイレが詰まった・流れない。"
+    },
+    {
+      "id": "D-08",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "鍵をなくした／部屋に入れない／締め出された。"
+    },
+    {
+      "id": "D-09",
+      "chapter": "D",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "照明・コンセント・USB・延長コードなどの場所と使い方。"
+    },
+    {
+      "id": "D-10",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "night"
+      ],
+      "question": "BBQ焼き場の使い方・予約・火の道具・後片付け。"
+    },
+    {
+      "id": "D-11",
+      "chapter": "D",
+      "severity": "high",
+      "who": [
+        "night"
+      ],
+      "question": "火の不始末・焚き火やBBQの消火確認（クローズ前チェック）。"
+    },
+    {
+      "id": "D-12",
+      "chapter": "D",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "ゴミの分別・出し方（ゲスト用／スタッフ最終）。"
+    },
+    {
+      "id": "D-13",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "虫（ムカデ・蜂・蚊）が出た。対処と予防の案内。"
+    },
+    {
+      "id": "D-14",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "共用部の備品（ドライヤー、アメニティ、調理器具）の場所・貸出。"
+    },
+    {
+      "id": "D-15",
+      "chapter": "D",
+      "severity": "mid",
+      "who": [
+        "night"
+      ],
+      "question": "騒音・他ゲストのいびき等、ドミトリーゆえの相部屋トラブル。"
+    },
+    {
+      "id": "D-16",
+      "chapter": "D",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "喫煙・飲酒のルールと場所。"
+    },
+    {
+      "id": "E-01",
+      "chapter": "E",
+      "severity": "high",
+      "who": [
+        "day"
+      ],
+      "question": "英語が話せない日中スタッフが、英語／ドイツ語のゲストと一対一になった。基本の凌ぎ方。"
+    },
+    {
+      "id": "E-02",
+      "chapter": "E",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "ゲストから込み入った質問をされ、定型フレーズで足りない。翻訳アプリ等への導線。"
+    },
+    {
+      "id": "E-03",
+      "chapter": "E",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "緊急・トラブルを外国語で訴えられている（何が起きているか聞き取れない）。"
+    },
+    {
+      "id": "E-04",
+      "chapter": "E",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "ドイツ語・イタリア語など、英語以外が母語のゲストへの最低限の挨拶・見送り。"
+    },
+    {
+      "id": "E-05",
+      "chapter": "E",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "電話・OTAメッセージでの問い合わせ（口頭でないやり取り）の言語対応。"
+    },
+    {
+      "id": "E-06",
+      "chapter": "E",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "筆談・指差し・写真を使うべき場面の判断。"
+    },
+    {
+      "id": "F-01",
+      "chapter": "F",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "OTA（Booking.com / Airbnb 等）の予約変更・キャンセルがゲストから直接申し出られた。"
+    },
+    {
+      "id": "F-02",
+      "chapter": "F",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "支払いが済んでいない・金額が合わない・現地払いの扱い。"
+    },
+    {
+      "id": "F-03",
+      "chapter": "F",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "領収書・請求書がほしいと言われた。発行できるか・誰が。"
+    },
+    {
+      "id": "F-04",
+      "chapter": "F",
+      "severity": "mid",
+      "who": [
+        "night"
+      ],
+      "question": "ノーショー（予約者が来ない・連絡なし）。何時まで待ち、どう処理。"
+    },
+    {
+      "id": "F-05",
+      "chapter": "F",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "OTA経由でないとできない手続きをゲストが現地で求めた。"
+    },
+    {
+      "id": "F-06",
+      "chapter": "F",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "予約内容（人数・日程・オプション）の確認をゲストから求められた。"
+    },
+    {
+      "id": "F-07",
+      "chapter": "F",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "ダブルブッキング・ベッド数オーバーが発覚。"
+    },
+    {
+      "id": "G-01",
+      "chapter": "G",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "翌日のルート（小雲取越・大雲取越など）の起点・所要時間・難易度。"
+    },
+    {
+      "id": "G-02",
+      "chapter": "G",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "ルート上の天候悪化・通行止め・遭難リスクへの注意喚起と情報源。"
+    },
+    {
+      "id": "G-03",
+      "chapter": "G",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "バス・電車の時刻、最終便、本数の少なさ。"
+    },
+    {
+      "id": "G-04",
+      "chapter": "G",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "タクシー・送迎・荷物転送（手荷物搬送サービス）の手配。"
+    },
+    {
+      "id": "G-05",
+      "chapter": "G",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "近隣の温泉・コンビニ・商店・ATM・薬局の有無と距離。"
+    },
+    {
+      "id": "G-06",
+      "chapter": "G",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "熊野本宮大社など主要スポットへのアクセス。"
+    },
+    {
+      "id": "G-07",
+      "chapter": "G",
+      "severity": "low",
+      "who": [
+        "day"
+      ],
+      "question": "川遊びの場所・安全（夏のファミリー向け）。"
+    },
+    {
+      "id": "G-08",
+      "chapter": "G",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "携帯の電波が入る場所・オフライン地図の案内。"
+    },
+    {
+      "id": "G-09",
+      "chapter": "G",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "御朱印・スタンプ（道中の押印帳）に関する質問。"
+    },
+    {
+      "id": "G-10",
+      "chapter": "G",
+      "severity": "mid",
+      "who": [
+        "night"
+      ],
+      "question": "早朝出発のための弁当・水・行動食の準備。"
+    },
+    {
+      "id": "H-01",
+      "chapter": "H",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "ゲストの急病・怪我。救急要請（119）の判断と手順、住所の伝え方。"
+    },
+    {
+      "id": "H-02",
+      "chapter": "H",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "ゲストが戻らない・連絡が取れない（道中での遭難の可能性）。"
+    },
+    {
+      "id": "H-03",
+      "chapter": "H",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "地震・台風・大雨などの自然災害発生時の対応と避難。"
+    },
+    {
+      "id": "H-04",
+      "chapter": "H",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "火災・火の事故。"
+    },
+    {
+      "id": "H-05",
+      "chapter": "H",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "近隣の医療機関・診療時間・夜間救急の場所。"
+    },
+    {
+      "id": "H-06",
+      "chapter": "H",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "ゲスト同士／ゲストとのトラブル・ハラスメント・暴言。"
+    },
+    {
+      "id": "H-07",
+      "chapter": "H",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "不審者・無断侵入・盗難。"
+    },
+    {
+      "id": "H-08",
+      "chapter": "H",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "常備薬・救急箱・AEDの有無と場所。"
+    },
+    {
+      "id": "H-09",
+      "chapter": "H",
+      "severity": "high",
+      "who": [
+        "night"
+      ],
+      "question": "一人勤務中（特に夜）にスタッフ自身が対応しきれない事態。誰に連絡。"
+    },
+    {
+      "id": "I-01",
+      "chapter": "I",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "「写真と違う」「思っていたのと違う」設備・部屋への不満。"
+    },
+    {
+      "id": "I-02",
+      "chapter": "I",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "ドミトリーであることへの不満（プライバシー・相部屋）。"
+    },
+    {
+      "id": "I-03",
+      "chapter": "I",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "返金・割引を強く要求された。誰がどこまで判断できるか。"
+    },
+    {
+      "id": "I-04",
+      "chapter": "I",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "口コミに悪く書くと言われた／書かれた後の対応。"
+    },
+    {
+      "id": "I-05",
+      "chapter": "I",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "些細な要望（枕追加、温度、置き場所）への気持ちのよい応じ方。"
+    },
+    {
+      "id": "I-06",
+      "chapter": "I",
+      "severity": "mid",
+      "who": [
+        "night"
+      ],
+      "question": "騒音・マナーで他ゲストから苦情。注意の仕方。"
+    },
+    {
+      "id": "J-01",
+      "chapter": "J",
+      "severity": "high",
+      "who": [
+        "all"
+      ],
+      "question": "Morley が夜シフトに入れない（急な不在）。代わりに誰が入り、その人はアプリを使えるか。"
+    },
+    {
+      "id": "J-02",
+      "chapter": "J",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "アプリにログインできない・同期しない・反映されない。"
+    },
+    {
+      "id": "J-03",
+      "chapter": "J",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "引き継ぎの記録を書き忘れた／前シフトの記録が無いまま交代した。"
+    },
+    {
+      "id": "J-04",
+      "chapter": "J",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "圏外・通信不良でアプリが使えないときの最低限の運用。"
+    },
+    {
+      "id": "J-05",
+      "chapter": "J",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "シフト時間外にゲスト対応が発生した（出勤前・退勤後の遭遇）。"
+    },
+    {
+      "id": "J-06",
+      "chapter": "J",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "Rucolow（午前リモート）に確認が必要だが日中・夜で連絡がつかない。"
+    },
+    {
+      "id": "J-07",
+      "chapter": "J",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "当日のゲスト確定情報がアプリに反映される時間と、それ以前の動き方。"
+    },
+    {
+      "id": "J-08",
+      "chapter": "J",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "複数スタッフで同じ対応が重複／抜ける（誰がやったか不明）。"
+    },
+    {
+      "id": "K-01",
+      "chapter": "K",
+      "severity": "mid",
+      "who": [
+        "day"
+      ],
+      "question": "子連れの安全配慮（二段ベッド、川、火）。"
+    },
+    {
+      "id": "K-02",
+      "chapter": "K",
+      "severity": "low",
+      "who": [
+        "day"
+      ],
+      "question": "和室・布団での貸切利用の使い方説明。"
+    },
+    {
+      "id": "K-03",
+      "chapter": "K",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "子どもの体調不良・怪我。"
+    },
+    {
+      "id": "K-04",
+      "chapter": "K",
+      "severity": "low",
+      "who": [
+        "day"
+      ],
+      "question": "ベビー・子ども向けの設備（食器、寝具、お風呂）への質問。"
+    },
+    {
+      "id": "K-05",
+      "chapter": "K",
+      "severity": "mid",
+      "who": [
+        "day"
+      ],
+      "question": "川遊びの装備・危険箇所・天候による増水。"
+    },
+    {
+      "id": "L-01",
+      "chapter": "L",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "長期滞在の料金・清掃・リネン交換の頻度。"
+    },
+    {
+      "id": "L-02",
+      "chapter": "L",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "Wi-Fiの速度・安定性・作業環境（静けさ、机、電源）。"
+    },
+    {
+      "id": "L-03",
+      "chapter": "L",
+      "severity": "low",
+      "who": [
+        "all"
+      ],
+      "question": "日中の在室・共用部の使い方（他ゲストとの兼ね合い）。"
+    },
+    {
+      "id": "L-04",
+      "chapter": "L",
+      "severity": "mid",
+      "who": [
+        "all"
+      ],
+      "question": "郵便・宅配の受け取り、買い出し、生活面の相談。"
+    }
+  ]
+}
+    </script>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var RAW = JSON.parse(document.getElementById("questions-data").textContent);
+        var CHAPTERS = RAW.chapters;
+        var ITEMS = RAW.items;
+        var STORE_KEY = "kraftbase_staff_check_v1";
+
+        var WHO = { all: "全員", day: "日中", night: "夜", morning: "朝" };
+        var SEV_LABEL = { high: "重要度 高", mid: "重要度 中", low: "重要度 低" };
+        var AW_LABEL = { known: "わかる", vague: "曖昧", unknown: "わからない" };
+
+        var view = document.getElementById("view");
+        var mode = "input";
+        var saveTimer = null;
+
+        // filters for review mode (Set semantics; empty = no filtering for that group)
+        var filters = { awareness: new Set(), severity: new Set(), chapter: new Set() };
+
+        function loadResponses() {
+          try {
+            var raw = localStorage.getItem(STORE_KEY);
+            if (!raw) return {};
+            var parsed = JSON.parse(raw);
+            return parsed && typeof parsed === "object" ? parsed : {};
+          } catch (e) {
+            return {};
+          }
+        }
+
+        var responses = loadResponses();
+
+        function persist() {
+          localStorage.setItem(STORE_KEY, JSON.stringify(responses));
+        }
+
+        function resp(id) {
+          return responses[id] || { awareness: null, answer: "", updatedAt: null };
+        }
+
+        function setAwareness(id, value) {
+          var cur = resp(id);
+          var next = cur.awareness === value ? null : value; // toggle off if same
+          responses[id] = {
+            awareness: next,
+            answer: cur.answer || "",
+            updatedAt: new Date().toISOString(),
+          };
+          persist();
+        }
+
+        function setAnswer(id, text) {
+          var cur = resp(id);
+          responses[id] = {
+            awareness: cur.awareness == null ? null : cur.awareness,
+            answer: text,
+            updatedAt: new Date().toISOString(),
+          };
+          if (saveTimer) clearTimeout(saveTimer);
+          saveTimer = setTimeout(persist, 350);
+        }
+
+        function esc(s) {
+          return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function whoLabel(who) {
+          return (who || [])
+            .map(function (w) {
+              return WHO[w] || w;
+            })
+            .join("・");
+        }
+
+        function answeredCount() {
+          return ITEMS.filter(function (it) {
+            return resp(it.id).awareness != null;
+          }).length;
+        }
+
+        function updateProgress() {
+          var done = answeredCount();
+          var total = ITEMS.length;
+          var pct = total ? Math.round((done / total) * 100) : 0;
+          document.getElementById("prog-fill").style.width = pct + "%";
+          document.getElementById("prog-label").textContent =
+            "把握度 入力済み " + done + " / 全 " + total + " 項目（" + pct + "%）";
+        }
+
+        // ---------- input mode ----------
+        function renderInput() {
+          var html = "";
+          CHAPTERS.forEach(function (ch) {
+            var items = ITEMS.filter(function (it) {
+              return it.chapter === ch.id;
+            });
+            var blank = items.filter(function (it) {
+              return resp(it.id).awareness == null;
+            }).length;
+            html += '<section class="chapter">';
+            html +=
+              '<div class="chapter-head"><span class="chapter-id">' +
+              esc(ch.id) +
+              '</span><span class="chapter-title">' +
+              esc(ch.title) +
+              '</span><span class="chapter-prog">未入力 ' +
+              blank +
+              " / 全 " +
+              items.length +
+              "</span></div>";
+            items.forEach(function (it) {
+              var r = resp(it.id);
+              html += '<div class="item" data-id="' + it.id + '">';
+              html +=
+                '<div class="item-top"><span class="item-id">' +
+                esc(it.id) +
+                '</span><span class="badge sev-' +
+                it.severity +
+                '">' +
+                SEV_LABEL[it.severity] +
+                '</span><span class="who">対象: ' +
+                esc(whoLabel(it.who)) +
+                "</span></div>";
+              html += '<div class="q">' + esc(it.question) + "</div>";
+              html += '<div class="aw">';
+              ["known", "vague", "unknown"].forEach(function (v) {
+                html +=
+                  '<button type="button" data-act="aw" data-id="' +
+                  it.id +
+                  '" data-val="' +
+                  v +
+                  '" class="' +
+                  (r.awareness === v ? "on" : "") +
+                  '">' +
+                  AW_LABEL[v] +
+                  "</button>";
+              });
+              html += "</div>";
+              html +=
+                '<textarea data-act="answer" data-id="' +
+                it.id +
+                '" placeholder="回答・メモ（任意）"></textarea>';
+              html += '<div class="saved" data-saved="' + it.id + '"></div>';
+              html += "</div>";
+            });
+            html += "</section>";
+          });
+          view.innerHTML = html;
+          // set textarea values safely via property
+          var areas = view.querySelectorAll('textarea[data-act="answer"]');
+          for (var i = 0; i < areas.length; i++) {
+            areas[i].value = resp(areas[i].getAttribute("data-id")).answer || "";
+          }
+          updateProgress();
+        }
+
+        function refreshChapterProg(chapterId) {
+          var items = ITEMS.filter(function (it) {
+            return it.chapter === chapterId;
+          });
+          var blank = items.filter(function (it) {
+            return resp(it.id).awareness == null;
+          }).length;
+          var sections = view.querySelectorAll(".chapter");
+          for (var i = 0; i < sections.length; i++) {
+            var idEl = sections[i].querySelector(".chapter-id");
+            if (idEl && idEl.textContent === chapterId) {
+              sections[i].querySelector(".chapter-prog").textContent =
+                "未入力 " + blank + " / 全 " + items.length;
+            }
+          }
+        }
+
+        // ---------- review mode ----------
+        function awRank(a) {
+          if (a === "unknown") return 0;
+          if (a === "vague") return 1;
+          if (a == null) return 2; // 未入力
+          return 3; // known
+        }
+        function sevRank(s) {
+          return s === "high" ? 0 : s === "mid" ? 1 : 2;
+        }
+        function stateKey(a) {
+          return a == null ? "none" : a;
+        }
+        function stateLabel(a) {
+          if (a === "unknown") return "わからない";
+          if (a === "vague") return "曖昧";
+          if (a === "known") return "わかる";
+          return "未入力";
+        }
+
+        function renderReview() {
+          // summary counts
+          var byAw = { known: 0, vague: 0, unknown: 0, none: 0 };
+          var cross = {
+            high: { known: 0, vague: 0, unknown: 0, none: 0 },
+            mid: { known: 0, vague: 0, unknown: 0, none: 0 },
+            low: { known: 0, vague: 0, unknown: 0, none: 0 },
+          };
+          ITEMS.forEach(function (it) {
+            var k = stateKey(resp(it.id).awareness);
+            byAw[k]++;
+            cross[it.severity][k]++;
+          });
+
+          var html = "";
+          html += '<div class="summary">';
+          html += "<h2>サマリー（炙り出し）</h2>";
+          html += '<div class="counts">';
+          html +=
+            '<span class="count st-unknown">わからない <b>' + byAw.unknown + "</b></span>";
+          html += '<span class="count st-vague">曖昧 <b>' + byAw.vague + "</b></span>";
+          html += '<span class="count st-none">未入力 <b>' + byAw.none + "</b></span>";
+          html += '<span class="count st-known">わかる <b>' + byAw.known + "</b></span>";
+          html += "</div>";
+          html +=
+            '<table class="cross"><thead><tr><th>重要度＼把握度</th><th>わからない</th><th>曖昧</th><th>未入力</th><th>わかる</th></tr></thead><tbody>';
+          [
+            ["high", "高"],
+            ["mid", "中"],
+            ["low", "低"],
+          ].forEach(function (row) {
+            var sev = row[0];
+            html += '<tr><td class="rowhead">' + row[1] + "</td>";
+            ["unknown", "vague", "none", "known"].forEach(function (col) {
+              var n = cross[sev][col];
+              var alert = sev === "high" && col !== "known" && n > 0;
+              html += '<td class="' + (alert ? "alert" : "") + '">' + n + "</td>";
+            });
+            html += "</tr>";
+          });
+          html += "</tbody></table>";
+          html +=
+            '<div class="progress-label" style="color:var(--ink-soft);margin-top:8px">' +
+            "赤いセルは「重要度 高なのに、わかる以外（要対応）」の件数です。" +
+            "</div>";
+          html += "</div>";
+
+          // filters
+          html += '<div class="filters">';
+          html += '<div class="group"><span class="glabel">把握度</span>';
+          [
+            ["unknown", "わからない"],
+            ["vague", "曖昧"],
+            ["none", "未入力"],
+            ["known", "わかる"],
+          ].forEach(function (f) {
+            html +=
+              '<button class="chip ' +
+              (filters.awareness.has(f[0]) ? "on" : "") +
+              '" data-fil="awareness" data-val="' +
+              f[0] +
+              '">' +
+              f[1] +
+              "</button>";
+          });
+          html += "</div>";
+          html += '<div class="group"><span class="glabel">重要度</span>';
+          [
+            ["high", "高"],
+            ["mid", "中"],
+            ["low", "低"],
+          ].forEach(function (f) {
+            html +=
+              '<button class="chip ' +
+              (filters.severity.has(f[0]) ? "on" : "") +
+              '" data-fil="severity" data-val="' +
+              f[0] +
+              '">' +
+              f[1] +
+              "</button>";
+          });
+          html += "</div>";
+          html += '<div class="group"><span class="glabel">章</span>';
+          CHAPTERS.forEach(function (ch) {
+            html +=
+              '<button class="chip ' +
+              (filters.chapter.has(ch.id) ? "on" : "") +
+              '" data-fil="chapter" data-val="' +
+              ch.id +
+              '">' +
+              esc(ch.id) +
+              "</button>";
+          });
+          html += "</div>";
+          html += "</div>";
+
+          // sorted + filtered list (holes on top)
+          var list = ITEMS.filter(function (it) {
+            var sKey = stateKey(resp(it.id).awareness);
+            if (filters.awareness.size && !filters.awareness.has(sKey)) return false;
+            if (filters.severity.size && !filters.severity.has(it.severity)) return false;
+            if (filters.chapter.size && !filters.chapter.has(it.chapter)) return false;
+            return true;
+          });
+          list.sort(function (a, b) {
+            var ra = awRank(resp(a.id).awareness);
+            var rb = awRank(resp(b.id).awareness);
+            if (ra !== rb) return ra - rb;
+            var sa = sevRank(a.severity);
+            var sb = sevRank(b.severity);
+            if (sa !== sb) return sa - sb;
+            return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+          });
+
+          if (!list.length) {
+            html += '<div class="empty-list">条件に合う項目がありません。</div>';
+          } else {
+            list.forEach(function (it) {
+              var r = resp(it.id);
+              var sk = stateKey(r.awareness);
+              html += '<div class="ritem aw-' + sk + '">';
+              html +=
+                '<div class="item-top"><span class="item-id">' +
+                esc(it.id) +
+                '</span><span class="rstate st-' +
+                sk +
+                '">' +
+                stateLabel(r.awareness) +
+                '</span><span class="badge sev-' +
+                it.severity +
+                '">' +
+                SEV_LABEL[it.severity] +
+                '</span><span class="who">対象: ' +
+                esc(whoLabel(it.who)) +
+                "</span></div>";
+              html += '<div class="q">' + esc(it.question) + "</div>";
+              if (r.answer && r.answer.trim()) {
+                html += '<div class="answer">' + esc(r.answer) + "</div>";
+              } else {
+                html += '<div class="answer empty">回答なし</div>';
+              }
+              html += "</div>";
+            });
+          }
+
+          view.innerHTML = html;
+          updateProgress();
+        }
+
+        function render() {
+          if (mode === "input") renderInput();
+          else renderReview();
+        }
+
+        // ---------- events ----------
+        view.addEventListener("click", function (e) {
+          var btn = e.target.closest ? e.target.closest("button") : null;
+          if (!btn) return;
+          if (btn.getAttribute("data-act") === "aw") {
+            var id = btn.getAttribute("data-id");
+            var val = btn.getAttribute("data-val");
+            setAwareness(id, val);
+            // update buttons in this item
+            var item = btn.closest(".item");
+            var current = resp(id).awareness;
+            var bs = item.querySelectorAll('button[data-act="aw"]');
+            for (var i = 0; i < bs.length; i++) {
+              bs[i].classList.toggle("on", bs[i].getAttribute("data-val") === current);
+            }
+            var savedEl = item.querySelector('[data-saved="' + id + '"]');
+            if (savedEl) savedEl.textContent = "保存しました";
+            refreshChapterProg(ITEMS.filter(function(x){return x.id===id;})[0].chapter);
+            updateProgress();
+            return;
+          }
+          if (btn.getAttribute("data-fil")) {
+            var grp = btn.getAttribute("data-fil");
+            var fv = btn.getAttribute("data-val");
+            if (filters[grp].has(fv)) filters[grp].delete(fv);
+            else filters[grp].add(fv);
+            renderReview();
+            return;
+          }
+        });
+
+        view.addEventListener("input", function (e) {
+          var t = e.target;
+          if (t && t.getAttribute && t.getAttribute("data-act") === "answer") {
+            var id = t.getAttribute("data-id");
+            setAnswer(id, t.value);
+            var savedEl = view.querySelector('[data-saved="' + id + '"]');
+            if (savedEl) savedEl.textContent = "保存中…";
+            setTimeout(function () {
+              if (savedEl) savedEl.textContent = "保存しました";
+            }, 400);
+          }
+        });
+
+        // mode toggle
+        document.getElementById("mode-input").addEventListener("click", function () {
+          mode = "input";
+          this.classList.add("active");
+          document.getElementById("mode-review").classList.remove("active");
+          render();
+        });
+        document.getElementById("mode-review").addEventListener("click", function () {
+          mode = "review";
+          this.classList.add("active");
+          document.getElementById("mode-input").classList.remove("active");
+          render();
+        });
+
+        // ---------- data exchange ----------
+        function download(filename, text, type) {
+          var blob = new Blob([text], { type: type });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 0);
+        }
+
+        function dateStamp() {
+          var d = new Date();
+          function p(n) {
+            return (n < 10 ? "0" : "") + n;
+          }
+          return (
+            d.getFullYear() +
+            p(d.getMonth() + 1) +
+            p(d.getDate()) +
+            "_" +
+            p(d.getHours()) +
+            p(d.getMinutes())
+          );
+        }
+
+        document.getElementById("btn-export-json").addEventListener("click", function () {
+          var payload = {
+            app: "kraftbase_staff_check",
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            responses: responses,
+          };
+          download(
+            "kraftbase_staff_check_" + dateStamp() + ".json",
+            JSON.stringify(payload, null, 2),
+            "application/json"
+          );
+        });
+
+        document.getElementById("btn-import-json").addEventListener("click", function () {
+          document.getElementById("file-input").click();
+        });
+
+        document.getElementById("file-input").addEventListener("change", function (e) {
+          var file = e.target.files && e.target.files[0];
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function () {
+            try {
+              var parsed = JSON.parse(reader.result);
+              var incoming =
+                parsed && parsed.responses && typeof parsed.responses === "object"
+                  ? parsed.responses
+                  : parsed;
+              if (!incoming || typeof incoming !== "object") {
+                alert("読み込めませんでした：JSONの形式が不正です。");
+                return;
+              }
+              if (
+                !window.confirm(
+                  "現在の入力内容を、読み込むファイルの内容で上書きします。よろしいですか？"
+                )
+              ) {
+                return;
+              }
+              responses = incoming;
+              persist();
+              render();
+              alert("読み込みました。");
+            } catch (err) {
+              alert("読み込めませんでした：" + err.message);
+            } finally {
+              e.target.value = "";
+            }
+          };
+          reader.readAsText(file);
+        });
+
+        document.getElementById("btn-export-md").addEventListener("click", function () {
+          var done = answeredCount();
+          var lines = [];
+          lines.push("# KRAFT BASE スタッフ把握度チェック");
+          lines.push("");
+          lines.push("書き出し: " + new Date().toISOString());
+          lines.push("全 " + ITEMS.length + " 項目 / 把握度入力済み " + done + " / 未入力 " + (ITEMS.length - done));
+          lines.push("");
+          CHAPTERS.forEach(function (ch) {
+            lines.push("## " + ch.id + " " + ch.title);
+            lines.push("");
+            ITEMS.filter(function (it) {
+              return it.chapter === ch.id;
+            }).forEach(function (it) {
+              var r = resp(it.id);
+              lines.push(
+                "### [" +
+                  it.id +
+                  "] 把握度: " +
+                  stateLabel(r.awareness) +
+                  " ／ " +
+                  SEV_LABEL[it.severity] +
+                  " ／ 対象: " +
+                  whoLabel(it.who)
+              );
+              lines.push("- 質問: " + it.question);
+              lines.push("- 回答: " + (r.answer && r.answer.trim() ? r.answer.replace(/\n/g, " ") : "回答なし"));
+              lines.push("");
+            });
+          });
+          download(
+            "kraftbase_staff_check_" + dateStamp() + ".md",
+            lines.join("\n"),
+            "text/markdown"
+          );
+        });
+
+        render();
+      })();
+    </script>
+  </body>
+</html>
