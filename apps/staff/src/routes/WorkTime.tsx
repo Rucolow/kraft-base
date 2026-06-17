@@ -79,14 +79,19 @@ export function WorkTime() {
       };
     });
 
-  const totalsMap = new Map<string, { name: string; minutes: number; count: number }>();
-  for (const r of rows) {
-    const cur = totalsMap.get(r.staffId) ?? { name: r.name, minutes: 0, count: 0 };
-    cur.minutes += r.minutes;
-    cur.count += 1;
-    totalsMap.set(r.staffId, cur);
-  }
-  const totals = [...totalsMap.values()].sort((a, b) => b.minutes - a.minutes);
+  // Every current staff member appears (0 included), so the owner always sees
+  // each person's attendance for the month.
+  const totals = [...payable.entries()]
+    .map(([id, name]) => {
+      const mine = rows.filter((r) => r.staffId === id);
+      return {
+        id,
+        name,
+        minutes: mine.reduce((sum, r) => sum + r.minutes, 0),
+        count: mine.length,
+      };
+    })
+    .sort((a, b) => b.minutes - a.minutes);
 
   if (!isOwner) {
     return <Navigate to="/" replace />;
@@ -124,7 +129,7 @@ export function WorkTime() {
         <div className="mb-5 overflow-hidden rounded-kb border border-line">
           {totals.map((t) => (
             <div
-              key={t.name}
+              key={t.id}
               className="flex items-center justify-between gap-3 border-line border-b bg-paper px-4 py-3 last:border-none"
             >
               <span className="font-bold text-[0.96rem]">{t.name}</span>
