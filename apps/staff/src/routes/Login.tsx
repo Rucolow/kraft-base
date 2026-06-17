@@ -49,15 +49,15 @@ export function Login() {
         <>
           <h1 className="mb-2 font-bold text-[1.1rem]">確認コードを入力</h1>
           <p className="mb-4 text-[0.86rem] text-ink-light">
-            <span className="text-ink">{email}</span> に届いた6桁のコードを入力してください。
+            <span className="text-ink">{email}</span> に届いたコードを入力してください。
           </p>
           <TextField
             label="確認コード"
             inputMode="numeric"
             autoComplete="one-time-code"
             value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="123456"
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 10))}
+            placeholder="コードを入力"
           />
           {error ? <p className="mb-2 text-[0.8rem] text-orange-deep">{error}</p> : null}
           <PrimaryButton onClick={verify} disabled={busy || code.length < 6}>
