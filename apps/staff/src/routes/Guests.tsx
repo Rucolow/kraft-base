@@ -4,27 +4,30 @@ import { useNavigate } from 'react-router-dom';
 import { Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useTodaysGuests, useUpcomingGuests } from '../data/queries';
 import { formatStayDate } from '../lib/date';
+import { guestStatusMeta } from '../lib/guestStatus';
 import type { GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
 
 type Tab = 'today' | 'upcoming';
 
 function GuestCard({ guest, onOpen }: { guest: GuestRow; onOpen: () => void }) {
+  const status = guestStatusMeta(guest.status);
+  const cancelled = guest.status === 'cancelled';
   return (
     <Card onClick={onOpen}>
-      <div className="flex items-center gap-2.5">
+      <div className={`flex items-center gap-2.5 ${cancelled ? 'opacity-55' : ''}`}>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[0.96rem]">{guest.name}</span>
+            <span className={`font-bold text-[0.96rem] ${cancelled ? 'line-through' : ''}`}>
+              {guest.name}
+            </span>
             {guest.whole_house === 1 ? <Badge tone="wood">貸切</Badge> : null}
           </div>
           <div className="mt-0.5 text-[0.76rem] text-ink-light">
             {guest.country}・{guest.party_size}名 ／ IN {guest.checkin_time}・{guest.bed}
           </div>
         </div>
-        <Badge tone={guest.status === 'arrived' ? 'ok' : 'warn'}>
-          {guest.status === 'arrived' ? '到着済' : guest.status === 'late' ? '遅着' : '予定'}
-        </Badge>
+        <Badge tone={status.tone}>{status.label}</Badge>
       </div>
     </Card>
   );

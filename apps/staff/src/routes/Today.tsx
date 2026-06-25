@@ -33,8 +33,9 @@ export function Today() {
   const { data: followups } = useOpenFollowups();
   const { data: mentions } = useMentions(currentStaff?.id ?? null);
 
-  const arrived = guests.filter((guest) => guest.status === 'arrived').length;
-  const late = guests.filter((guest) => guest.status === 'late');
+  const active = guests.filter((guest) => guest.status !== 'cancelled');
+  const arrived = active.filter((guest) => guest.status === 'arrived').length;
+  const late = active.filter((guest) => guest.status === 'late');
   const done = tasks.filter((task) => intToBool(task.done)).length;
 
   return (
@@ -103,7 +104,7 @@ export function Today() {
               title="本日のチェックイン"
               trailing={
                 <Badge tone="ok">
-                  {arrived} / {guests.length}
+                  {arrived} / {active.length}
                 </Badge>
               }
             />

@@ -8,14 +8,8 @@ import { LANG_LABEL } from '../content/kinds';
 import { useGuest, useGuestNotes } from '../data/queries';
 import { nowIso } from '../lib/date';
 import { boolToInt, insertRow, parseList, serializeList, updateRow, uuid } from '../lib/db';
+import { GUEST_STATUSES, guestStatusLabel } from '../lib/guestStatus';
 import { useSession } from '../lib/session';
-
-const STATUS_NEXT: Record<string, string> = {
-  expected: 'arrived',
-  arrived: 'late',
-  late: 'arrived',
-};
-const STATUS_LABEL: Record<string, string> = { expected: '予定', arrived: '到着済', late: '遅着' };
 
 export function GuestDetail() {
   const { id = '' } = useParams();
@@ -102,18 +96,6 @@ export function GuestDetail() {
       <div className="mb-4 border-line border-b pb-3.5">
         <div className="flex items-start gap-2.5">
           <div className="flex-1 font-bold text-[1.3rem] leading-tight">{guest.name}</div>
-          <button
-            type="button"
-            onClick={() =>
-              updateRow('guest', guest.id, {
-                status: STATUS_NEXT[guest.status ?? 'expected'] ?? 'arrived',
-              })
-            }
-          >
-            <Badge tone={guest.status === 'arrived' ? 'ok' : 'warn'}>
-              {STATUS_LABEL[guest.status ?? 'expected']}
-            </Badge>
-          </button>
           {isOwner ? (
             <button
               type="button"
@@ -123,6 +105,23 @@ export function GuestDetail() {
               <Pencil size={16} />
             </button>
           ) : null}
+        </div>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {GUEST_STATUSES.map((st) => {
+            const active = (guest.status ?? 'expected') === st;
+            return (
+              <button
+                key={st}
+                type="button"
+                onClick={() => updateRow('guest', guest.id, { status: st })}
+                className={`min-h-[36px] rounded-full border px-3.5 font-bold text-[0.8rem] ${
+                  active ? 'border-orange bg-orange/15 text-orange' : 'border-line text-ink-light'
+                }`}
+              >
+                {guestStatusLabel(st)}
+              </button>
+            );
+          })}
         </div>
       </div>
 
