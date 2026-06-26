@@ -1,6 +1,6 @@
 import { useQuery } from '@powersync/react';
 import { Minus, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   BackButton,
@@ -71,6 +71,16 @@ function bentoToString(counts: Record<string, number>): string {
     .join('・');
 }
 
+function parseBeds(value: string | null): string[] {
+  if (!value) {
+    return [];
+  }
+  return value
+    .split('・')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-3 block">
@@ -91,13 +101,25 @@ function Choice({
   onChange: (next: string) => void;
   options: string[];
 }) {
-  const known = value === '' || options.includes(value);
+  const inOptions = options.includes(value);
+  // "Other" is active when the user picked it, or the loaded value isn't a preset.
+  const [otherMode, setOtherMode] = useState(false);
+  const showInput = otherMode || (value !== '' && !inOptions);
+  const selectValue = showInput ? OTHER : value;
   return (
     <Labeled label={label}>
       <select
         className={FIELD}
-        value={known ? value : OTHER}
-        onChange={(event) => onChange(event.target.value === OTHER ? '' : event.target.value)}
+        value={selectValue}
+        onChange={(event) => {
+          if (event.target.value === OTHER) {
+            setOtherMode(true);
+            onChange('');
+          } else {
+            setOtherMode(false);
+            onChange(event.target.value);
+          }
+        }}
       >
         <option value="">選択してください</option>
         {options.map((option) => (
@@ -107,7 +129,7 @@ function Choice({
         ))}
         <option value={OTHER}>その他（自由入力）</option>
       </select>
-      {!known ? (
+      {showInput ? (
         <input
           className={`mt-2 ${FIELD}`}
           placeholder="自由入力"
@@ -139,12 +161,33 @@ export function GuestEdit() {
     language: existing?.language ?? 'en',
     party_size: String(existing?.party_size ?? 1),
     checkin_time: existing?.checkin_time ?? '',
-    bed: existing?.bed ?? '',
   });
+  const [beds, setBeds] = useState<string[]>(() => parseBeds(existing?.bed ?? null));
   const [wholeHouse, setWholeHouse] = useState(existing?.whole_house === 1);
   const [bento, setBento] = useState<Record<string, number>>(() =>
     parseBento(existing?.bento ?? null),
   );
+  const [langOther, setLangOther] = useState(false);
+
+  // The guest record loads asynchronously; populate the form once it arrives so
+  // editing shows the saved values rather than a blank (new-looking) form.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sync only when the loaded record changes
+  useEffect(() => {
+    if (!existing) {
+      return;
+    }
+    setForm({
+      stay_date: existing.stay_date ?? jstDate(),
+      name: existing.name ?? '',
+      country: existing.country ?? '',
+      language: existing.language ?? 'en',
+      party_size: String(existing.party_size ?? 1),
+      checkin_time: existing.checkin_time ?? '',
+    });
+    setBeds(parseBeds(existing.bed ?? null));
+    setWholeHouse(existing.whole_house === 1);
+    setBento(parseBento(existing.bento ?? null));
+  }, [existing?.id]);
 
   if (!isOwner) {
     return (
@@ -164,7 +207,11 @@ export function GuestEdit() {
       return { ...prev, [item]: next };
     });
 
-  const languageKnown = form.language === '' || form.language in LANG_LABEL;
+  const toggleBed = (bed: string) =>
+    setBeds((prev) => (prev.includes(bed) ? prev.filter((b) => b !== bed) : [...prev, bed]));
+
+  const langKnown = form.language in LANG_LABEL;
+  const showLangInput = langOther || (form.language !== '' && !langKnown);
 
   async function save() {
     if (!form.name.trim()) {
@@ -177,7 +224,7 @@ export function GuestEdit() {
       language: form.language || null,
       party_size: Number.parseInt(form.party_size, 10) || 1,
       checkin_time: form.checkin_time || null,
-      bed: form.bed || null,
+      bed: BEDS.filter((b) => beds.includes(b)).join('・') || null,
       bento: bentoToString(bento) || null,
       whole_house: boolToInt(wholeHouse),
     };
@@ -195,6 +242,8 @@ export function GuestEdit() {
     }
     navigate('/guests');
   }
+
+  const partyCount = Number.parseInt(form.party_size, 10) || 1;
 
   return (
     <Screen>
@@ -245,10 +294,16 @@ export function GuestEdit() {
         <Labeled label="言語">
           <select
             className={FIELD}
-            value={languageKnown ? form.language : OTHER}
-            onChange={(event) =>
-              set('language')(event.target.value === OTHER ? '' : event.target.value)
-            }
+            value={showLangInput ? OTHER : form.language}
+            onChange={(event) => {
+              if (event.target.value === OTHER) {
+                setLangOther(true);
+                set('language')('');
+              } else {
+                setLangOther(false);
+                set('language')(event.target.value);
+              }
+            }}
           >
             {Object.entries(LANG_LABEL).map(([code, name]) => (
               <option key={code} value={code}>
@@ -257,7 +312,7 @@ export function GuestEdit() {
             ))}
             <option value={OTHER}>その他（自由入力）</option>
           </select>
-          {!languageKnown ? (
+          {showLangInput ? (
             <input
               className={`mt-2 ${FIELD}`}
               placeholder="言語（自由入力）"
@@ -298,7 +353,25 @@ export function GuestEdit() {
           </datalist>
         </Labeled>
 
-        <Choice label="ベッド" value={form.bed} onChange={set('bed')} options={BEDS} />
+        <Labeled label={`ベッド（${partyCount}名分・複数選択可：${beds.length}件選択中）`}>
+          <div className="flex flex-wrap gap-2">
+            {BEDS.map((bed) => {
+              const on = beds.includes(bed);
+              return (
+                <button
+                  key={bed}
+                  type="button"
+                  onClick={() => toggleBed(bed)}
+                  className={`min-h-[44px] rounded-[11px] border px-4 font-bold text-[0.9rem] ${
+                    on ? 'border-orange bg-orange/15 text-orange' : 'border-line text-ink-light'
+                  }`}
+                >
+                  {bed}
+                </button>
+              );
+            })}
+          </div>
+        </Labeled>
 
         <Labeled label="弁当（必要な数だけ）">
           <div className="rounded-[11px] border border-line">
