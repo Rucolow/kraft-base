@@ -24,6 +24,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
+      // Staging only: if a test credential is configured (env present only on the
+      // staging deployment), sign in automatically so the app can be opened and
+      // verified without a magic-link email. Production has no such env, so this
+      // is a no-op there.
+      if (!data.session) {
+        const email = import.meta.env.VITE_AUTO_LOGIN_EMAIL as string | undefined;
+        const password = import.meta.env.VITE_AUTO_LOGIN_PASSWORD as string | undefined;
+        if (email && password) {
+          supabase?.auth.signInWithPassword({ email, password });
+        }
+      }
     });
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);

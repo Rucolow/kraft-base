@@ -31,12 +31,22 @@ import { Today } from './routes/Today';
 import { WorkTime } from './routes/WorkTime';
 
 function RootBootstrap() {
-  const { device } = useSession();
+  const { configured, session } = useAuth();
+  const { device, staff } = useSession();
+  // Daily reset / stale-session cleanup write to the database. Only attempt them
+  // once the signed-in account is actually a linked org member, otherwise RLS
+  // rejects the write (403) and PowerSync retries it forever, stalling sync.
+  // Local-only mode (no backend) has no uploads, so it is safe there too.
+  const canWrite =
+    !configured || (!!session && staff.some((member) => member.auth_user_id === session.user.id));
   useEffect(() => {
-    ensureLocalSeed()
-      .then(() => runDailyReset())
-      .then(() => (device ? closeStaleSessions(device.deviceId) : undefined));
-  }, [device]);
+    ensureLocalSeed().then(() => {
+      if (!canWrite) {
+        return undefined;
+      }
+      return runDailyReset().then(() => (device ? closeStaleSessions(device.deviceId) : undefined));
+    });
+  }, [device, canWrite]);
   return null;
 }
 
