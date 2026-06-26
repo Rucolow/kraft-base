@@ -1,4 +1,4 @@
-import { jstDate, nowIso, shiftBoundaryIso } from './date';
+import { nowIso, shiftBoundaryIso, shiftDate } from './date';
 import { boolToInt, insertRow, updateRow, uuid } from './db';
 import { db } from './powersync';
 import type { ShiftSessionRow, TaskRow } from './powersync/schema';
@@ -71,7 +71,7 @@ export async function closeStaleSessions(deviceId: string): Promise<void> {
 
 // Resets daily tasks once per JST day (spec §5).
 export async function runDailyReset(): Promise<void> {
-  const today = jstDate();
+  const today = shiftDate();
   const reset = await db.getOptional<{ id: string; last_reset_date: string }>(
     'SELECT id, last_reset_date FROM daily_reset ORDER BY last_reset_date DESC LIMIT 1',
   );

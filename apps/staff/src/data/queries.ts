@@ -1,5 +1,5 @@
 import { useQuery } from '@powersync/react';
-import { jstDate } from '../lib/date';
+import { shiftDate } from '../lib/date';
 import type {
   ContentRow,
   EquipmentIssueRow,
@@ -24,14 +24,14 @@ export function useShiftSessions() {
 export function useTodaysGuests() {
   return useQuery<GuestRow>(
     "SELECT * FROM guest WHERE stay_date = ? ORDER BY COALESCE(checkin_time, '~~')",
-    [jstDate()],
+    [shiftDate()],
   );
 }
 
 export function useUpcomingGuests() {
   return useQuery<GuestRow>(
     "SELECT * FROM guest WHERE stay_date > ? ORDER BY stay_date, COALESCE(checkin_time, '~~')",
-    [jstDate()],
+    [shiftDate()],
   );
 }
 

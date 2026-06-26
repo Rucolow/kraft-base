@@ -1,6 +1,6 @@
 import { SEED_PRODUCTS } from '../content/products';
 import { seedContent, seedTasks } from '../content/seed';
-import { jstDate, nowIso } from './date';
+import { nowIso, shiftDate } from './date';
 import { boolToInt, insertRow, serializeList, uuid } from './db';
 import { db } from './powersync';
 import { canConnect } from './powersync/connector';
@@ -38,7 +38,7 @@ export async function ensureLocalSeed(): Promise<void> {
   }
 
   const at = nowIso();
-  const today = jstDate();
+  const today = shiftDate();
 
   for (const member of Object.values(STAFF)) {
     await insertRow('staff', {

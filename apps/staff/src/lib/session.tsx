@@ -11,6 +11,11 @@ interface SessionValue {
   currentStaff: StaffRow | null;
   activeSession: ShiftSessionRow | null;
   isOwner: boolean;
+  // True until the staff + shift_session watched queries have produced their first
+  // result. The router must not make redirect decisions (to /link or /shift) while
+  // this is true, or a fresh page load races the local query and bounces away from
+  // a session that actually exists.
+  loading: boolean;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -19,8 +24,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [device, setDeviceState] = useState<DeviceConfig | null>(() => readDeviceConfig());
   const boundary = useMemo(() => shiftBoundaryIso(), []);
 
-  const { data: staff } = useQuery<StaffRow>('SELECT * FROM staff ORDER BY role, name');
-  const { data: sessions } = useQuery<ShiftSessionRow>(
+  const { data: staff, isLoading: staffLoading } = useQuery<StaffRow>(
+    'SELECT * FROM staff ORDER BY role, name',
+  );
+  const { data: sessions, isLoading: sessionsLoading } = useQuery<ShiftSessionRow>(
     `SELECT * FROM shift_session
        WHERE device_id = ? AND ended_at IS NULL AND started_at >= ?
        ORDER BY started_at DESC LIMIT 1`,
@@ -43,6 +50,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     currentStaff,
     activeSession,
     isOwner: currentStaff?.role === 'owner',
+    loading: staffLoading || sessionsLoading,
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
