@@ -45,6 +45,15 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
             : await table.delete().eq('id', op.id);
 
       if (result.error) {
+        // Postgres permission (class 42, incl. RLS 42501), integrity (23) and
+        // data (22) errors will never succeed on retry. Discarding the op lets
+        // the transaction complete so a single rejected write can't block all
+        // sync forever. Transient errors (network, 5xx) still throw to retry.
+        const code = result.error.code ?? '';
+        if (/^(22|23|42)/.test(code)) {
+          console.error('Discarding rejected change', op.table, op.op, op.id, result.error);
+          continue;
+        }
         throw result.error;
       }
     }
