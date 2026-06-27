@@ -6,7 +6,7 @@ import { Avatar } from '../components/Avatar';
 import { BackButton, Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { LANG_LABEL } from '../content/kinds';
 import { useGuest, useGuestNotes } from '../data/queries';
-import { nowIso } from '../lib/date';
+import { formatStayDate, nowIso } from '../lib/date';
 import { boolToInt, insertRow, parseList, serializeList, updateRow, uuid } from '../lib/db';
 import { GUEST_STATUSES, guestStatusLabel } from '../lib/guestStatus';
 import { useSession } from '../lib/session';
@@ -80,7 +80,7 @@ export function GuestDetail() {
 
   const info: Array<[string, string]> = [
     ['予約タイプ', guest.whole_house === 1 ? '貸切' : '相部屋'],
-    ['宿泊日', guest.stay_date ?? '—'],
+    ['宿泊日', guest.stay_date ? formatStayDate(guest.stay_date) : '—'],
     ['国', guest.country ?? '—'],
     ['言語', LANG_LABEL[guest.language ?? ''] ?? guest.language ?? '—'],
     ['人数', `${guest.party_size ?? 1}名`],

@@ -1,9 +1,10 @@
-import { Check, Plus } from 'lucide-react';
+import { Check, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useTasks } from '../data/queries';
 import { nowIso } from '../lib/date';
-import { insertRow, intToBool, uuid } from '../lib/db';
+import { deleteRow, insertRow, intToBool, uuid } from '../lib/db';
+import type { TaskRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
 import { setTaskDone } from '../lib/shiftOps';
 
@@ -14,9 +15,19 @@ const GROUPS: Array<{ key: string; label: string }> = [
 ];
 
 export function Tasks() {
-  const { staff } = useSession();
+  const { staff, isOwner } = useSession();
   const { data: tasks } = useTasks();
   const [draft, setDraft] = useState('');
+
+  // Deletion is owner-only — matches the task_delete RLS policy (is_owner). A
+  // confirm guards against removing a recurring task by mistake, since there is
+  // no in-app way to recreate daily/per-checkout tasks.
+  async function removeTask(task: TaskRow) {
+    if (!window.confirm(`「${task.title}」を削除しますか？`)) {
+      return;
+    }
+    await deleteRow('task', task.id);
+  }
 
   async function addTask() {
     if (!draft.trim()) {
@@ -52,24 +63,38 @@ export function Tasks() {
                     const checked = intToBool(task.done);
                     const owner = staff.find((member) => member.id === task.owner_id) ?? null;
                     return (
-                      <button
+                      <div
                         key={task.id}
-                        type="button"
-                        onClick={() => setTaskDone(task, !checked)}
-                        className="flex min-h-[44px] w-full items-center gap-3 border-line border-b border-dashed py-2.5 text-left last:border-none"
+                        className="flex min-h-[44px] w-full items-center gap-3 border-line border-b border-dashed py-2.5 last:border-none"
                       >
-                        <span
-                          className={`grid h-[21px] w-[21px] shrink-0 place-items-center rounded-md border-[1.6px] ${checked ? 'border-orange bg-orange' : 'border-orange-light'}`}
+                        <button
+                          type="button"
+                          onClick={() => setTaskDone(task, !checked)}
+                          className="flex flex-1 items-center gap-3 text-left"
                         >
-                          {checked ? <Check size={14} className="text-ondark" /> : null}
-                        </span>
-                        <span
-                          className={`flex-1 text-[0.9rem] ${checked ? 'text-ink-mute line-through' : ''}`}
-                        >
-                          {task.title}
-                        </span>
+                          <span
+                            className={`grid h-[21px] w-[21px] shrink-0 place-items-center rounded-md border-[1.6px] ${checked ? 'border-orange bg-orange' : 'border-orange-light'}`}
+                          >
+                            {checked ? <Check size={14} className="text-ondark" /> : null}
+                          </span>
+                          <span
+                            className={`flex-1 text-[0.9rem] ${checked ? 'text-ink-mute line-through' : ''}`}
+                          >
+                            {task.title}
+                          </span>
+                        </button>
                         {owner ? <Badge tone="wood">@{owner.name}</Badge> : null}
-                      </button>
+                        {isOwner ? (
+                          <button
+                            type="button"
+                            aria-label="タスクを削除"
+                            onClick={() => removeTask(task)}
+                            className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-ink-mute"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        ) : null}
+                      </div>
                     );
                   })
                 )}
