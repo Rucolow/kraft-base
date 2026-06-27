@@ -1,6 +1,6 @@
 import { useQuery } from '@powersync/react';
 import { Check, House, Plane } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BackButton, EmptyState, PrimaryButton } from '../components/ui';
 import { useGuest } from '../data/queries';
@@ -66,6 +66,9 @@ export function CheckIn() {
   // record (org-member INSERT is allowed by RLS) and the latest one wins, since
   // the record query orders by created_at DESC.
   const [redo, setRedo] = useState(false);
+  // Long-press timer for the kiosk "back to staff" exit (declared with the other
+  // hooks, before any early return, to satisfy the Rules of Hooks).
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (!guest) {
     return (
@@ -123,6 +126,20 @@ export function CheckIn() {
     setRedo(true);
   }
 
+  // The completed screen is shown while a guest still holds the iPad (kiosk hand-
+  // off). Gate the "back to staff" exit behind a long-press so a guest can't
+  // casually tap straight into the staff screens (guest list / other guests' PII);
+  // a staff member returning the device just holds the button.
+  const startHold = () => {
+    holdTimer.current = setTimeout(() => navigate(`/guests/${id}`), 700);
+  };
+  const cancelHold = () => {
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  };
+
   if ((done || record) && !redo) {
     return (
       <div className="mx-auto flex h-dvh max-w-xl flex-col items-center justify-center bg-paper px-6 text-center">
@@ -138,10 +155,13 @@ export function CheckIn() {
         </p>
         <button
           type="button"
-          onClick={() => navigate(`/guests/${id}`)}
+          onPointerDown={startHold}
+          onPointerUp={cancelHold}
+          onPointerLeave={cancelHold}
+          onPointerCancel={cancelHold}
           className="mt-8 min-h-[44px] rounded-full border border-line px-6 text-[0.84rem] text-ink-light"
         >
-          スタッフ画面へ戻る
+          スタッフ画面へ戻る（長押し）
         </button>
         <button
           type="button"

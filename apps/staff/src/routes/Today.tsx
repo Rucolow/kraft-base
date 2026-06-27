@@ -1,4 +1,4 @@
-import { Bell, Check, ListChecks, ScrollText, Users } from 'lucide-react';
+import { Bell, Check, Clock, ListChecks, ScrollText, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Card, CardHead, EmptyState, Screen } from '../components/ui';
@@ -18,7 +18,7 @@ const PHASE_LABEL: Record<string, string> = {
 
 export function Today() {
   const navigate = useNavigate();
-  const { currentStaff } = useSession();
+  const { currentStaff, isOwner } = useSession();
   const hour = jstHour();
   const phases = cockpitPhases(hour);
   const [clock, setClock] = useState(() => formatClock(nowIso()));
@@ -144,6 +144,19 @@ export function Today() {
               {followups.length > 0 ? '未完の申し送りがあります。' : '未完の申し送りはありません。'}
             </div>
           </Card>
+
+          {/* Worktime lives in the side nav on tablet/desktop; surface it here for
+              phone owners, where it is intentionally dropped from the bottom nav. */}
+          {isOwner ? (
+            <div className="md:hidden">
+              <Card onClick={() => navigate('/worktime')}>
+                <CardHead icon={<Clock size={17} />} tone="wood" title="勤務（給与）" />
+                <div className="text-[0.86rem] text-ink-light">
+                  スタッフの勤務時間を月別に確認します。
+                </div>
+              </Card>
+            </div>
+          ) : null}
         </div>
       </div>
     </Screen>

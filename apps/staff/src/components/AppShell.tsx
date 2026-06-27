@@ -144,10 +144,13 @@ function BottomNav({ tabs }: { tabs: Tab[] }) {
 
 export function AppShell() {
   const { isOwner } = useSession();
-  const tabs = isOwner ? [...TABS, OWNER_TAB] : TABS;
+  // The owner-only 勤務 (monthly payroll) view is rarely used. Keep it in the
+  // roomy side nav (tablet/desktop) but drop it from the phone bottom nav so the
+  // bar stays uncramped at 6 tabs; phone owners reach it from the home cockpit.
+  const sideTabs = isOwner ? [...TABS, OWNER_TAB] : TABS;
   return (
     <div className="kb-grain flex h-dvh bg-paper">
-      <SideNav tabs={tabs} />
+      <SideNav tabs={sideTabs} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
         <main className="flex-1 overflow-y-auto">
@@ -155,7 +158,7 @@ export function AppShell() {
             <Outlet />
           </div>
         </main>
-        <BottomNav tabs={tabs} />
+        <BottomNav tabs={TABS} />
       </div>
     </div>
   );
