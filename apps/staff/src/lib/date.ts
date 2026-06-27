@@ -18,10 +18,21 @@ export function nowIso(at: Date = new Date()): string {
   return at.toISOString();
 }
 
-// Instant of today's 04:00 JST shift boundary, as an ISO string. Sessions started
-// before this are stale (spec §4.4).
+// Calendar date (JST) of the current shift-day. The shift-day runs 04:00→04:00
+// (spec §4.4), so the hours between midnight and 04:00 still belong to the previous
+// calendar date's shift. Daily resets and session staleness key off this, not the
+// raw calendar date, so the close routine and a running shift survive midnight.
+export function shiftDate(at: Date = new Date()): string {
+  const base = jstHour(at) % 24 < 4 ? new Date(at.getTime() - 24 * 60 * 60 * 1000) : at;
+  return jstDate(base);
+}
+
+// Start of the current shift-day as an ISO string. Sessions started before this
+// are stale (spec §4.4). Using today's 04:00 unconditionally would wrongly treat a
+// shift started at, say, 00:30 as stale, leaving night staff unable to start a
+// shift during the late-arrival window.
 export function shiftBoundaryIso(at: Date = new Date()): string {
-  return new Date(`${jstDate(at)}T04:00:00+09:00`).toISOString();
+  return new Date(`${shiftDate(at)}T04:00:00+09:00`).toISOString();
 }
 
 export function formatClock(iso: string): string {

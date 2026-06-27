@@ -13,6 +13,10 @@ type Tab = 'today' | 'upcoming';
 function GuestCard({ guest, onOpen }: { guest: GuestRow; onOpen: () => void }) {
   const status = guestStatusMeta(guest.status);
   const cancelled = guest.status === 'cancelled';
+  // Build the meta line from present fields only, so a missing country, time or
+  // bed doesn't leave a dangling separator (e.g. "IN 19:00・" with no bed).
+  const meta = [guest.country, `${guest.party_size ?? 1}名`].filter(Boolean).join('・');
+  const inParts = [guest.checkin_time, guest.bed].filter(Boolean).join('・');
   return (
     <Card onClick={onOpen}>
       <div className={`flex items-center gap-2.5 ${cancelled ? 'opacity-55' : ''}`}>
@@ -24,7 +28,8 @@ function GuestCard({ guest, onOpen }: { guest: GuestRow; onOpen: () => void }) {
             {guest.whole_house === 1 ? <Badge tone="wood">貸切</Badge> : null}
           </div>
           <div className="mt-0.5 text-[0.76rem] text-ink-light">
-            {guest.country}・{guest.party_size}名 ／ IN {guest.checkin_time}・{guest.bed}
+            {meta}
+            {inParts ? ` ／ IN ${inParts}` : ''}
           </div>
         </div>
         <Badge tone={status.tone}>{status.label}</Badge>
@@ -39,6 +44,13 @@ export function Guests() {
   const { data: today } = useTodaysGuests();
   const { data: upcoming } = useUpcomingGuests();
   const [tab, setTab] = useState<Tab>('today');
+
+  // Cancelled guests stay visible in the list (greyed out) but must not inflate
+  // headcounts used for prep — keep this consistent with the home cockpit, which
+  // already counts active guests only.
+  const isActive = (guest: GuestRow) => guest.status !== 'cancelled';
+  const todayCount = today.filter(isActive).length;
+  const upcomingCount = upcoming.filter(isActive).length;
 
   // Upcoming stays are already ordered by date; collapse into per-date groups.
   const groups: Array<{ date: string; guests: GuestRow[] }> = [];
@@ -60,8 +72,8 @@ export function Guests() {
         <div className="flex flex-1 gap-2">
           {(
             [
-              ['today', '今日', today.length],
-              ['upcoming', 'これから先', upcoming.length],
+              ['today', '今日', todayCount],
+              ['upcoming', 'これから先', upcomingCount],
             ] as const
           ).map(([key, label, count]) => (
             <button
@@ -93,7 +105,7 @@ export function Guests() {
       {tab === 'today' ? (
         <>
           <SectionLabel>
-            本日のゲスト — <span className="font-sans tabular-nums">{today.length}</span>名
+            本日のゲスト — <span className="font-sans tabular-nums">{todayCount}</span>名
           </SectionLabel>
           {today.length === 0 ? (
             <EmptyState>
@@ -114,7 +126,8 @@ export function Guests() {
           <div key={group.date} className="mb-5">
             <SectionLabel>
               {formatStayDate(group.date)} —{' '}
-              <span className="font-sans tabular-nums">{group.guests.length}</span>名
+              <span className="font-sans tabular-nums">{group.guests.filter(isActive).length}</span>
+              名
             </SectionLabel>
             <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3 xl:grid-cols-3">
               {group.guests.map((guest) => (

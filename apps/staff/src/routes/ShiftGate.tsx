@@ -1,6 +1,6 @@
 import { useQuery } from '@powersync/react';
 import { AlertTriangle, Check } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { BackButton, EmptyState, PrimaryButton } from '../components/ui';
@@ -13,7 +13,8 @@ import { startShift } from '../lib/shiftOps';
 
 export function ShiftGate() {
   const navigate = useNavigate();
-  const { device, staff, currentStaff } = useSession();
+  const { device, staff, currentStaff, activeSession } = useSession();
+  const [starting, setStarting] = useState(false);
   const { data: timeline } = useTimeline();
   const { data: followups } = useOpenFollowups();
   const { data: previous } = useQuery<ShiftSessionRow>(
@@ -37,12 +38,23 @@ export function ShiftGate() {
     [previous, timeline, followups],
   );
 
+  // Starting a shift inserts a shift_session row, but RequireApp gates the app on
+  // `activeSession`, which is a PowerSync watched query and updates a tick later.
+  // Navigating immediately races that update and bounces back here. Instead, flag
+  // the start and navigate from an effect once the new session is visible in
+  // context, so the app router sees it and lets us in.
+  useEffect(() => {
+    if (starting && activeSession) {
+      navigate('/');
+    }
+  }, [starting, activeSession, navigate]);
+
   async function start() {
     if (!selected || !device) {
       return;
     }
+    setStarting(true);
     await startShift({ staffId: selected.id, deviceId: device.deviceId });
-    navigate('/');
   }
 
   if (!device) {

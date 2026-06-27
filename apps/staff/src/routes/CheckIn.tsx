@@ -62,6 +62,10 @@ export function CheckIn() {
   const [nationality, setNationality] = useState('');
   const [passport, setPassport] = useState('');
   const [done, setDone] = useState(false);
+  // Re-entry: lets staff correct a mistyped legal register. We insert a fresh
+  // record (org-member INSERT is allowed by RLS) and the latest one wins, since
+  // the record query orders by created_at DESC.
+  const [redo, setRedo] = useState(false);
 
   if (!guest) {
     return (
@@ -103,9 +107,23 @@ export function CheckIn() {
       created_at: nowIso(),
     });
     setDone(true);
+    setRedo(false);
   }
 
-  if (done || record) {
+  function reenter() {
+    if (record) {
+      setName(record.name ?? '');
+      setAddress(record.address ?? '');
+      setContact(record.contact ?? '');
+      setNationality(record.nationality ?? '');
+      setPassport(record.passport_number ?? '');
+      setResidence(record.nationality ? 'abroad' : 'japan');
+    }
+    setDone(false);
+    setRedo(true);
+  }
+
+  if ((done || record) && !redo) {
     return (
       <div className="mx-auto flex h-dvh max-w-xl flex-col items-center justify-center bg-paper px-6 text-center">
         <span className="grid h-16 w-16 place-items-center rounded-full bg-orange/15 text-orange">
@@ -124,6 +142,13 @@ export function CheckIn() {
           className="mt-8 min-h-[44px] rounded-full border border-line px-6 text-[0.84rem] text-ink-light"
         >
           スタッフ画面へ戻る
+        </button>
+        <button
+          type="button"
+          onClick={reenter}
+          className="mt-3 text-[0.78rem] text-ink-mute underline"
+        >
+          記入をやり直す / Re-enter
         </button>
       </div>
     );

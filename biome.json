@@ -18,7 +18,9 @@
       "**/test-results/**",
       "docs/**",
       "apps/staff/docs/**",
-      "apps/site/**"
+      "apps/site/**",
+      "questions.json",
+      "CLAUDE_CODE_INSTRUCTION.md"
     ]
   },
   "formatter": {

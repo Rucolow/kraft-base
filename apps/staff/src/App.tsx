@@ -78,7 +78,7 @@ function useAutoLock() {
 
 function RequireApp() {
   const { configured, session, loading } = useAuth();
-  const { device, staff, activeSession } = useSession();
+  const { device, staff, activeSession, loading: sessionLoading } = useSession();
   useAutoLock();
 
   if (configured && loading) {
@@ -86,6 +86,12 @@ function RequireApp() {
   }
   if (configured && !session) {
     return <Navigate to="/login" replace />;
+  }
+  // Hold routing decisions until the local staff/session queries have loaded.
+  // Redirecting on a still-empty result set bounces fresh page loads away from a
+  // session/link that actually exists (the local query resolves a tick later).
+  if (sessionLoading) {
+    return null;
   }
   if (configured && session && !staff.some((member) => member.auth_user_id === session.user.id)) {
     return <Navigate to="/link" replace />;

@@ -14,7 +14,7 @@ import {
 } from '../components/ui';
 import { LANG_LABEL } from '../content/kinds';
 import { useGuest } from '../data/queries';
-import { jstDate, nowIso } from '../lib/date';
+import { nowIso, shiftDate } from '../lib/date';
 import { boolToInt, insertRow, updateRow, uuid } from '../lib/db';
 import type { GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
@@ -151,11 +151,11 @@ export function GuestEdit() {
 
   const { data: reviewNeeded } = useQuery<GuestRow>(
     'SELECT * FROM guest WHERE stay_date < ? AND review_sent_at IS NULL ORDER BY stay_date DESC LIMIT 20',
-    [jstDate()],
+    [shiftDate()],
   );
 
   const [form, setForm] = useState({
-    stay_date: existing?.stay_date ?? jstDate(),
+    stay_date: existing?.stay_date ?? shiftDate(),
     name: existing?.name ?? '',
     country: existing?.country ?? '',
     language: existing?.language ?? 'en',
@@ -177,7 +177,7 @@ export function GuestEdit() {
       return;
     }
     setForm({
-      stay_date: existing.stay_date ?? jstDate(),
+      stay_date: existing.stay_date ?? shiftDate(),
       name: existing.name ?? '',
       country: existing.country ?? '',
       language: existing.language ?? 'en',
