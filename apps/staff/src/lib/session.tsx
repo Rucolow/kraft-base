@@ -1,5 +1,5 @@
 import { useQuery } from '@powersync/react';
-import { type ReactNode, createContext, useContext, useMemo, useState } from 'react';
+import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { shiftBoundaryIso } from './date';
 import { type DeviceConfig, readDeviceConfig } from './device';
 import type { ShiftSessionRow, StaffRow } from './powersync/schema';
@@ -16,13 +16,36 @@ interface SessionValue {
   // this is true, or a fresh page load races the local query and bounces away from
   // a session that actually exists.
   loading: boolean;
+  // Current shift-day boundary (04:00 JST). Advances at the boundary even on a
+  // long-running device so consumers (RootBootstrap cleanup) can re-run there.
+  boundary: string;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [device, setDeviceState] = useState<DeviceConfig | null>(() => readDeviceConfig());
-  const boundary = useMemo(() => shiftBoundaryIso(), []);
+  // The shared reception iPad stays mounted for days, so the shift-day boundary
+  // must not be frozen at mount — otherwise sessions never go stale and daily
+  // tasks never reset across 04:00. Re-evaluate on a timer and on focus; the
+  // value only actually changes (triggering a re-render / query re-bind) when the
+  // shift-day rolls.
+  const [boundary, setBoundary] = useState(() => shiftBoundaryIso());
+  useEffect(() => {
+    const tick = () => {
+      const next = shiftBoundaryIso();
+      setBoundary((prev) => (prev === next ? prev : next));
+    };
+    const timer = setInterval(tick, 60_000);
+    const onWake = () => tick();
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('focus', onWake);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('focus', onWake);
+    };
+  }, []);
 
   const { data: staff, isLoading: staffLoading } = useQuery<StaffRow>(
     'SELECT * FROM staff ORDER BY role, name',
@@ -51,6 +74,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     activeSession,
     isOwner: currentStaff?.role === 'owner',
     loading: staffLoading || sessionsLoading,
+    boundary,
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

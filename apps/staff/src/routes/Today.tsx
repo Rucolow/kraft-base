@@ -109,8 +109,8 @@ export function Today() {
               }
             />
             <div className="text-[0.86rem] text-ink-light">
-              {guests.length === 0
-                ? '本日のゲストは未登録です。'
+              {active.length === 0
+                ? '本日のゲストはいません。'
                 : late.length > 0
                   ? `未着：${late.map((guest) => `${guest.name}様`).join('・')}`
                   : '全員到着済み'}

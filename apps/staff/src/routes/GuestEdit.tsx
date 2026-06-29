@@ -167,6 +167,10 @@ export function GuestEdit() {
   const [bento, setBento] = useState<Record<string, number>>(() =>
     parseBento(existing?.bento ?? null),
   );
+  // The bento control only models the preset "item ×N" form. Track whether the
+  // user actually touched it so an unrelated edit doesn't destroy a free-form
+  // bento note (e.g. "なし（カップ麺を案内）") that the counters can't represent.
+  const [bentoTouched, setBentoTouched] = useState(false);
   const [langOther, setLangOther] = useState(false);
 
   // The guest record loads asynchronously; populate the form once it arrives so
@@ -180,13 +184,16 @@ export function GuestEdit() {
       stay_date: existing.stay_date ?? shiftDate(),
       name: existing.name ?? '',
       country: existing.country ?? '',
-      language: existing.language ?? 'en',
+      // Don't coerce an unknown/blank language to 'en' on edit (would silently
+      // mutate the record); only new guests default to 'en' via useState above.
+      language: existing.language ?? '',
       party_size: String(existing.party_size ?? 1),
       checkin_time: existing.checkin_time ?? '',
     });
     setBeds(parseBeds(existing.bed ?? null));
     setWholeHouse(existing.whole_house === 1);
     setBento(parseBento(existing.bento ?? null));
+    setBentoTouched(false);
   }, [existing?.id]);
 
   if (!isOwner) {
@@ -201,11 +208,13 @@ export function GuestEdit() {
   const set = (key: keyof typeof form) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const bumpBento = (item: string, delta: number) =>
+  const bumpBento = (item: string, delta: number) => {
+    setBentoTouched(true);
     setBento((prev) => {
       const next = Math.max(0, (prev[item] ?? 0) + delta);
       return { ...prev, [item]: next };
     });
+  };
 
   const toggleBed = (bed: string) =>
     setBeds((prev) => (prev.includes(bed) ? prev.filter((b) => b !== bed) : [...prev, bed]));
@@ -224,8 +233,11 @@ export function GuestEdit() {
       language: form.language || null,
       party_size: Number.parseInt(form.party_size, 10) || 1,
       checkin_time: form.checkin_time || null,
-      bed: BEDS.filter((b) => beds.includes(b)).join('・') || null,
-      bento: bentoToString(bento) || null,
+      // Preserve whatever bed tokens are present (including non-preset/legacy
+      // values like "1・2番（下段）"); the old preset-only filter silently wiped them.
+      bed: beds.length > 0 ? beds.join('・') : null,
+      // Keep a non-preset bento note unless the counters were actually edited.
+      bento: bentoTouched ? bentoToString(bento) || null : (existing?.bento ?? null),
       whole_house: boolToInt(wholeHouse),
     };
     if (editing && existing) {

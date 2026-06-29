@@ -4,15 +4,11 @@ import { PhraseRow } from '../components/PhraseRow';
 import { BackButton, EmptyState, NeedsInputBadge, Screen, SectionLabel } from '../components/ui';
 import { KIND_META, LANG_LABEL } from '../content/kinds';
 import { useContentByKind } from '../data/queries';
-import { nowIso } from '../lib/date';
-import { insertRow, serializeList, uuid } from '../lib/db';
-import { useSession } from '../lib/session';
 
 export function KnowledgeCategory() {
   const { kind = '' } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentStaff } = useSession();
   const { data: allItems } = useContentByKind(kind);
   const meta = KIND_META[kind];
   const langFilter = searchParams.get('lang');
@@ -22,22 +18,14 @@ export function KnowledgeCategory() {
       ? allItems.filter((item) => item.lang === langFilter)
       : allItems;
 
-  async function add() {
+  // Defer creation: navigate to the editor with a draft, and only write a content
+  // row when the user actually saves (ContentReader). Inserting eagerly here left
+  // an undeletable empty needs_input orphan whenever the editor was cancelled.
+  function add() {
     const slug = `${kind}-${Date.now()}`;
-    await insertRow('content', {
-      id: uuid(),
-      kind,
-      slug,
-      title: '',
-      body: '',
-      phase: null,
-      lang: kind === 'phrase' ? 'en' : null,
-      photo_paths: serializeList([]),
-      status: 'needs_input',
-      updated_by: currentStaff?.id ?? null,
-      updated_at: nowIso(),
+    navigate(`/manual/c/${slug}`, {
+      state: { edit: true, draft: { kind, slug, lang: kind === 'phrase' ? 'en' : null } },
     });
-    navigate(`/manual/c/${slug}`, { state: { edit: true } });
   }
 
   if (!meta) {

@@ -1,5 +1,5 @@
 import { Camera, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackButton, Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useLostItems } from '../data/queries';
@@ -30,6 +30,7 @@ export function LostItems() {
   const [item, setItem] = useState('');
   const [place, setPlace] = useState('');
   const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const adding = useRef(false);
 
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -38,25 +39,43 @@ export function LostItems() {
     }
   }
 
-  async function add() {
-    if (!item.trim()) {
+  // Cycle the lost-item status. 返却済/処分 are closed outcomes; confirm before a
+  // single tap re-opens a finished item (and re-bumps the open count).
+  function cycle(id: string, status: string | null) {
+    const current = status ?? 'held';
+    if (
+      (current === 'returned' || current === 'disposed') &&
+      !window.confirm('終了した忘れ物のステータスを変更しますか？')
+    ) {
       return;
     }
-    await insertRow('lost_item', {
-      id: uuid(),
-      item: item.trim(),
-      found_date: jstDate(),
-      place: place || null,
-      finder_id: currentStaff?.id ?? null,
-      guest_id: null,
-      photo_path: photoPath,
-      status: 'held',
-      note: null,
-      created_at: nowIso(),
-    });
-    setItem('');
-    setPlace('');
-    setPhotoPath(null);
+    updateRow('lost_item', id, { status: FLOW[current] ?? 'held' });
+  }
+
+  async function add() {
+    if (!item.trim() || adding.current) {
+      return;
+    }
+    adding.current = true;
+    try {
+      await insertRow('lost_item', {
+        id: uuid(),
+        item: item.trim(),
+        found_date: jstDate(),
+        place: place || null,
+        finder_id: currentStaff?.id ?? null,
+        guest_id: null,
+        photo_path: photoPath,
+        status: 'held',
+        note: null,
+        created_at: nowIso(),
+      });
+      setItem('');
+      setPlace('');
+      setPhotoPath(null);
+    } finally {
+      adding.current = false;
+    }
   }
 
   return (
@@ -116,12 +135,7 @@ export function LostItems() {
                   {lost.found_date} ／ {lost.place ?? '場所未記入'}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  updateRow('lost_item', lost.id, { status: FLOW[lost.status ?? 'held'] ?? 'held' })
-                }
-              >
+              <button type="button" onClick={() => cycle(lost.id, lost.status)}>
                 <Badge tone={lost.status === 'returned' ? 'ok' : 'warn'}>
                   {LABEL[lost.status ?? 'held']}
                 </Badge>
