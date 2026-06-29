@@ -1,6 +1,6 @@
 import { useQuery } from '@powersync/react';
 import { Check, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackButton, EmptyState, PrimaryButton, Screen, SectionLabel } from '../components/ui';
 import { nowIso } from '../lib/date';
@@ -18,22 +18,28 @@ export function Products() {
   const [name, setName] = useState('');
   const [sell, setSell] = useState('');
   const [cost, setCost] = useState('');
+  const adding = useRef(false);
 
   async function add() {
-    if (!name.trim()) {
+    if (!name.trim() || adding.current) {
       return;
     }
-    await insertRow('product', {
-      id: uuid(),
-      name: name.trim(),
-      sell_price: Number.parseInt(sell, 10) || 0,
-      cost: Number.parseInt(cost, 10) || 0,
-      sort: products.length,
-      created_at: nowIso(),
-    });
-    setName('');
-    setSell('');
-    setCost('');
+    adding.current = true;
+    try {
+      await insertRow('product', {
+        id: uuid(),
+        name: name.trim(),
+        sell_price: Number.parseInt(sell, 10) || 0,
+        cost: Number.parseInt(cost, 10) || 0,
+        sort: products.length,
+        created_at: nowIso(),
+      });
+      setName('');
+      setSell('');
+      setCost('');
+    } finally {
+      adding.current = false;
+    }
   }
 
   const numCls =

@@ -1,5 +1,5 @@
 import { Camera, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackButton, Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useEquipmentIssues } from '../data/queries';
@@ -18,6 +18,7 @@ export function Equipment() {
   const [title, setTitle] = useState('');
   const [kind, setKind] = useState<'fault' | 'restock'>('fault');
   const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const adding = useRef(false);
 
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -27,21 +28,26 @@ export function Equipment() {
   }
 
   async function add() {
-    if (!title.trim()) {
+    if (!title.trim() || adding.current) {
       return;
     }
-    await insertRow('equipment_issue', {
-      id: uuid(),
-      kind,
-      title: title.trim(),
-      photo_path: photoPath,
-      status: 'open',
-      reporter_id: currentStaff?.id ?? null,
-      created_at: nowIso(),
-      resolved_at: null,
-    });
-    setTitle('');
-    setPhotoPath(null);
+    adding.current = true;
+    try {
+      await insertRow('equipment_issue', {
+        id: uuid(),
+        kind,
+        title: title.trim(),
+        photo_path: photoPath,
+        status: 'open',
+        reporter_id: currentStaff?.id ?? null,
+        created_at: nowIso(),
+        resolved_at: null,
+      });
+      setTitle('');
+      setPhotoPath(null);
+    } finally {
+      adding.current = false;
+    }
   }
 
   return (

@@ -2,16 +2,18 @@ import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useShiftSessions, useStaff } from '../data/queries';
-import { formatClock, jstDate } from '../lib/date';
+import { formatClock, shiftDate } from '../lib/date';
 import { useSession } from '../lib/session';
 
 const JST = 'Asia/Tokyo';
 
+// Bucket by shift-day (04:00→04:00 JST), not raw calendar date, so a late-night
+// shift that crosses midnight is attributed to the correct payroll day/month.
 function ymOf(iso: string): string {
-  return jstDate(new Date(iso)).slice(0, 7);
+  return shiftDate(new Date(iso)).slice(0, 7);
 }
 function dayOf(iso: string): string {
-  return jstDate(new Date(iso));
+  return shiftDate(new Date(iso));
 }
 function parseYm(ym: string): [number, number] {
   const parts = ym.split('-');
@@ -44,7 +46,7 @@ export function WorkTime() {
   const { isOwner } = useSession();
   const { data: sessions } = useShiftSessions();
   const { data: staff } = useStaff();
-  const [month, setMonth] = useState(() => jstDate().slice(0, 7));
+  const [month, setMonth] = useState(() => shiftDate().slice(0, 7));
 
   // Only paid staff (role 'staff', excluding the shared device account). Owners
   // are not time-tracked, and orphaned/old ids simply drop out.

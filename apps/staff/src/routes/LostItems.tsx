@@ -1,5 +1,5 @@
 import { Camera, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackButton, Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useLostItems } from '../data/queries';
@@ -30,6 +30,7 @@ export function LostItems() {
   const [item, setItem] = useState('');
   const [place, setPlace] = useState('');
   const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const adding = useRef(false);
 
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -39,24 +40,29 @@ export function LostItems() {
   }
 
   async function add() {
-    if (!item.trim()) {
+    if (!item.trim() || adding.current) {
       return;
     }
-    await insertRow('lost_item', {
-      id: uuid(),
-      item: item.trim(),
-      found_date: jstDate(),
-      place: place || null,
-      finder_id: currentStaff?.id ?? null,
-      guest_id: null,
-      photo_path: photoPath,
-      status: 'held',
-      note: null,
-      created_at: nowIso(),
-    });
-    setItem('');
-    setPlace('');
-    setPhotoPath(null);
+    adding.current = true;
+    try {
+      await insertRow('lost_item', {
+        id: uuid(),
+        item: item.trim(),
+        found_date: jstDate(),
+        place: place || null,
+        finder_id: currentStaff?.id ?? null,
+        guest_id: null,
+        photo_path: photoPath,
+        status: 'held',
+        note: null,
+        created_at: nowIso(),
+      });
+      setItem('');
+      setPlace('');
+      setPhotoPath(null);
+    } finally {
+      adding.current = false;
+    }
   }
 
   return (

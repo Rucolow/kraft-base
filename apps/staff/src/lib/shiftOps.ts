@@ -69,7 +69,9 @@ export async function closeStaleSessions(deviceId: string): Promise<void> {
   );
 }
 
-// Resets daily tasks once per JST day (spec §5).
+// Resets recurring tasks once per shift-day (spec §5). Both daily and
+// per_checkout (チェックアウトごと) tasks recur each day; without this, a ticked
+// per_checkout task (e.g. linen) would stay done forever.
 export async function runDailyReset(): Promise<void> {
   const today = shiftDate();
   const reset = await db.getOptional<{ id: string; last_reset_date: string }>(
@@ -79,7 +81,7 @@ export async function runDailyReset(): Promise<void> {
     return;
   }
   await db.execute(
-    'UPDATE task SET done = 0, done_at = NULL WHERE "group" = \'daily\' AND done = 1',
+    "UPDATE task SET done = 0, done_at = NULL WHERE \"group\" IN ('daily', 'per_checkout') AND done = 1",
   );
   if (reset) {
     await updateRow('daily_reset', reset.id, { last_reset_date: today });

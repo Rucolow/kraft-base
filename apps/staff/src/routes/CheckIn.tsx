@@ -66,6 +66,8 @@ export function CheckIn() {
   // record (org-member INSERT is allowed by RLS) and the latest one wins, since
   // the record query orders by created_at DESC.
   const [redo, setRedo] = useState(false);
+  // Guards against a double-tap creating duplicate legal-register rows.
+  const [submitting, setSubmitting] = useState(false);
   // Long-press timer for the kiosk "back to staff" exit (declared with the other
   // hooks, before any early return, to satisfy the Rules of Hooks).
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,9 +88,10 @@ export function CheckIn() {
     (!abroad || (nationality.trim() !== '' && passport.trim() !== ''));
 
   async function submit() {
-    if (!complete) {
+    if (!complete || submitting) {
       return;
     }
+    setSubmitting(true);
     await insertRow('checkin_record', {
       id: uuid(),
       guest_id: id,
@@ -111,6 +114,7 @@ export function CheckIn() {
     });
     setDone(true);
     setRedo(false);
+    setSubmitting(false);
   }
 
   function reenter() {
@@ -289,7 +293,7 @@ export function CheckIn() {
           ) : null}
         </div>
 
-        <PrimaryButton onClick={submit} disabled={!complete}>
+        <PrimaryButton onClick={submit} disabled={!complete || submitting}>
           <Check size={18} /> {abroad ? 'Complete / 記入を完了' : '記入を完了 / Complete'}
         </PrimaryButton>
         <p className="mt-3 text-center text-[0.72rem] text-ink-mute">

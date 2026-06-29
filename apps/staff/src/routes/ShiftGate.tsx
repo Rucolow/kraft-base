@@ -69,6 +69,19 @@ export function ShiftGate() {
         <p className="mt-1 mb-5 text-[0.84rem] text-ink-light">
           あなたの名前を選んでください。交代は「引き継ぎを受け取る」ことから始まります。
         </p>
+        {people.length === 0 ? (
+          <div className="rounded-kb border border-line bg-paper p-4">
+            <div className="font-bold text-[0.95rem] text-ink">
+              スタッフがまだ表示されていません
+            </div>
+            <p className="mt-2 text-[0.8rem] text-ink-light">
+              オーナーがスタッフを登録すると、ここに名前が表示されます。同期中の場合は数秒お待ちください。
+            </p>
+            <div className="mt-3">
+              <PrimaryButton onClick={() => window.location.reload()}>再読み込み</PrimaryButton>
+            </div>
+          </div>
+        ) : null}
         {people.map((member) => (
           <button
             key={member.id}

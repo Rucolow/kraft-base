@@ -1,5 +1,13 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { useAuth } from './lib/auth';
 import { AuthProvider } from './lib/auth';
@@ -32,13 +40,16 @@ import { WorkTime } from './routes/WorkTime';
 
 function RootBootstrap() {
   const { configured, session } = useAuth();
-  const { device, staff } = useSession();
+  const { device, staff, boundary } = useSession();
   // Daily reset / stale-session cleanup write to the database. Only attempt them
   // once the signed-in account is actually a linked org member, otherwise RLS
   // rejects the write (403) and PowerSync retries it forever, stalling sync.
   // Local-only mode (no backend) has no uploads, so it is safe there too.
   const canWrite =
     !configured || (!!session && staff.some((member) => member.auth_user_id === session.user.id));
+  // Depend on `boundary` so the reset + stale-session close also fire when the
+  // shift-day rolls at 04:00 on a device that never reloads — not only on mount.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: boundary is a re-run trigger, not used in the body
   useEffect(() => {
     ensureLocalSeed().then(() => {
       if (!canWrite) {
@@ -46,15 +57,19 @@ function RootBootstrap() {
       }
       return runDailyReset().then(() => (device ? closeStaleSessions(device.deviceId) : undefined));
     });
-  }, [device, canWrite]);
+  }, [device, canWrite, boundary]);
   return null;
 }
 
 function useAutoLock() {
   const { device } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
+  // The check-in screen is handed to a guest; auto-lock would bounce them to the
+  // staff roster (and interrupt their entry), so don't arm it there.
+  const onCheckin = location.pathname.startsWith('/checkin');
   useEffect(() => {
-    if (!device || device.mode !== 'shared' || device.autoLockMin <= 0) {
+    if (!device || device.mode !== 'shared' || device.autoLockMin <= 0 || onCheckin) {
       return;
     }
     let timer: ReturnType<typeof setTimeout>;
@@ -73,7 +88,7 @@ function useAutoLock() {
         window.removeEventListener(event, reset);
       }
     };
-  }, [device, navigate]);
+  }, [device, navigate, onCheckin]);
 }
 
 function RequireApp() {
