@@ -15,7 +15,7 @@ import {
 import { KIND_META } from '../content/kinds';
 import { useContentBySlug } from '../data/queries';
 import { nowIso } from '../lib/date';
-import { parseList, serializeList, updateRow } from '../lib/db';
+import { insertRow, parseList, serializeList, updateRow, uuid } from '../lib/db';
 import type { ContentRow, StaffRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
 import { photoSrc, storePhoto } from '../lib/storage';
@@ -26,10 +26,33 @@ export function ContentReader() {
   const location = useLocation();
   const { currentStaff, staff } = useSession();
   const { data } = useContentBySlug(slug);
-  const item = data[0] ?? null;
-  const [editing, setEditing] = useState(
-    Boolean((location.state as { edit?: boolean } | null)?.edit),
-  );
+  const state = location.state as {
+    edit?: boolean;
+    draft?: { kind: string; slug: string; lang: string | null };
+  } | null;
+  const existing = data[0] ?? null;
+  const draft = state?.draft ?? null;
+  // A draft (from "add") has no DB row yet; render a synthetic item and insert on
+  // first save so a cancelled new entry leaves no orphan row.
+  const isNew = !existing && !!draft;
+  const item: ContentRow | null =
+    existing ??
+    (draft
+      ? ({
+          id: '',
+          kind: draft.kind,
+          slug: draft.slug,
+          title: '',
+          body: '',
+          phase: null,
+          lang: draft.lang,
+          photo_paths: serializeList([]),
+          status: 'needs_input',
+          updated_by: null,
+          updated_at: null,
+        } as ContentRow)
+      : null);
+  const [editing, setEditing] = useState(isNew || Boolean(state?.edit));
 
   if (!item) {
     return (
@@ -44,7 +67,19 @@ export function ContentReader() {
     return (
       <Screen>
         <BackButton onClick={() => navigate(-1)}>戻る</BackButton>
-        <Editor item={item} staffId={currentStaff?.id ?? null} onClose={() => setEditing(false)} />
+        <Editor
+          item={item}
+          isNew={isNew}
+          staffId={currentStaff?.id ?? null}
+          onSaved={() => {
+            setEditing(false);
+            // Clear the draft state so the now-saved row renders as the reader.
+            if (isNew) {
+              navigate(`/manual/c/${item.slug}`, { replace: true, state: {} });
+            }
+          }}
+          onCancel={() => (isNew ? navigate(-1) : setEditing(false))}
+        />
       </Screen>
     );
   }
@@ -110,12 +145,16 @@ export function ContentReader() {
 
 function Editor({
   item,
+  isNew,
   staffId,
-  onClose,
+  onSaved,
+  onCancel,
 }: {
   item: ContentRow;
+  isNew: boolean;
   staffId: string | null;
-  onClose: () => void;
+  onSaved: () => void;
+  onCancel: () => void;
 }) {
   const [title, setTitle] = useState(item.title ?? '');
   const [body, setBody] = useState(item.body ?? '');
@@ -136,8 +175,11 @@ function Editor({
   }
 
   async function save() {
+    if (saving) {
+      return;
+    }
     setSaving(true);
-    await updateRow('content', item.id, {
+    const values = {
       title: title.trim(),
       body,
       lang: isPhrase ? lang.trim() || 'en' : item.lang,
@@ -145,8 +187,19 @@ function Editor({
       status: ready ? 'ready' : 'needs_input',
       updated_by: staffId,
       updated_at: nowIso(),
-    });
-    onClose();
+    };
+    if (isNew) {
+      await insertRow('content', {
+        id: uuid(),
+        kind: item.kind,
+        slug: item.slug,
+        phase: item.phase ?? null,
+        ...values,
+      });
+    } else {
+      await updateRow('content', item.id, values);
+    }
+    onSaved();
   }
 
   return (
@@ -228,7 +281,7 @@ function Editor({
         保存
       </PrimaryButton>
       <div className="mt-2">
-        <GhostButton onClick={onClose}>キャンセル</GhostButton>
+        <GhostButton onClick={onCancel}>キャンセル</GhostButton>
       </div>
     </>
   );

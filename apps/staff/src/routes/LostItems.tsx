@@ -39,6 +39,19 @@ export function LostItems() {
     }
   }
 
+  // Cycle the lost-item status. 返却済/処分 are closed outcomes; confirm before a
+  // single tap re-opens a finished item (and re-bumps the open count).
+  function cycle(id: string, status: string | null) {
+    const current = status ?? 'held';
+    if (
+      (current === 'returned' || current === 'disposed') &&
+      !window.confirm('終了した忘れ物のステータスを変更しますか？')
+    ) {
+      return;
+    }
+    updateRow('lost_item', id, { status: FLOW[current] ?? 'held' });
+  }
+
   async function add() {
     if (!item.trim() || adding.current) {
       return;
@@ -122,12 +135,7 @@ export function LostItems() {
                   {lost.found_date} ／ {lost.place ?? '場所未記入'}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  updateRow('lost_item', lost.id, { status: FLOW[lost.status ?? 'held'] ?? 'held' })
-                }
-              >
+              <button type="button" onClick={() => cycle(lost.id, lost.status)}>
                 <Badge tone={lost.status === 'returned' ? 'ok' : 'warn'}>
                   {LABEL[lost.status ?? 'held']}
                 </Badge>

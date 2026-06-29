@@ -19,6 +19,26 @@ export function Products() {
   const [sell, setSell] = useState('');
   const [cost, setCost] = useState('');
   const adding = useRef(false);
+  // Inline price edits use a local draft committed on blur, so typing doesn't
+  // write a CRUD op per keystroke and clearing the field doesn't snap it to 0.
+  const [drafts, setDrafts] = useState<Record<string, { sell_price?: string; cost?: string }>>({});
+  const setDraft = (id: string, col: 'sell_price' | 'cost', value: string) =>
+    setDrafts((prev) => ({ ...prev, [id]: { ...prev[id], [col]: value } }));
+  const commit = (id: string, col: 'sell_price' | 'cost') => {
+    const raw = drafts[id]?.[col];
+    if (raw === undefined) {
+      return;
+    }
+    const n = Number.parseInt(raw, 10);
+    if (!Number.isNaN(n) && n >= 0) {
+      updateRow('product', id, { [col]: n });
+    }
+    setDrafts((prev) => {
+      const entry = { ...prev[id] };
+      delete entry[col];
+      return { ...prev, [id]: entry };
+    });
+  };
 
   async function add() {
     if (!name.trim() || adding.current) {
@@ -86,23 +106,17 @@ export function Products() {
                       type="number"
                       inputMode="numeric"
                       className={numCls}
-                      value={String(product.sell_price ?? 0)}
-                      onChange={(event) =>
-                        updateRow('product', product.id, {
-                          sell_price: Number.parseInt(event.target.value, 10) || 0,
-                        })
-                      }
+                      value={drafts[product.id]?.sell_price ?? String(product.sell_price ?? 0)}
+                      onChange={(event) => setDraft(product.id, 'sell_price', event.target.value)}
+                      onBlur={() => commit(product.id, 'sell_price')}
                     />
                     <input
                       type="number"
                       inputMode="numeric"
                       className={numCls}
-                      value={String(product.cost ?? 0)}
-                      onChange={(event) =>
-                        updateRow('product', product.id, {
-                          cost: Number.parseInt(event.target.value, 10) || 0,
-                        })
-                      }
+                      value={drafts[product.id]?.cost ?? String(product.cost ?? 0)}
+                      onChange={(event) => setDraft(product.id, 'cost', event.target.value)}
+                      onBlur={() => commit(product.id, 'cost')}
                     />
                     <button
                       type="button"
