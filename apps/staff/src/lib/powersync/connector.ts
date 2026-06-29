@@ -5,6 +5,7 @@ import {
   UpdateType,
 } from '@powersync/web';
 import { supabase } from '../supabase/client';
+import { serializeForServer } from './serialize';
 
 const powersyncUrl = import.meta.env.VITE_POWERSYNC_URL;
 
@@ -36,7 +37,10 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
 
     for (const op of transaction.crud) {
       const table = supabase.from(op.table);
-      const data = op.opData ?? {};
+      // Convert local SQLite representation (int booleans, JSON-text arrays) to the
+      // Postgres column types, otherwise PostgREST rejects array/boolean writes and
+      // they get silently discarded below.
+      const data = serializeForServer(op.table, op.opData ?? {});
       const result =
         op.op === UpdateType.PUT
           ? await table.upsert({ ...data, id: op.id })
