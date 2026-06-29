@@ -15,6 +15,11 @@ export const db = new PowerSyncDatabase({
 });
 
 let started = false;
+let connector: SupabaseConnector | null = null;
+const getConnector = (): SupabaseConnector => {
+  connector ??= new SupabaseConnector();
+  return connector;
+};
 
 export async function startPowerSync(): Promise<void> {
   if (started) {
@@ -23,8 +28,22 @@ export async function startPowerSync(): Promise<void> {
   started = true;
   await db.init();
   if (canConnect()) {
-    await db.connect(new SupabaseConnector());
+    await db.connect(getConnector());
   }
+}
+
+// Re-establish the sync connection with fresh credentials. Called when a session
+// appears (after login) so the first sign-in syncs immediately instead of the
+// user having to kill and relaunch the app for it to pick up the new token.
+export async function connectPowerSync(): Promise<void> {
+  if (!canConnect()) {
+    return;
+  }
+  await db.connect(getConnector());
+}
+
+export async function disconnectPowerSync(): Promise<void> {
+  await db.disconnect();
 }
 
 export * from './schema';

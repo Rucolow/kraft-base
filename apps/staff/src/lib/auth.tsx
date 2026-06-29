@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { connectPowerSync, disconnectPowerSync } from './powersync';
 import { isSupabaseConfigured, supabase } from './supabase/client';
 
 interface AuthValue {
@@ -38,6 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
+      // Reconnect sync with the fresh token as soon as a session appears, so the
+      // first login syncs without needing an app relaunch; drop it on sign-out.
+      if (next) {
+        connectPowerSync().catch(() => undefined);
+      } else {
+        disconnectPowerSync().catch(() => undefined);
+      }
     });
     return () => data.subscription.unsubscribe();
   }, []);
