@@ -83,6 +83,8 @@ export function Setup() {
           この設定で始める
         </PrimaryButton>
       </div>
+
+      <div className="mt-6 text-center text-[0.68rem] text-ink-mute">build {__APP_BUILD__}</div>
     </div>
   );
 }

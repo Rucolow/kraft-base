@@ -70,7 +70,7 @@ function TopBar() {
         >
           <Bell size={22} />
           {mentions.length > 0 ? (
-            <span className="-top-0.5 -right-0.5 absolute grid h-[19px] min-w-[19px] place-items-center rounded-full bg-orange px-1 font-bold text-[0.66rem] text-ondark">
+            <span className="-top-0.5 -right-0.5 absolute grid h-[19px] min-w-[19px] place-items-center rounded-full bg-orange px-1 font-bold text-[0.66rem] text-onaccent">
               {mentions.length}
             </span>
           ) : null}

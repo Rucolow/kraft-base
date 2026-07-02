@@ -9,6 +9,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
+import { SWUpdater } from './components/SWUpdater';
 import { useAuth } from './lib/auth';
 import { AuthProvider } from './lib/auth';
 import { ensureLocalSeed } from './lib/devSeed';
@@ -92,14 +93,17 @@ function useAutoLock() {
 }
 
 function RequireApp() {
-  const { configured, session, loading } = useAuth();
+  const { configured, session, loading, offlineGrace } = useAuth();
   const { device, staff, activeSession, loading: sessionLoading } = useSession();
   useAutoLock();
 
   if (configured && loading) {
     return null;
   }
-  if (configured && !session) {
+  // offlineGrace: a previously signed-in device launched without network (token
+  // refresh failed). The data is local; don't strand staff at a login screen
+  // that itself needs the network. Sync resumes when a session comes back.
+  if (configured && !session && !offlineGrace) {
     return <Navigate to="/login" replace />;
   }
   // Hold routing decisions until the local staff/session queries have loaded.
@@ -161,6 +165,7 @@ export function App() {
         <AuthProvider>
           <SessionProvider>
             <BrowserRouter>
+              <SWUpdater />
               <RootBootstrap />
               <AppRoutes />
             </BrowserRouter>

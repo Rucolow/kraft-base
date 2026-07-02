@@ -413,7 +413,7 @@ export function GuestEdit() {
                     type="button"
                     aria-label={`${item}を増やす`}
                     onClick={() => bumpBento(item, 1)}
-                    className="grid h-9 w-9 place-items-center rounded-full bg-orange text-ondark"
+                    className="grid h-9 w-9 place-items-center rounded-full bg-orange text-onaccent"
                   >
                     <Plus size={16} />
                   </button>
@@ -449,7 +449,7 @@ export function GuestEdit() {
                 <button
                   type="button"
                   onClick={() => updateRow('guest', guest.id, { review_sent_at: nowIso() })}
-                  className="rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-ondark"
+                  className="rounded-full bg-orange px-3 py-1.5 font-bold text-[0.74rem] text-onaccent"
                 >
                   送信済みにする
                 </button>
