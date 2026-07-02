@@ -20,7 +20,8 @@
       "apps/staff/docs/**",
       "apps/site/**",
       "questions.json",
-      "CLAUDE_CODE_INSTRUCTION.md"
+      "CLAUDE_CODE_INSTRUCTION.md",
+      "apps/staff/e2e/**"
     ]
   },
   "formatter": {
