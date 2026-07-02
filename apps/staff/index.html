@@ -6,10 +6,22 @@
     <meta name="theme-color" content="#2d4a3e" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Non-render-blocking font load: on flaky/offline wifi a blocking external
+         stylesheet stalls first paint until timeout (measured ~13s). media="print"
+         defers it off the render path; onload swaps it in (display=swap upgrades
+         the fallback fonts). The SW runtime-caches it after the first visit. -->
     <link
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <title>KRAFT BASE Staff</title>
   </head>
   <body>

@@ -20,6 +20,10 @@
   --kb-ink-mute: 143 153 143;
   --kb-paper: 17 64 58;
   --kb-on-dark: 244 238 223;
+  /* Text/icons on the orange accent fill. Cream-on-orange failed WCAG (~2:1); a
+     dark ink passes AA in both themes (~6.7:1 dark / ~5.7:1 light). Defined once
+     — text on orange is always dark, so .theme-light inherits it. */
+  --kb-on-accent: 13 42 37;
 
   --kb-line: rgba(243, 237, 221, 0.13);
   --kb-app-bg: radial-gradient(ellipse at 12% 0%, rgba(235, 154, 60, 0.12) 0%, transparent 46%),

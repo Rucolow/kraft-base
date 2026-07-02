@@ -24,6 +24,15 @@ body {
   font-family: var(--kb-font-heading);
 }
 
+/* Visible keyboard/AT focus. Inputs and buttons across the app use outline-none
+   with only a faint border tint, leaving keyboard/switch users with no visible
+   focus. Restore a clear ring for keyboard focus only (not mouse/touch taps). */
+:focus-visible {
+  outline: 3px solid rgb(var(--kb-orange));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Grain texture to match the logo's printed feel. */
 .kb-grain,
 .kb-grain-strong {

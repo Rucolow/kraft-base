@@ -28,7 +28,12 @@ export async function startPowerSync(): Promise<void> {
   started = true;
   await db.init();
   if (canConnect()) {
-    await db.connect(getConnector());
+    // Local-first: don't hold the UI hostage to the network handshake. The local
+    // data is already on disk; sync catches up in the background. Errors here are
+    // connection-level (PowerSync retries internally), not fatal to the app.
+    db.connect(getConnector()).catch((error) => {
+      console.error('PowerSync connect failed (will retry in background)', error);
+    });
   }
 }
 
@@ -44,6 +49,13 @@ export async function connectPowerSync(): Promise<void> {
 
 export async function disconnectPowerSync(): Promise<void> {
   await db.disconnect();
+}
+
+// Sign-out on a shared device must not leave the guest register (passports,
+// addresses) sitting in local storage. disconnectAndClear wipes the local DB;
+// data re-syncs on the next sign-in.
+export async function wipePowerSync(): Promise<void> {
+  await db.disconnectAndClear();
 }
 
 export * from './schema';
