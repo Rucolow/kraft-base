@@ -38,6 +38,7 @@ export const brandPreset = {
         },
         paper: 'rgb(var(--kb-paper) / <alpha-value>)',
         ondark: 'rgb(var(--kb-on-dark) / <alpha-value>)',
+        onaccent: 'rgb(var(--kb-on-accent) / <alpha-value>)',
         line: 'var(--kb-line)',
       },
       fontFamily: {

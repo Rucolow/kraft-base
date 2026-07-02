@@ -83,7 +83,7 @@ export function Today() {
                     <span
                       className={`grid h-[21px] w-[21px] shrink-0 place-items-center rounded-md border-[1.6px] ${checked ? 'border-orange bg-orange' : 'border-orange-light'}`}
                     >
-                      {checked ? <Check size={14} className="text-ondark" /> : null}
+                      {checked ? <Check size={14} className="text-onaccent" /> : null}
                     </span>
                     <span
                       className={`flex-1 text-[0.9rem] ${checked ? 'text-ink-mute line-through' : ''}`}

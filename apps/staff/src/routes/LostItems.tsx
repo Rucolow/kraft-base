@@ -109,7 +109,7 @@ export function LostItems() {
           type="button"
           aria-label="起票"
           onClick={add}
-          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
+          className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[11px] bg-orange text-onaccent"
         >
           <Plus size={18} />
         </button>

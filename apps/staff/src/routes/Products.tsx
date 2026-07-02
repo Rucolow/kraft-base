@@ -174,7 +174,7 @@ export function Products() {
               type="button"
               aria-label="追加"
               onClick={add}
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-[11px] bg-orange text-ondark"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-[11px] bg-orange text-onaccent"
             >
               <Plus size={20} />
             </button>
