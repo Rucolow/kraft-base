@@ -24,17 +24,8 @@ export function LinkAccount() {
     }
   }, [alreadyLinked, navigate]);
 
-  // Once an owner is already linked, an unclaimed owner row must not be claimable
-  // by anyone else — that would escalate a regular sign-in to owner rights. The
-  // first owner can still self-claim during bootstrap (nobody linked yet).
-  const ownerLinked = staff.some((member) => member.role === 'owner' && member.auth_user_id);
-
   async function link(staffId: string) {
     if (!session) {
-      return;
-    }
-    const target = staff.find((member) => member.id === staffId);
-    if (target?.role === 'owner' && ownerLinked && target.auth_user_id !== myId) {
       return;
     }
     await updateRow('staff', staffId, { auth_user_id: session.user.id });
@@ -79,12 +70,11 @@ export function LinkAccount() {
         people.map((member) => {
           const linkedToMe = member.auth_user_id === myId;
           const linkedToOther = Boolean(member.auth_user_id) && !linkedToMe;
-          const blockedOwner = member.role === 'owner' && ownerLinked && !linkedToMe;
           return (
             <button
               key={member.id}
               type="button"
-              disabled={linkedToOther || blockedOwner}
+              disabled={linkedToOther}
               onClick={() => (linkedToMe ? navigate('/') : link(member.id))}
               className="mb-2 flex w-full items-center gap-3 rounded-[14px] border border-line bg-paper p-3.5 text-left disabled:opacity-45"
             >
