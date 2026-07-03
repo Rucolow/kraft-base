@@ -13,6 +13,7 @@ import { SWUpdater } from './components/SWUpdater';
 import { useAuth } from './lib/auth';
 import { AuthProvider } from './lib/auth';
 import { ensureLocalSeed } from './lib/devSeed';
+import { ensureDeviceRow } from './lib/device';
 import { PowerSyncProvider } from './lib/powersync/provider';
 import { SessionProvider, useSession } from './lib/session';
 import { closeStaleSessions, runDailyReset } from './lib/shiftOps';
@@ -56,7 +57,11 @@ function RootBootstrap() {
       if (!canWrite) {
         return undefined;
       }
-      return runDailyReset().then(() => (device ? closeStaleSessions(device.deviceId) : undefined));
+      return runDailyReset().then(() =>
+        device
+          ? ensureDeviceRow(device).then(() => closeStaleSessions(device.deviceId))
+          : undefined,
+      );
     });
   }, [device, canWrite, boundary]);
   return null;
