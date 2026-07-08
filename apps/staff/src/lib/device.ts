@@ -1,5 +1,5 @@
 import { nowIso } from './date';
-import { insertRow, uuid } from './db';
+import { insertRow, updateRow, uuid } from './db';
 import { db } from './powersync';
 
 export type DeviceMode = 'shared' | 'personal';
@@ -30,22 +30,40 @@ export function writeDeviceConfig(config: DeviceConfig): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 }
 
-// Registers the device once: persists the local config and mirrors a `device` row.
-export async function registerDevice(input: {
+export interface DeviceInput {
   mode: DeviceMode;
   label: string;
   boundStaffId: string | null;
   autoLockMin: number;
-}): Promise<DeviceConfig> {
-  const config: DeviceConfig = { deviceId: uuid(), ...input };
-  await insertRow('device', {
-    id: config.deviceId,
-    mode: config.mode,
-    bound_staff_id: config.boundStaffId,
-    label: config.label,
-    auto_lock_min: config.autoLockMin,
-    created_at: nowIso(),
-  });
+}
+
+// Persists the local config and mirrors a `device` row. Used both for first-time
+// setup and for later re-configuration (Setup is reachable again via the "端末の
+// 設定を変更" link). On re-config we keep the SAME deviceId and UPDATE the row —
+// minting a fresh id would orphan every past shift_session / worktime that FKs to
+// the old device. If the row is missing (e.g. an earlier RLS-rejected insert left
+// a ghost, see ensureDeviceRow), we re-insert it.
+export async function saveDevice(input: DeviceInput): Promise<DeviceConfig> {
+  const existing = readDeviceConfig();
+  const deviceId = existing?.deviceId ?? uuid();
+  const config: DeviceConfig = { deviceId, ...input };
+  if (existing && (await deviceRowExists(deviceId))) {
+    await updateRow('device', deviceId, {
+      mode: input.mode,
+      bound_staff_id: input.boundStaffId,
+      label: input.label,
+      auto_lock_min: input.autoLockMin,
+    });
+  } else {
+    await insertRow('device', {
+      id: deviceId,
+      mode: input.mode,
+      bound_staff_id: input.boundStaffId,
+      label: input.label,
+      auto_lock_min: input.autoLockMin,
+      created_at: nowIso(),
+    });
+  }
   writeDeviceConfig(config);
   return config;
 }

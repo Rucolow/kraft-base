@@ -5,6 +5,7 @@ import {
   UpdateType,
 } from '@powersync/web';
 import { supabase } from '../supabase/client';
+import { recordSyncAlert } from '../syncAlerts';
 import { serializeForServer } from './serialize';
 
 const powersyncUrl = import.meta.env.VITE_POWERSYNC_URL;
@@ -56,6 +57,14 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
         const code = result.error.code ?? '';
         if (/^(22|23|42)/.test(code)) {
           console.error('Discarding rejected change', op.table, op.op, op.id, result.error);
+          // Surface it: a silent discard is exactly the failure mode that stalls
+          // staff (the write reflects locally, then vanishes) with no trace.
+          recordSyncAlert({
+            table: op.table,
+            op: String(op.op),
+            code,
+            message: result.error.message ?? '',
+          });
           continue;
         }
         throw result.error;

@@ -85,6 +85,7 @@ const has = async (page,t)=> (await page.locator('body').innerText()).includes(t
   sp.on('console',m=>{if(m.type()==='error'){const t=m.text();if(!/ERR_CONNECTION_CLOSED|404|favicon|Failed to load resource/.test(t))errs.push('STAFF console: '+t);}});
   const wU=mkWait(sp);
   await sp.goto(`${BASE}/`,{waitUntil:'networkidle'}); await sp.waitForTimeout(800);
+  await sp.getByText('共有（受付iPad）').click(); await sp.waitForTimeout(150);
   await sp.getByText('この設定で始める').click(); await wU(u=>u.includes('/shift'));
   await sp.locator('button:has-text("日中スタッフ")').first().click(); await sp.waitForTimeout(200);
   await sp.getByRole('button',{name:/シフトを開始/}).click(); await wU(u=>u==='/'); await sp.waitForTimeout(400);

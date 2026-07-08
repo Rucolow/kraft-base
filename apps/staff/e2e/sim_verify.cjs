@@ -69,6 +69,7 @@ const check = (name, pass, detail='') => { R.push({name,pass,detail}); console.l
   page2.on('dialog', d=>d.accept());
   const wU=async(p,ms=10000)=>{const s=Date.now();while(Date.now()-s<ms){if(p(new URL(page2.url()).pathname))return true;await page2.waitForTimeout(150);}return false;};
   await page2.goto(`${BASE}/`,{waitUntil:'networkidle'}); await page2.waitForTimeout(900);
+  await page2.getByText('共有（受付iPad）').click(); await page2.waitForTimeout(150);
   await page2.getByText('この設定で始める').click(); await wU(u=>u.includes('/shift'));
   await page2.locator('button:has-text("日中スタッフ")').first().click(); await page2.waitForTimeout(300);
   await page2.getByRole('button',{name:/シフトを開始/}).click(); await wU(u=>u==='/'); await page2.waitForTimeout(400);
