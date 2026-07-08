@@ -2,21 +2,26 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { PrimaryButton, TextField } from '../components/ui';
-import { type DeviceMode, registerDevice } from '../lib/device';
+import { type DeviceMode, readDeviceConfig, saveDevice } from '../lib/device';
 import { useSession } from '../lib/session';
 
 export function Setup() {
   const navigate = useNavigate();
   const { staff, setDevice } = useSession();
-  const [mode, setMode] = useState<DeviceMode>('shared');
-  const [boundStaffId, setBoundStaffId] = useState<string | null>(null);
-  const [label, setLabel] = useState('');
+  // Re-configuration (via the "端末の設定を変更" link) pre-fills the current
+  // values; first-time setup starts with mode unchosen so nobody silently ends
+  // up on the "shared reception iPad" default (which also arms a 5-min auto-lock)
+  // on a personal Mac or phone.
+  const existing = readDeviceConfig();
+  const [mode, setMode] = useState<DeviceMode | null>(existing?.mode ?? null);
+  const [boundStaffId, setBoundStaffId] = useState<string | null>(existing?.boundStaffId ?? null);
+  const [label, setLabel] = useState(existing?.label ?? '');
 
   async function submit() {
-    if (mode === 'personal' && !boundStaffId) {
+    if (mode === null || (mode === 'personal' && !boundStaffId)) {
       return;
     }
-    const config = await registerDevice({
+    const config = await saveDevice({
       mode,
       label: label.trim() || (mode === 'shared' ? '受付iPad' : '個人端末'),
       boundStaffId: mode === 'personal' ? boundStaffId : null,
@@ -46,13 +51,15 @@ export function Setup() {
               {option === 'shared' ? '共有（受付iPad）' : '個人端末'}
             </span>
             <span className="block text-[0.72rem]">
-              {option === 'shared' ? '名前タップで交代' : '本人固定'}
+              {option === 'shared' ? '受付に置く共有端末・自動ロックあり' : '自分専用のスマホ・PC'}
             </span>
           </button>
         ))}
       </div>
 
-      {mode === 'personal' ? (
+      {mode === null ? (
+        <p className="mt-1 mb-2 text-[0.82rem] text-ink-mute">上のどちらかを選んでください。</p>
+      ) : mode === 'personal' ? (
         <>
           <div className="mb-2 text-[0.78rem] text-ink-light">この端末の本人</div>
           {staff
@@ -78,11 +85,13 @@ export function Setup() {
         />
       )}
 
-      <div className="mt-4">
-        <PrimaryButton onClick={submit} disabled={mode === 'personal' && !boundStaffId}>
-          この設定で始める
-        </PrimaryButton>
-      </div>
+      {mode !== null ? (
+        <div className="mt-4">
+          <PrimaryButton onClick={submit} disabled={mode === 'personal' && !boundStaffId}>
+            この設定で始める
+          </PrimaryButton>
+        </div>
+      ) : null}
 
       <div className="mt-6 text-center text-[0.68rem] text-ink-mute">build {__APP_BUILD__}</div>
     </div>

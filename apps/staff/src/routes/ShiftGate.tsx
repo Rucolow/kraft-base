@@ -23,9 +23,11 @@ export function ShiftGate() {
     [device?.deviceId ?? ''],
   );
 
-  // The shared reception roster lists staff who work shifts. Owners manage from
-  // their own device, so they are not tappable shift identities here.
-  const people = staff.filter((member) => !member.is_device && member.role === 'staff');
+  // The shift roster lists everyone who works a shift. At this 3-person guest-
+  // house 2 of the 3 are owners, so owners MUST be tappable here — filtering to
+  // role==='staff' left them with no way to start a shift and stranded them on
+  // this screen. Only the synthetic device account is excluded.
+  const people = staff.filter((member) => !member.is_device);
   const personalStaff =
     device?.mode === 'personal'
       ? (staff.find((member) => member.id === device.boundStaffId) ?? null)
@@ -98,6 +100,13 @@ export function ShiftGate() {
             </span>
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => navigate('/setup')}
+          className="mt-3 self-center text-[0.76rem] text-ink-mute underline"
+        >
+          端末の設定を変更
+        </button>
       </div>
     );
   }
