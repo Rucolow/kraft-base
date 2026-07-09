@@ -3,6 +3,7 @@ import { AlertTriangle, Check } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
+import { SyncAlertNotice } from '../components/SyncAlertList';
 import { BackButton, EmptyState, PrimaryButton } from '../components/ui';
 import { useOpenFollowups, useTimeline } from '../data/queries';
 import { formatClock } from '../lib/date';
@@ -107,6 +108,7 @@ export function ShiftGate() {
         >
           端末の設定を変更
         </button>
+        <SyncAlertNotice />
       </div>
     );
   }
@@ -170,6 +172,7 @@ export function ShiftGate() {
           現在のシフト：{currentStaff.name}
         </p>
       ) : null}
+      <SyncAlertNotice />
     </div>
   );
 }

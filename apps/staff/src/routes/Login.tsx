@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PrimaryButton, TextField } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { type FriendlyAuthError, mapAuthError } from '../lib/authErrors';
@@ -6,7 +7,19 @@ import { type FriendlyAuthError, mapAuthError } from '../lib/authErrors';
 const RESEND_COOLDOWN = 60;
 
 export function Login() {
-  const { signInWithEmail, verifyCode } = useAuth();
+  const navigate = useNavigate();
+  const { session, signInWithEmail, verifyCode } = useAuth();
+
+  // Verifying the code establishes a session but does NOT route anywhere: /login
+  // sits outside RequireApp, so a signed-in user just sees the login form still.
+  // Pressing ログイン again re-verifies the now-consumed code and errors — success
+  // dressed as failure. Leave once a session exists (also covers magic-link
+  // landings and revisiting /login while already signed in).
+  useEffect(() => {
+    if (session) {
+      navigate('/', { replace: true });
+    }
+  }, [session, navigate]);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
@@ -157,6 +170,10 @@ export function Login() {
           </PrimaryButton>
         </>
       )}
+      {/* Build stamp: makes "which version is this device on?" answerable from a
+          single screenshot — a stale service-worker cache once served a months-old
+          build here and masked every fix until it was spotted. */}
+      <div className="mt-8 text-center text-[0.68rem] text-ink-mute">build {__APP_BUILD__}</div>
     </div>
   );
 }
