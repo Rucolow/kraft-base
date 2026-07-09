@@ -4,19 +4,7 @@ import { type ReactNode, useState, useSyncExternalStore } from 'react';
 import { formatClock } from '../lib/date';
 import { canConnect } from '../lib/powersync/connector';
 import { clearSyncAlerts, getSyncAlerts, subscribeSyncAlerts } from '../lib/syncAlerts';
-
-// Postgres table names → words the innkeepers use, for the discard list.
-const TABLE_LABELS: Record<string, string> = {
-  device: '端末',
-  shift_session: 'シフト',
-  guest: 'ゲスト',
-  guest_note: 'ゲストのメモ',
-  task: 'タスク',
-  followup: '申し送り',
-  content: '記録',
-  staff: 'スタッフ',
-  checkin_record: 'チェックイン',
-};
+import { SyncAlertList } from './SyncAlertList';
 
 // Sync health at a glance. The critical case this must surface: writes that
 // exist locally but have not reached the server (ps_crud queue) — previously the
@@ -92,20 +80,7 @@ export function SyncBadge() {
           <p className="mb-2 text-[0.66rem] text-ink-light">
             サーバーに拒否され、端末から取り消された変更です。繰り返す場合は管理者に共有してください。
           </p>
-          <ul className="max-h-56 space-y-1 overflow-y-auto">
-            {alerts.map((alert, index) => (
-              <li
-                key={`${alert.at}-${index}`}
-                className="border-line border-b pb-1 text-[0.7rem] last:border-none"
-              >
-                <span className="font-semibold text-ink">
-                  {TABLE_LABELS[alert.table] ?? alert.table}
-                </span>
-                <span className="text-ink-mute"> ・ {formatClock(alert.at)}</span>
-                <span className="block text-[0.6rem] text-ink-mute">コード {alert.code}</span>
-              </li>
-            ))}
-          </ul>
+          <SyncAlertList alerts={alerts} />
           <button
             type="button"
             onClick={() => {
