@@ -76,8 +76,10 @@ function runSuite(file, env) {
     child.stderr.on('data', capture);
     child.on('close', (code) => {
       // Case-sensitive FAIL: matches the suites' "FAIL — <name>" checks but not
-      // console noise like "Failed to load resource".
-      const failed = code !== 0 || /\bFAIL\b/.test(out);
+      // console noise like "Failed to load resource". Also catch sweep's own
+      // regression markers — it exits 0 and never prints "FAIL", so a blank or
+      // content-missing route would otherwise slip through as a pass.
+      const failed = code !== 0 || /\bFAIL\b/.test(out) || /NEAR-BLANK|EXPECT-MISSING/.test(out);
       resolve({ file, ok: !failed, code });
     });
     child.on('error', (err) => {
@@ -104,7 +106,10 @@ function runSuite(file, env) {
   // the port and the parent's stdio pipes open — the process then gets signalled
   // and its buffered output is lost. Detached + group-kill tears the whole tree
   // down cleanly so this process can exit normally.
-  const viteBin = require.resolve('vite/bin/vite.js', { paths: [STAFF_DIR] });
+  // vite@6's exports map does not expose ./bin/vite.js, so resolve the package
+  // root (./package.json IS exported) and join the bin path from there.
+  const vitePkg = require.resolve('vite/package.json', { paths: [STAFF_DIR] });
+  const viteBin = path.join(path.dirname(vitePkg), 'bin', 'vite.js');
   const preview = spawn(
     process.execPath,
     [viteBin, 'preview', '--port', String(PORT), '--strictPort'],
