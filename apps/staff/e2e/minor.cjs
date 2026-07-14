@@ -1,5 +1,5 @@
-const { chromium } = require('./_pw.cjs');
-const CHROME='/opt/pw-browsers/chromium-1194/chrome-linux/chrome'; const BASE='http://localhost:4173';
+const { chromium, resolveChrome } = require('./_pw.cjs');
+const CHROME = resolveChrome(); const BASE='http://localhost:4173';
 const R=[]; const ck=(n,p,d='')=>{R.push({n,p});console.log(`  ${p?'PASS':'FAIL'} — ${n}${d?` (${d})`:''}`);};
 (async()=>{
   const b=await chromium.launch({executablePath:CHROME,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});

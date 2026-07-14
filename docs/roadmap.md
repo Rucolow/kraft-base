@@ -5,55 +5,53 @@
 背景の指摘一覧は `docs/improvement-plan.md`（84指摘の統合）。
 **状態凡例**: ✅本番済 / 🟡ブランチ済(検証待ち) / ⬜未着手 / 🔶オーナー判断待ち
 
-## 現在地（2026-07-02）
+## 現在地（2026-07-09）
 - ✅ バグ修正一式＋オフライン信頼性/a11yバッチ（PR #23-#27）
-- 🟡 `claude/nifty-euler-mqj76p` に温存: コネクタ型変換(serialize)・LinkAccountガード・
-  migrations 0015/0016・境界テスト → **W1のステージング実証を通してから本番へ**
-- ⏳ 外部待ち: モーリーの実機4チェック（結果がW1の 0016 要否を確定する）
+- ✅ オーナーのログイン/紐づけ/シフト開始の障害を解決（PR #29-#31）: 0016適用・0015は0017で撤回・
+  serialize・LinkAccountガード撤去・ログイン自動遷移・拒否バッジ・ログインのビルド刻印まで本番反映済み。
+  真因の多くは「demo/e2eで検証できない層（同期/RLS/認証）＋端末の化石ビルド」だった。
+- ✅ 検証方針を確定: **常設ステージングは作らない**。5層モデル（L1〜L5）で回す。
+  正本は `docs/plan-verification-system.md`。
 
 ## 着工順序（依存関係）
 ```
-W1(同期/RLS実証) ──→ W2(名簿ライフサイクル)  ※W2はserialize到達が前提ではないが同時期が効率的
+W1(同期/RLS実証) … ✅観測ベースで決着（plan-verification-system 参照）。常設ステージングは不採用
+W2(名簿ライフサイクル) … 独立
 W3(キオスク堅牢化) … 独立・いつでも
 W4(現場UXパック) … 独立・いつでも（小粒の集合）
-W5(E2E CI化) … 独立・最初にやると以降の全WSが安全になる ★推奨着手順1位
-W6(運用) … W1後が効率的（ステージング環境が温まっているため）
+W5(E2E CI化) … 🟡実装中（plan-verification-system §3-1）★以降の全WSを安全にする
+W6(運用) … 独立
 W7(コンテンツ/通知) … 独立・大きい・急がない
 ```
 
 ---
 
 ## W5. E2EのCI化 ★最初にやる（他の全部を安全にする）
-**状態** ⬜ / 規模 S-M / 全てフロント＋CI
-**設計（決定済み）**
-- `apps/staff/e2e/` は導入済み（実戦スクリプト6本＋README）。
-- devDependency に `playwright-core` を追加し、スクリプトの `CHROME` 定数を
-  `process.env.E2E_CHROME ?? '(クラウド既定パス)'` に変更。CIでは
-  `npx playwright-core install chromium --with-deps` 相当ではなく、GH Actions の
-  `microsoft/playwright-github-action` か `npx playwright install chromium` を使う
-  （playwright-core単体はinstallコマンドを持たない点に注意。素直に `playwright` を
-  devDepにする方が簡単。判断は実装時、READMEに追記）。
-- `.github/workflows/ci.yml` に job 追加: build → `vite preview --port 4173 &` →
-  `node e2e/sweep.cjs && node e2e/sim_verify.cjs && node e2e/checkin_multi.cjs && node e2e/minor.cjs`。
-- スクリプトの console-error フィルタに `fonts.googleapis` 由来の失敗を良性として追加。
+**状態** 🟡 実装中（`docs/plan-verification-system.md` §3-1 が正本）。実装分:
+- `apps/staff/e2e/_pw.cjs` に `resolveChrome()`（KB_CHROME → クラウド固定パス → playwright-core解決）。
+  全スイートの `CHROME` 定数をこれに置換。
+- `apps/staff/e2e/run-all.cjs`: preview起動→全8スイート実行→集計（`pnpm e2e` で一括）。
+- ルート `package.json` に `e2e` スクリプト、`apps/staff` devDep に `playwright-core`。
+- `.github/workflows/ci.yml` に別ジョブ `e2e`（本体ゲートと分離）。CIは `playwright install chromium` で
+  ブラウザを入れる（playwright-core単体はinstallコマンドを持たないため）。
+- 既知の注意: `fonts.googleapis` 由来の console 失敗は良性（cloudサンドボックスのみ）。
+  cloud環境ではBashラッパが常駐サーバを144で殺すため、run-all全体の実走はCIが正となる。
 **受け入れ基準**: GH Actions 上で e2e job が緑。わざと `GuestEdit` の保存を壊すと落ちる（1回試す）。
 **リスク**: CI マシンでの headless 差異。→ `--no-sandbox` 維持、失敗時スクショをartifact化。
 
-## W1. 同期/RLS層のステージング実証 → 本番反映
-**状態** 🟡（コード/SQL準備済み） / 規模 M / **要ステージング＋オーナーのSQL実行**
-**手順書**: `apps/staff/supabase/staging/VERIFY-sync-rls.md`（A/B/C試験・ロールバック込み）
-**内容**: serialize.ts（配列/bool変換）/ 0015(claim封鎖) / 0016(device→org、**条件付き**)
-**判断ポイント**: モーリー4チェックで「シフト即戻り」or「勤務時間が出ない」が残存 → 0016必須。
-**受け入れ基準**: ステージングで (a)メンション既読・写真が2台目に残存 (b)guest_note.mentions が
-  Postgres上で配列型 (c)claim封鎖動作 (d)(0016時) device行とshift_sessionがサーバー到達。
-**本番反映順**: SQL(0015→必要なら0016) → コードPR（serialize＋LinkAccountガード）。
-**注意**: 本番反映後、**過去にサイレント消失した書き込みは自動復元されない**。
-  既存メンション既読等の不整合は「気にしない」で運用可（軽微）。device行は Setup やり直しで再生成。
+## W1. 同期/RLS層の実証 → 本番反映 ✅完了（2026-07）
+**結末**: 常設ステージングは立てず、**観測ベース**（L3）＋オーナーのSQL実行で決着した。
+- serialize.ts（配列/bool変換）… 本番反映済み。
+- 0015(claim封鎖) … **撤回**。この宿はオーナー2人のため 0017 で 0011 の許容ポリシーへ戻した。
+- 0016(device→org) … 本番適用済み。「シフト即戻り」の真因（device行のRLS拒否）を解消。
+- 真因特定は本番 Supabase のポリシー/ログ確認と、アプリの拒否バッジで実施（`plan-verification-system` L3）。
+**教訓**: この層は demo/e2e で検証しきれない。今後は L3観測＋L4実機（下記 plan 参照）で守る。
+`supabase/staging/VERIFY-sync-rls.md` は L5使い捨て環境用の手順として温存。
 
 ## W2. 法定宿泊者名簿のライフサイクル（法令・P0-3）
 **状態** ⬜ / 規模 L / フロント＋**マイグレーション＋PowerSync同期ルール変更**
 **設計（決定済み）**
-1. **マイグレーション 0017**:
+1. **マイグレーション 0018**（※0015-0017は使用済み。連番はここから）:
    - `checkin_record` に `stay_date date`・`batch_id uuid` を追加（既存行は guest join で backfill、
      joinできない行は created_at::date）。
    - `guest_id` の FK を `on delete cascade` → `on delete set null` に変更（**名簿はゲスト削除より長生き**）。
@@ -63,14 +61,14 @@ W7(コンテンツ/通知) … 独立・大きい・急がない
 3. **オーナー用名簿ビュー** `/register`（owner-only route）: 月切替一覧（stay_date基準）＋
    CSVエクスポート（client-side Blob、UTF-8 BOM付き＝Excel対応）。列: 宿泊日/氏名/住所/連絡先/
    国籍/旅券番号/記入日時。**表示・出力ともowner限定**（RLSは checkin_record SELECT が
-   org member なので、まずUI限定。厳格化するなら SELECT を owner に絞る 0018 を検討 → 🔶）。
+   org member なので、まずUI限定。厳格化するなら SELECT を owner に絞る 0019 を検討 → 🔶）。
 4. **同期ウィンドウ化**（別PR・慎重に）: PowerSync ダッシュボードの sync rules で
    checkin_record を `WHERE created_at > now() - interval '90 days'` 相当のバケットに
    （classicルールの記法は要確認）。**サーバーには全量が残る**＝法定3年保存はPostgres側の責務。
-   ローカルは直近だけ。→ ステージングで download 挙動を必ず確認。
+   ローカルは直近だけ。→ **L5使い捨て環境**で download 挙動を必ず確認（同期ルール変更のため）。
 **受け入れ基準**: e2e: 記入→/registerに出る→CSVがダウンロードされ全員分の行がある。
   ゲスト削除しても名簿行が残る（demoで検証可）。再入力で旧バッチと新バッチが区別される。
-**リスク**: FK変更はデータ移行を伴う→ステージングで0017を先に流す。同期ルール変更は
+**リスク**: FK変更はデータ移行を伴う→**L5使い捨て環境**で 0018 を先に流して確認。同期ルール変更は
   re-snapshot を誘発しうる（過去に staff の publication 変更で詰まった前例）→営業時間外に。
 
 ## W3. キオスク堅牢化（戻る操作の封鎖）
@@ -110,7 +108,7 @@ W7(コンテンツ/通知) … 独立・大きい・急がない
 **状態** ⬜ / 規模 S-M / 主にドキュメント＋外部サービス設定（🔶オーナー作業を含む）
 1. **`docs/ops-runbook.md`**（1ページ）: 症状→対処の表:
    同期が止まった(SyncBadge未同期n件が減らない)/白画面/古いビルド疑い(Setupのbuild表記確認)/
-   iPad紛失(Supabaseでauthユーザー無効化→wipe手順)/名簿エクスポート/ステージング検証のやり方/
+   iPad紛失(Supabaseでauthユーザー無効化→wipe手順)/名簿エクスポート/L5使い捨て環境の立て方/
    ロールバック(Vercelで前デプロイをPromote)。
 2. **監視** 🔶: UptimeRobot(無料)で本番URLとSupabase REST の死活。Supabaseの
    一時停止(無料枠アイドル)対策として週1のkeep-alive ping（GitHub Actions cron で

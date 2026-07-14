@@ -1,8 +1,8 @@
 // P0-5: the build stamp must be visible on /login (so "which build is this
 // device on?" is answerable from one screenshot). Demo mode skips auth, so we
 // visit /login directly — the stamp renders regardless of session.
-const { chromium } = require('./_pw.cjs');
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const { chromium, resolveChrome } = require('./_pw.cjs');
+const CHROME = resolveChrome();
 const BASE = 'http://localhost:4173';
 
 (async () => {

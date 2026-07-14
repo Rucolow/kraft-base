@@ -1,5 +1,5 @@
-const { chromium } = require('./_pw.cjs');
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const { chromium, resolveChrome } = require('./_pw.cjs');
+const CHROME = resolveChrome();
 const BASE = 'http://localhost:4173';
 const R=[]; const ck=(n,p,d='')=>{R.push({n,p});console.log(`  ${p?'PASS':'FAIL'} — ${n}${d?` (${d})`:''}`);};
 const mkWait = page => async (p,ms=10000)=>{const s=Date.now();while(Date.now()-s<ms){if(p(new URL(page.url()).pathname))return true;await page.waitForTimeout(150);}return false;};

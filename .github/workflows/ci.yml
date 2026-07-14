@@ -34,3 +34,30 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # Demo-mode browser e2e (L2). Separate job so it doesn't slow the gate above.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # playwright-core (the devDep) has no browser-install command, so use the
+      # matching full `playwright` to fetch the Chromium build it resolves.
+      - name: Install Chromium
+        run: npx playwright@1.44.0 install --with-deps chromium
+
+      - name: E2E (build + all suites)
+        run: pnpm e2e

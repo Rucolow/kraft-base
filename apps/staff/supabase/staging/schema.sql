@@ -1,5 +1,7 @@
--- KRAFT BASE 検証(ステージング)環境スキーマ。新規Supabaseプロジェクトに1回貼って実行する。
--- 本番マイグレーション 0001〜0014 を順に結合したもの（自動生成）。
+-- KRAFT BASE 使い捨て検証環境(L5)用スキーマ。新規Supabaseプロジェクトに1回貼って実行する。
+-- 本番マイグレーション 0001〜0017 を順に結合したもの（手動再生成）。
+-- 方針: 常設ステージングは作らない（docs/plan-verification-system.md）。大規模変更の
+-- 事前リハーサルでのみ使い捨て環境を立てる用。migrations を増やしたら末尾に追記すること。
 
 -- ===== 0001_extensions.sql =====
 -- Extensions
@@ -653,3 +655,54 @@ create policy guest_update on public.guest
   using (public.is_org_member())
   with check (public.is_org_member());
 
+
+-- ===== 0015_staff_claim_guard.sql =====
+-- NOTE: 0015 was reverted by 0017 (KRAFT BASE has two legitimate owners). Kept in
+-- sequence so a fresh combined apply reproduces the true final state.
+-- Harden the self-claim path (0011) so it can't be used to escalate to owner.
+
+create or replace function public.owner_is_linked()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.staff where role = 'owner' and auth_user_id is not null
+  );
+$$;
+
+grant execute on function public.owner_is_linked() to authenticated;
+
+drop policy if exists staff_claim on public.staff;
+create policy staff_claim on public.staff
+  for update to authenticated
+  using (auth_user_id is null and (role <> 'owner' or not public.owner_is_linked()))
+  with check (auth_user_id = auth.uid());
+
+-- ===== 0016_device_org_member.sql =====
+-- device_insert/update relaxed from owner-only to org-member (shared iPad sync).
+-- SELECT stays org-member; DELETE stays owner-only.
+
+drop policy if exists device_insert on public.device;
+create policy device_insert on public.device
+  for insert to authenticated with check (public.is_org_member());
+
+drop policy if exists device_update on public.device;
+create policy device_update on public.device
+  for update to authenticated
+  using (public.is_org_member())
+  with check (public.is_org_member());
+
+-- ===== 0017_staff_claim_revert.sql =====
+-- Revert 0015: restore the permissive self-claim policy (two legitimate owners),
+-- drop the owner_is_linked() helper.
+
+drop policy if exists staff_claim on public.staff;
+create policy staff_claim on public.staff
+  for update to authenticated
+  using (auth_user_id is null)
+  with check (auth_user_id = auth.uid());
+
+drop function if exists public.owner_is_linked();

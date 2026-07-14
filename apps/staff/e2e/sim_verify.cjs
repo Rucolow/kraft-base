@@ -1,5 +1,5 @@
-const { chromium } = require('./_pw.cjs');
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const { chromium, resolveChrome } = require('./_pw.cjs');
+const CHROME = resolveChrome();
 const BASE = 'http://localhost:4173';
 const R = [];
 const check = (name, pass, detail='') => { R.push({name,pass,detail}); console.log(`  ${pass?'PASS':'FAIL'} — ${name}${detail?` (${detail})`:''}`); };
