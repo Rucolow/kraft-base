@@ -61,9 +61,11 @@ const has = async (page,t)=> (await page.locator('body').innerText()).includes(t
 
   // --- Products owner edit ---
   await page.goto(`${BASE}/manual/products`,{waitUntil:'networkidle'}); await page.waitForTimeout(400);
-  ck('products: owner sees 編集', await has(page,'編集'));
-  await page.getByRole('button',{name:'編集'}).click(); await page.waitForTimeout(300);
-  ck('products: edit mode shows 商品名 add field', await has(page,'商品名'));
+  ck('products: owner sees 編集', (await page.getByRole('button',{name:'編集',exact:true}).count())>0);
+  await page.getByRole('button',{name:'編集',exact:true}).click();
+  // '商品名' is only a placeholder (not in innerText); assert the add-form's label.
+  await page.getByText('商品を追加').waitFor({timeout:3000}).catch(()=>{});
+  ck('products: edit mode shows add-product form', await has(page,'商品を追加'));
   await page.getByPlaceholder('商品名').fill('テスト手ぬぐい');
   await page.getByPlaceholder('売価').fill('800');
   await page.getByPlaceholder('原価').fill('300');
@@ -89,8 +91,11 @@ const has = async (page,t)=> (await page.locator('body').innerText()).includes(t
   await sp.getByText('この設定で始める').click(); await wU(u=>u.includes('/shift'));
   await sp.locator('button:has-text("日中スタッフ")').first().click(); await sp.waitForTimeout(200);
   await sp.getByRole('button',{name:/シフトを開始/}).click(); await wU(u=>u==='/'); await sp.waitForTimeout(400);
-  await sp.goto(`${BASE}/manual/products`,{waitUntil:'networkidle'}); await sp.waitForTimeout(400);
-  ck('STAFF products: NO 編集 button (owner-only)', !(await has(sp,'編集')));
+  await sp.goto(`${BASE}/manual/products`,{waitUntil:'networkidle'});
+  await sp.getByText('商品一覧（館内販売）').waitFor({timeout:5000}).catch(()=>{});
+  // Check the button itself — the staff view shows helper text '価格の編集はオーナーのみ。'
+  // which a body-text substring match on '編集' would false-positive on.
+  ck('STAFF products: NO 編集 button (owner-only)', (await sp.getByRole('button',{name:'編集',exact:true}).count())===0);
   await sp.goto(`${BASE}/records/lost`,{waitUntil:'networkidle'}); await sp.waitForTimeout(300);
   await sp.getByPlaceholder('品名').fill('スタッフ起票テスト'); await sp.getByRole('button',{name:'起票'}).click(); await sp.waitForTimeout(400);
   ck('STAFF records: can create lost item (org-member)', await has(sp,'スタッフ起票テスト'));

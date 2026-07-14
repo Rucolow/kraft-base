@@ -40,7 +40,9 @@ const R=[]; const ck=(n,p,d='')=>{R.push({n,p});console.log(`  ${p?'PASS':'FAIL'
 
   // open edit, verify round-trip prefill
   await page.goto(`${BASE}/guests/${gid}/edit`,{waitUntil:'networkidle'}); await wU(u=>/\/edit$/.test(u)); await page.waitForTimeout(400);
-  const countryFree = await page.getByPlaceholder('自由入力').inputValue().catch(()=> '');
+  // exact:true — 'その他' country input's placeholder is exactly '自由入力', but the
+  // language input's is '言語（自由入力）', which a substring match would also hit.
+  const countryFree = await page.getByPlaceholder('自由入力', { exact: true }).inputValue().catch(()=> '');
   const langFree = await page.getByPlaceholder('言語（自由入力）').inputValue().catch(()=> '');
   ck('edit: country prefilled in その他 input', countryFree==='ブラジル', `"${countryFree}"`);
   ck('edit: language prefilled in その他 input', langFree==='ポルトガル語', `"${langFree}"`);
