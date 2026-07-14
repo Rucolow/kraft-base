@@ -36,8 +36,11 @@ jobs:
         run: pnpm build
 
   # Demo-mode browser e2e (L2). Separate job so it doesn't slow the gate above.
+  # Pinned to 22.04 (jammy): playwright 1.44's `install --with-deps` still targets
+  # libasound2, which 24.04 (noble) renamed to libasound2t64 — the install fails on
+  # ubuntu-latest. Bump the runner and the playwright/playwright-core pair together.
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
