@@ -134,7 +134,7 @@ const BASE = 'http://localhost:4173';
 
   // edge: bad ids
   await visit('guest-badid','/guests/does-not-exist','見つかりません');
-  await visit('checkin-badid','/checkin/does-not-exist','見つかりません');
+  await visit('checkin-badid','/checkin/does-not-exist','このリンクは使えません');
 
   // ===== summary =====
   console.log('\n===== ROUTE REPORT (owner) =====');
