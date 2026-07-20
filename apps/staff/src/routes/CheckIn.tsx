@@ -2,7 +2,7 @@ import { useQuery } from '@powersync/react';
 import { Check, House, Plane } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { BackButton, EmptyState, PrimaryButton } from '../components/ui';
+import { BackButton, PrimaryButton } from '../components/ui';
 import { useGuest } from '../data/queries';
 import { nowIso } from '../lib/date';
 import { insertRow, updateRow, uuid } from '../lib/db';
@@ -65,7 +65,7 @@ function Field({
 export function CheckIn() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const { data: guests } = useGuest(id);
+  const { data: guests, isLoading: guestLoading } = useGuest(id);
   // All register rows for this guest, newest first. Used both to detect an existing
   // registration and to prefill every party member on re-entry.
   const { data: existing } = useQuery<CheckinRecordRow>(
@@ -104,9 +104,32 @@ export function CheckIn() {
   }, [partySize]);
 
   if (!guest) {
+    // The local query hasn't resolved yet — show the brand splash rather than
+    // flashing the invalid-link screen for a guest whose record is about to load.
+    if (guestLoading) {
+      return (
+        <div className="flex min-h-dvh flex-col items-center justify-center bg-paper px-6">
+          <div className="font-heading text-[1.4rem] text-orange tracking-[0.22em]">KRAFT BASE</div>
+        </div>
+      );
+    }
+    // Genuinely not found: a stale QR / old link a guest is holding on the iPad.
+    // Guest-facing and bilingual, and — per the kiosk sanctuary rule — no auto-
+    // navigation; a staff member takes over from here.
     return (
-      <div className="mx-auto flex h-dvh max-w-xl flex-col justify-center bg-paper px-6">
-        <EmptyState>ゲストが見つかりません。</EmptyState>
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-paper px-6 text-center">
+        <div className="w-full max-w-xl">
+          <div className="font-heading text-[1.4rem] text-orange tracking-[0.22em]">KRAFT BASE</div>
+          <h1 className="mt-6 font-bold text-[1.2rem]">このリンクは使えません</h1>
+          <p className="mt-2 text-[0.95rem] text-ink-light">
+            This check-in link is no longer valid.
+          </p>
+          <p className="mt-5 text-[0.9rem] text-ink-light">
+            お手数ですが、スタッフにお声がけください。
+            <br />
+            Please ask a member of our staff for help.
+          </p>
+        </div>
       </div>
     );
   }

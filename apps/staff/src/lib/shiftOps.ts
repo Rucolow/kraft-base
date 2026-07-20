@@ -31,6 +31,32 @@ export async function endActiveSession(deviceId: string): Promise<void> {
   }
 }
 
+// Explicit clock-out (退勤). Ends the open session and drops a timeline marker so
+// the shift shows up as a clear "終了！！" in the handover — the signal the owner
+// used to get by LINE. The staff name is resolved from the session itself, not
+// passed in, so a shared device can't attribute the clock-out to whoever happens
+// to be tapping.
+export async function endShift(deviceId: string): Promise<void> {
+  const active = await getActiveSession(deviceId);
+  if (!active) {
+    return;
+  }
+  const at = nowIso();
+  await updateRow('shift_session', active.id, { ended_at: at });
+  const member = await db.getOptional<{ name: string }>('SELECT name FROM staff WHERE id = ?', [
+    active.staff_id,
+  ]);
+  await insertRow('timeline_entry', {
+    id: uuid(),
+    author_id: active.staff_id,
+    kind: 'system',
+    body: `退勤 ${member?.name ?? ''}（終了！！）`,
+    ref_type: null,
+    ref_id: null,
+    created_at: at,
+  });
+}
+
 // Starts a shift; replaces any open session on the same device first (spec §4.4).
 export async function startShift(input: {
   staffId: string;
@@ -61,11 +87,15 @@ export async function startShift(input: {
 }
 
 // Closes any session left open past today's boundary (client-side guard, spec §4.4).
+// Caps ended_at at the 04:00 boundary rather than "now": a staff member who
+// forgets to clock out would otherwise be credited until the next app launch
+// (potentially the next morning), inflating work-time. The boundary is the latest
+// the previous shift-day can extend to.
 export async function closeStaleSessions(deviceId: string): Promise<void> {
   await db.execute(
     `UPDATE shift_session SET ended_at = ?
        WHERE device_id = ? AND ended_at IS NULL AND started_at < ?`,
-    [nowIso(), deviceId, shiftBoundaryIso()],
+    [shiftBoundaryIso(), deviceId, shiftBoundaryIso()],
   );
 }
 

@@ -1,5 +1,5 @@
-const { chromium } = require('./_pw.cjs');
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const { chromium, resolveChrome } = require('./_pw.cjs');
+const CHROME = resolveChrome();
 const BASE = 'http://localhost:4173';
 
 (async () => {
@@ -134,7 +134,7 @@ const BASE = 'http://localhost:4173';
 
   // edge: bad ids
   await visit('guest-badid','/guests/does-not-exist','見つかりません');
-  await visit('checkin-badid','/checkin/does-not-exist','見つかりません');
+  await visit('checkin-badid','/checkin/does-not-exist','このリンクは使えません');
 
   // ===== summary =====
   console.log('\n===== ROUTE REPORT (owner) =====');

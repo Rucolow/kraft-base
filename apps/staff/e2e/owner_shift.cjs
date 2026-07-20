@@ -3,8 +3,8 @@
 //   P0-3  Setup starts with no mode chosen (no silent "shared iPad" default)
 //   P0-4  a "端末の設定を変更" link reaches Setup, pre-filled with current values
 // Demo seed: ルッコロー(owner) / モーリー(staff) / 日中スタッフ(staff).
-const { chromium } = require('./_pw.cjs');
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const { chromium, resolveChrome } = require('./_pw.cjs');
+const CHROME = resolveChrome();
 const BASE = 'http://localhost:4173';
 const R = [];
 const check = (name, pass, detail = '') => {

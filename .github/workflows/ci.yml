@@ -34,3 +34,33 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # Demo-mode browser e2e (L2). Separate job so it doesn't slow the gate above.
+  # Pinned to 22.04 (jammy): playwright 1.44's `install --with-deps` still targets
+  # libasound2, which 24.04 (noble) renamed to libasound2t64 — the install fails on
+  # ubuntu-latest. Bump the runner and the playwright/playwright-core pair together.
+  e2e:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # playwright-core (the devDep) has no browser-install command, so use the
+      # matching full `playwright` to fetch the Chromium build it resolves.
+      - name: Install Chromium
+        run: npx playwright@1.44.0 install --with-deps chromium
+
+      - name: E2E (build + all suites)
+        run: pnpm e2e

@@ -12,7 +12,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "lint": "biome check .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "e2e": "pnpm --filter @kraft-base/staff build && node apps/staff/e2e/run-all.cjs"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
