@@ -28,6 +28,8 @@ const ALL_SUITES = [
   'minor.cjs',
   'interact.cjs',
   'roundtrip.cjs',
+  'shift_end.cjs',
+  'checkin_undecided.cjs',
 ];
 
 // KB_E2E_ONLY=owner_shift.cjs,login_stamp.cjs runs a subset (CI debugging / quick

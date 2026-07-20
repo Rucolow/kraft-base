@@ -23,6 +23,14 @@ const FIELD =
   'min-h-[48px] w-full rounded-[11px] border border-line bg-cream px-3 py-3 text-base text-ink outline-none focus:border-orange-light';
 const OTHER = '__other__';
 
+// checkin_time can hold a HH:MM time, the sentinel '未定' (undecided), or legacy
+// free text (e.g. '遅着 ~19:30'). Only real times may be fed to <input type="time">
+// — it silently drops anything else, which used to wipe free-text times on any
+// unrelated save.
+const isHHMM = (value: string | null | undefined): boolean =>
+  typeof value === 'string' && /^\d{1,2}:\d{2}$/.test(value);
+const UNDECIDED = '未定';
+
 const COUNTRIES = [
   '日本',
   'ドイツ',
@@ -160,8 +168,13 @@ export function GuestEdit() {
     country: existing?.country ?? '',
     language: existing?.language ?? 'en',
     party_size: String(existing?.party_size ?? 1),
-    checkin_time: existing?.checkin_time ?? '',
+    // Only a real HH:MM feeds the time input; '未定'/free-text are held elsewhere.
+    checkin_time: isHHMM(existing?.checkin_time) ? (existing?.checkin_time ?? '') : '',
   });
+  const [undecided, setUndecided] = useState(existing?.checkin_time === UNDECIDED);
+  // Whether the time field (or the 未定 toggle) was touched this session, so an
+  // unrelated edit preserves a loaded free-text time instead of wiping it.
+  const [checkinTouched, setCheckinTouched] = useState(false);
   const [beds, setBeds] = useState<string[]>(() => parseBeds(existing?.bed ?? null));
   const [wholeHouse, setWholeHouse] = useState(existing?.whole_house === 1);
   const [bento, setBento] = useState<Record<string, number>>(() =>
@@ -188,8 +201,10 @@ export function GuestEdit() {
       // mutate the record); only new guests default to 'en' via useState above.
       language: existing.language ?? '',
       party_size: String(existing.party_size ?? 1),
-      checkin_time: existing.checkin_time ?? '',
+      checkin_time: isHHMM(existing.checkin_time) ? (existing.checkin_time ?? '') : '',
     });
+    setUndecided(existing.checkin_time === UNDECIDED);
+    setCheckinTouched(false);
     setBeds(parseBeds(existing.bed ?? null));
     setWholeHouse(existing.whole_house === 1);
     setBento(parseBento(existing.bento ?? null));
@@ -232,7 +247,13 @@ export function GuestEdit() {
       country: form.country || null,
       language: form.language || null,
       party_size: Number.parseInt(form.party_size, 10) || 1,
-      checkin_time: form.checkin_time || null,
+      // '未定' when toggled; a typed time when touched; otherwise keep the loaded
+      // value verbatim so a legacy free-text time survives an unrelated edit.
+      checkin_time: undecided
+        ? UNDECIDED
+        : checkinTouched
+          ? form.checkin_time.trim() || null
+          : (existing?.checkin_time ?? null),
       // Preserve whatever bed tokens are present (including non-preset/legacy
       // values like "1・2番（下段）"); the old preset-only filter silently wiped them.
       bed: beds.length > 0 ? beds.join('・') : null,
@@ -349,15 +370,38 @@ export function GuestEdit() {
         </Labeled>
 
         <Labeled label="チェックイン予定">
-          <input
-            type="time"
-            list="checkin-times"
-            className={FIELD}
-            value={form.checkin_time}
-            onFocus={openPicker}
-            onClick={openPicker}
-            onChange={(event) => set('checkin_time')(event.target.value)}
-          />
+          <div className="flex gap-2">
+            <input
+              type="time"
+              list="checkin-times"
+              className={`flex-1 ${FIELD} ${undecided ? 'opacity-40' : ''}`}
+              value={form.checkin_time}
+              disabled={undecided}
+              onFocus={openPicker}
+              onClick={openPicker}
+              onChange={(event) => {
+                setCheckinTouched(true);
+                set('checkin_time')(event.target.value);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setCheckinTouched(true);
+                setUndecided((prev) => {
+                  if (!prev) {
+                    set('checkin_time')('');
+                  }
+                  return !prev;
+                });
+              }}
+              className={`min-h-[48px] shrink-0 rounded-[11px] border px-4 font-bold text-[0.9rem] ${
+                undecided ? 'border-orange bg-orange/15 text-orange' : 'border-line text-ink-light'
+              }`}
+            >
+              未定
+            </button>
+          </div>
           <datalist id="checkin-times">
             {TIMES.map((time) => (
               <option key={time} value={time} />
