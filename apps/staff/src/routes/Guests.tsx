@@ -100,6 +100,8 @@ export function Guests() {
     }
   }
   const selectedGuests = selectedDay ? (byDay.get(selectedDay) ?? []) : [];
+  const selectedActive = selectedGuests.filter(isActive);
+  const selectedHeads = selectedActive.reduce((sum, g) => sum + (g.party_size ?? 1), 0);
 
   const open = (id: string) => navigate(`/guests/${id}`);
   const goMonth = (delta: number) => {
@@ -283,10 +285,8 @@ export function Guests() {
               <>
                 <SectionLabel>
                   {formatStayDate(selectedDay)} —{' '}
-                  <span className="font-sans tabular-nums">
-                    {selectedGuests.filter(isActive).length}
-                  </span>
-                  名
+                  <span className="font-sans tabular-nums">{selectedActive.length}</span>組{' '}
+                  <span className="font-sans tabular-nums">{selectedHeads}</span>名
                 </SectionLabel>
                 {selectedGuests.length === 0 ? (
                   <EmptyState>この日の予約はありません。</EmptyState>
