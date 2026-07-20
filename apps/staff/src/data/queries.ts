@@ -7,6 +7,7 @@ import type {
   GuestNoteRow,
   GuestRow,
   LostItemRow,
+  ShiftPlanRow,
   ShiftSessionRow,
   StaffRow,
   TaskRow,
@@ -41,6 +42,15 @@ export function useUpcomingGuests() {
 export function useGuestsInMonth(ym: string) {
   return useQuery<GuestRow>(
     "SELECT * FROM guest WHERE stay_date >= ? AND stay_date <= ? ORDER BY stay_date, COALESCE(checkin_time, '~~')",
+    [`${ym}-01`, `${ym}-31`],
+  );
+}
+
+// Shift-plan (rota) rows for a calendar month. (Bulk ops read their own source
+// days directly, so no margin is needed here.)
+export function useShiftPlansInMonth(ym: string) {
+  return useQuery<ShiftPlanRow>(
+    'SELECT * FROM shift_plan WHERE date >= ? AND date <= ? ORDER BY date, created_at',
     [`${ym}-01`, `${ym}-31`],
   );
 }

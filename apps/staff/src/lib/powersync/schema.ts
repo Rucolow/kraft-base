@@ -163,6 +163,17 @@ const product = new Table({
   created_at: column.text,
 });
 
+const shift_plan = new Table(
+  {
+    date: column.text,
+    staff_id: column.text,
+    label: column.text,
+    created_by: column.text,
+    created_at: column.text,
+  },
+  { indexes: { date: ['date'] } },
+);
+
 export const AppSchema = new Schema({
   staff,
   device,
@@ -178,6 +189,7 @@ export const AppSchema = new Schema({
   daily_reset,
   checkin_record,
   product,
+  shift_plan,
 });
 
 export type Database = (typeof AppSchema)['types'];
@@ -195,3 +207,4 @@ export type EquipmentIssueRow = Database['equipment_issue'];
 export type DailyResetRow = Database['daily_reset'];
 export type CheckinRecordRow = Database['checkin_record'];
 export type ProductRow = Database['product'];
+export type ShiftPlanRow = Database['shift_plan'];
