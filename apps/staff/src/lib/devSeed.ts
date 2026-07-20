@@ -2,6 +2,7 @@ import { SEED_PRODUCTS } from '../content/products';
 import { seedContent, seedTasks } from '../content/seed';
 import { nowIso, shiftDate } from './date';
 import { type SqlValue, boolToInt, insertRow, serializeList, uuid } from './db';
+import { addDays } from './month';
 import { db } from './powersync';
 import { canConnect } from './powersync/connector';
 
@@ -144,6 +145,26 @@ export async function ensureLocalSeed(): Promise<void> {
         status: guest.status,
         review_sent_at: null,
         whole_house: 0,
+        created_by: STAFF.owner.id,
+        created_at: at,
+      });
+    }
+
+    // Rota (shift plan) — a few assignments around today, plus last week's so the
+    // "copy last week" action has a source in the demo.
+    for (const plan of [
+      { date: today, staff: STAFF.morley.id, label: null },
+      { date: today, staff: STAFF.day.id, label: '遅番' },
+      { date: addDays(today, 1), staff: STAFF.morley.id, label: null },
+      { date: addDays(today, 3), staff: STAFF.day.id, label: null },
+      { date: addDays(today, -7), staff: STAFF.morley.id, label: null },
+      { date: addDays(today, -6), staff: STAFF.day.id, label: '遅番' },
+    ]) {
+      await ins('shift_plan', {
+        id: uuid(),
+        date: plan.date,
+        staff_id: plan.staff,
+        label: plan.label,
         created_by: STAFF.owner.id,
         created_at: at,
       });

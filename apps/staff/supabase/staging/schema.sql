@@ -1,5 +1,5 @@
 -- KRAFT BASE 使い捨て検証環境(L5)用スキーマ。新規Supabaseプロジェクトに1回貼って実行する。
--- 本番マイグレーション 0001〜0017 を順に結合したもの（手動再生成）。
+-- 本番マイグレーション 0001〜0018 を順に結合したもの（手動再生成）。
 -- 方針: 常設ステージングは作らない（docs/plan-verification-system.md）。大規模変更の
 -- 事前リハーサルでのみ使い捨て環境を立てる用。migrations を増やしたら末尾に追記すること。
 
@@ -706,3 +706,44 @@ create policy staff_claim on public.staff
   with check (auth_user_id = auth.uid());
 
 drop function if exists public.owner_is_linked();
+
+-- ===== 0018_shift_plan.sql =====
+-- Staff shift plan (rota). date = shift-day; owner edits, everyone reads.
+
+create table if not exists public.shift_plan (
+  id uuid primary key default gen_random_uuid(),
+  date text not null,
+  staff_id uuid not null references public.staff (id),
+  label text,
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+create index if not exists shift_plan_date_idx on public.shift_plan (date);
+
+alter table public.shift_plan enable row level security;
+revoke all on table public.shift_plan from anon;
+grant select, insert, update, delete on table public.shift_plan to authenticated;
+
+drop policy if exists shift_plan_select on public.shift_plan;
+create policy shift_plan_select on public.shift_plan
+  for select to authenticated using (public.is_org_member());
+drop policy if exists shift_plan_insert on public.shift_plan;
+create policy shift_plan_insert on public.shift_plan
+  for insert to authenticated with check (public.is_owner());
+drop policy if exists shift_plan_update on public.shift_plan;
+create policy shift_plan_update on public.shift_plan
+  for update to authenticated using (public.is_owner()) with check (public.is_owner());
+drop policy if exists shift_plan_delete on public.shift_plan;
+create policy shift_plan_delete on public.shift_plan
+  for delete to authenticated using (public.is_owner());
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'powersync' and tablename = 'shift_plan') then
+    alter publication powersync add table public.shift_plan;
+  end if;
+  if exists (select 1 from pg_roles where rolname = 'powersync_role') then
+    grant select on public.shift_plan to powersync_role;
+  end if;
+end
+$$;
