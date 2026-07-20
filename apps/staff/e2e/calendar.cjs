@@ -61,14 +61,14 @@ const check = (n, p, d = '') => {
   await page.getByRole('button', { name: 'カレンダー', exact: true }).click();
   await page.waitForTimeout(400);
   const cal = await txt();
-  check('R3a view toggle: ゲスト + シフト（準備中）', /ゲスト/.test(cal) && /シフト.{0,4}準備中/.test(cal), '');
-  // The only シフト button on this screen is the (disabled) view toggle; the
-  // accessible name has a space before （準備中）, so match loosely.
+  check('R3a view toggle has ゲスト + シフト', /ゲスト/.test(cal) && /シフト/.test(cal), '');
+  // The シフト view is live now (PR-3); the toggle must be enabled. Shift-view
+  // behavior itself is covered by shift_plan.cjs.
   const shiftDisabled = await page
-    .getByRole('button', { name: /シフト/ })
+    .getByRole('button', { name: 'シフト', exact: true })
     .isDisabled()
-    .catch(() => false);
-  check('R3a シフト toggle is disabled (skeleton)', shiftDisabled);
+    .catch(() => true);
+  check('R3a シフト toggle is enabled', !shiftDisabled);
   check('R3a shows the current month label', /\d{4}年\d{1,2}月/.test(cal), (cal.match(/\d{4}年\d{1,2}月/) || [''])[0]);
   check('R3a a day cell shows a headcount (名)', /\d+名/.test(cal));
   check('R3a 貸切 day highlighted (label in a cell)', /貸切/.test(cal));
