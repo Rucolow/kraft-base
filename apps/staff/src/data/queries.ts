@@ -35,6 +35,16 @@ export function useUpcomingGuests() {
   );
 }
 
+// All guests in a calendar month ('YYYY-MM'). stay_date is 'YYYY-MM-DD' text, so a
+// string range covers the month; '-31' as the upper bound is safe for every month
+// (no real day sorts above it).
+export function useGuestsInMonth(ym: string) {
+  return useQuery<GuestRow>(
+    "SELECT * FROM guest WHERE stay_date >= ? AND stay_date <= ? ORDER BY stay_date, COALESCE(checkin_time, '~~')",
+    [`${ym}-01`, `${ym}-31`],
+  );
+}
+
 export function useGuest(id: string) {
   return useQuery<GuestRow>('SELECT * FROM guest WHERE id = ?', [id]);
 }
