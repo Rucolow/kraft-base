@@ -78,7 +78,9 @@ const tapToday = async (page) => {
   page.on('pageerror', (e) => errs.push('OWNER pageerror:' + e.message));
 
   const grid = await txt(page);
-  check('R3b shift cells show staff chips', /モ|日/.test(grid), '');
+  // モ (モーリー's chip) is unambiguous — it never appears in the weekday header
+  // 日月火水木金土, so this only passes if a real staff chip rendered.
+  check('R3b shift cells show staff chips', /モ/.test(grid), '');
 
   // Tap the today cell (only day with plans in the current-month seed grid). The
   // shift toggle removed guest headcounts, so tap the cell holding "遅番"? No —
@@ -107,9 +109,10 @@ const tapToday = async (page) => {
   check('R3b owner delete removes an assignment', delAfterDel === delAfterAdd - 1, `${delAfterAdd}->${delAfterDel}`);
 
   // Range assign: open the tool, assign 日中スタッフ over today (defaults) — count grows.
+  // The range form's select is DOM-first (it renders above the add form), so .first().
   await page.getByRole('button', { name: '期間でまとめて入力' }).click();
   await page.waitForTimeout(200);
-  await page.locator('select').last().selectOption({ label: '日中スタッフ' }).catch(() => {});
+  await page.locator('select').first().selectOption({ label: '日中スタッフ' }).catch(() => {});
   await page.getByRole('button', { name: '割り当て' }).click();
   await page.waitForTimeout(600);
   const delAfterRange = await page.getByRole('button', { name: '削除' }).count();

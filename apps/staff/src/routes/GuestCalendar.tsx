@@ -71,20 +71,25 @@ export function GuestCalendar() {
     setSelectedDay(null);
   };
 
+  // try/finally so a rejected write never leaves `busy` stuck true (which would
+  // wedge every edit button until the component remounts).
   async function doAdd() {
     if (!selectedDay || !addStaff || busy) {
       return;
     }
     setBusy(true);
-    await addShiftPlan({
-      date: selectedDay,
-      staffId: addStaff,
-      label: addLabel || null,
-      createdBy: currentStaff?.id ?? null,
-    });
-    setAddStaff('');
-    setAddLabel('');
-    setBusy(false);
+    try {
+      await addShiftPlan({
+        date: selectedDay,
+        staffId: addStaff,
+        label: addLabel || null,
+        createdBy: currentStaff?.id ?? null,
+      });
+      setAddStaff('');
+      setAddLabel('');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function doRange() {
@@ -92,17 +97,22 @@ export function GuestCalendar() {
       return;
     }
     setBusy(true);
-    const [start, end] = rangeStart <= rangeEnd ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
-    await addShiftPlanRange({
-      start,
-      end,
-      staffId: rangeStaff,
-      label: addLabel || null,
-      createdBy: currentStaff?.id ?? null,
-    });
-    setBusy(false);
-    setRangeOpen(false);
-    setRangeStaff('');
+    try {
+      const [start, end] = rangeStart <= rangeEnd ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
+      // The range tool has no label field, so assign unlabeled (don't leak the
+      // add-form's label); the owner can label individual days afterward.
+      await addShiftPlanRange({
+        start,
+        end,
+        staffId: rangeStaff,
+        label: null,
+        createdBy: currentStaff?.id ?? null,
+      });
+      setRangeOpen(false);
+      setRangeStaff('');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function doCopyWeek() {
@@ -110,8 +120,11 @@ export function GuestCalendar() {
       return;
     }
     setBusy(true);
-    await copyPrevWeek(selectedDay, currentStaff?.id ?? null);
-    setBusy(false);
+    try {
+      await copyPrevWeek(selectedDay, currentStaff?.id ?? null);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
