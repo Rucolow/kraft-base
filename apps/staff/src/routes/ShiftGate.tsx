@@ -23,6 +23,15 @@ export function ShiftGate() {
        ORDER BY ended_at DESC LIMIT 1`,
     [device?.deviceId ?? ''],
   );
+  // Deliberate 退勤 markers. endShift stamps a timeline entry at the exact instant
+  // it sets the session's ended_at; the 04:00 auto-close (closeStaleSessions)
+  // writes none. Matching on that instant is what tells a real clock-out apart
+  // from a forgotten shift, so the celebratory card can't fire for the latter.
+  const { data: clockOutMarks } = useQuery<{ created_at: string }>(
+    `SELECT created_at FROM timeline_entry
+       WHERE kind = 'system' AND body LIKE '退勤%'
+       ORDER BY created_at DESC LIMIT 20`,
+  );
 
   // The shift roster lists everyone who works a shift. At this 3-person guest-
   // house 2 of the 3 are owners, so owners MUST be tappable here — filtering to
@@ -42,13 +51,15 @@ export function ShiftGate() {
     [previous, timeline, followups],
   );
 
-  // "Clocked out today": show the お疲れさま card while the most recent ended
-  // session on this device is still within the current shift-day, so the message
-  // survives a reload / app relaunch (a personal device would otherwise fall back
-  // to the "start a shift" prompt and read as "did my clock-out even work?").
+  // "Clocked out today": show the お疲れさま card while this device's most recent
+  // ended session is within the current shift-day AND was ended deliberately (a
+  // matching 退勤 marker), so it survives a reload but never celebrates a shift
+  // that was merely auto-closed at 04:00 because someone forgot to press 退勤.
   const lastEnded = previous[0] ?? null;
   const clockedOutToday =
-    !!lastEnded?.ended_at && shiftDate(new Date(lastEnded.ended_at)) === shiftDate();
+    !!lastEnded?.ended_at &&
+    shiftDate(new Date(lastEnded.ended_at)) === shiftDate() &&
+    clockOutMarks.some((mark) => mark.created_at === lastEnded.ended_at);
   const lastEndedStaff = staff.find((member) => member.id === lastEnded?.staff_id) ?? null;
 
   async function end() {
