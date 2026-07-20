@@ -62,8 +62,10 @@ const check = (n, p, d = '') => {
   await page.waitForTimeout(400);
   const cal = await txt();
   check('R3a view toggle: ゲスト + シフト（準備中）', /ゲスト/.test(cal) && /シフト.{0,4}準備中/.test(cal), '');
+  // The only シフト button on this screen is the (disabled) view toggle; the
+  // accessible name has a space before （準備中）, so match loosely.
   const shiftDisabled = await page
-    .getByRole('button', { name: /シフト（準備中）/ })
+    .getByRole('button', { name: /シフト/ })
     .isDisabled()
     .catch(() => false);
   check('R3a シフト toggle is disabled (skeleton)', shiftDisabled);
