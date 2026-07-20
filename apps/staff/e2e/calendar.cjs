@@ -51,13 +51,14 @@ const check = (n, p, d = '') => {
   await wU((u) => /\/new$/.test(u));
   await page.waitForTimeout(300);
   await page.getByRole('button', { name: '貸切', exact: true }).click();
-  await page.getByLabel('お名前').fill('貸切カレンダーさん');
+  // Name must not contain "カレンダー" — it would collide with the tab locator.
+  await page.getByLabel('お名前').fill('マルキリ検証さん');
   await page.getByRole('button', { name: '追加', exact: true }).last().click();
   await wU((u) => u === '/guests');
   await page.waitForTimeout(400);
 
-  // Open the calendar tab.
-  await page.getByRole('button', { name: /カレンダー/ }).click();
+  // Open the calendar tab (exact — the tab label is exactly "カレンダー").
+  await page.getByRole('button', { name: 'カレンダー', exact: true }).click();
   await page.waitForTimeout(400);
   const cal = await txt();
   check('R3a view toggle: ゲスト + シフト（準備中）', /ゲスト/.test(cal) && /シフト.{0,4}準備中/.test(cal), '');
@@ -74,7 +75,7 @@ const check = (n, p, d = '') => {
   await page.locator('button').filter({ hasText: /\d+名/ }).first().click();
   await page.waitForTimeout(400);
   const withList = await txt();
-  check('R3a tapping a day lists its guests', /Jonas Schmidt/.test(withList) || /貸切カレンダーさん/.test(withList), withList.slice(0, 140));
+  check('R3a tapping a day lists its guests', /Jonas Schmidt/.test(withList) || /マルキリ検証さん/.test(withList), withList.slice(0, 140));
 
   check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 
