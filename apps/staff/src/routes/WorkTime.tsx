@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useShiftSessions, useStaff } from '../data/queries';
 import { formatClock, shiftDate } from '../lib/date';
+import { addMonth, monthLabel } from '../lib/month';
 import { useSession } from '../lib/session';
 
 const JST = 'Asia/Tokyo';
@@ -14,19 +15,6 @@ function ymOf(iso: string): string {
 }
 function dayOf(iso: string): string {
   return shiftDate(new Date(iso));
-}
-function parseYm(ym: string): [number, number] {
-  const parts = ym.split('-');
-  return [Number(parts[0] ?? '0'), Number(parts[1] ?? '1')];
-}
-function addMonth(ym: string, delta: number): string {
-  const [y, m] = parseYm(ym);
-  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
-function monthLabel(ym: string): string {
-  const [y, m] = parseYm(ym);
-  return `${y}年${m}月`;
 }
 function durLabel(min: number): string {
   const h = Math.floor(min / 60);
