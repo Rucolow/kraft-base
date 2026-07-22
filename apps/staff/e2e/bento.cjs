@@ -65,27 +65,35 @@ const check = (n, p, d = '') => {
   check('expanded: cancelled order struck with badge', /キャンセル/.test(expanded));
   check('expanded: stale PENDING hidden', !/決済待ち/.test(expanded));
 
-  // 1-tap matching: link ROSSI's order to Marco Rossi.
+  // Two unmatched orders. ORDER BY id puts bo-manual-1 (電話注文, ONSITE) before
+  // bo-unmatched-1 (ROSSI) — so the FIRST 照合 belongs to the manual entry.
   const beforeBtns = await page.getByRole('button', { name: '照合', exact: true }).count();
   check('two 照合 buttons before matching', beforeBtns === 2, `count=${beforeBtns}`);
-  await page.getByRole('button', { name: '照合', exact: true }).first().click();
-  await page.waitForTimeout(300);
-  await page.getByRole('button', { name: /Marco Rossi/ }).click();
-  await page.waitForTimeout(500);
-  const afterLink = await txt();
-  check('matched: order now shows → Marco Rossi', /→ Marco Rossi/.test(afterLink));
-  check('unmatched count dropped to 1', /未照合1件/.test(afterLink));
 
-  // Exclude the manual-entry order (not a staying guest).
+  // Step 1: exclude the manual phone order (not a staying guest).
   await page.getByRole('button', { name: '照合', exact: true }).first().click();
   await page.waitForTimeout(300);
   await page.getByRole('button', { name: /宿泊者ではない/ }).click();
   await page.waitForTimeout(500);
   const afterExclude = await txt();
-  check('excluded: no unmatched warning left', !/未照合/.test(afterExclude), (afterExclude.match(/弁当注文[^詳]*/) || [''])[0]);
+  check('excluded: one unmatched left', /未照合1件/.test(afterExclude), (afterExclude.match(/弁当注文[^詳]*/) || [''])[0]);
   check('excluded row shows 対象外（戻す）', /対象外（戻す）/.test(afterExclude));
 
+  // Step 2: the remaining 照合 is ROSSI's order — link it to Marco Rossi.
+  // The picker chip's name includes 当日; the guest-list card doesn't (strict-mode safe).
+  await page.getByRole('button', { name: '照合', exact: true }).first().click();
+  await page.waitForTimeout(300);
+  await page.getByRole('button', { name: /Marco Rossi.*当日/ }).click();
+  await page.waitForTimeout(500);
+  const afterLink = await txt();
+  check('matched: order now shows → Marco Rossi', /→ Marco Rossi/.test(afterLink));
+  check('no unmatched warning left', !/未照合/.test(afterLink));
+
   // Guest detail: Weber shows the linked order chip, manual field greyed as 手入力.
+  // Collapse the panel first — its expanded rows contain a "→ Lukas & Anna Weber"
+  // unlink chip that would otherwise shadow the guest card.
+  await page.getByRole('button', { name: /弁当注文 計/ }).click();
+  await page.waitForTimeout(300);
   await page.locator('text=Lukas & Anna Weber').first().click();
   await wU((u) => /^\/guests\/[^/]+$/.test(u));
   await page.waitForTimeout(400);

@@ -37,7 +37,7 @@ values
    '11111111-0000-0000-0000-000000000001'),
   ('22222222-0000-0000-0000-000000000003',
    to_char(((now() at time zone 'Asia/Tokyo')::date + 1), 'YYYY-MM-DD'),
-   'Anna Weber (TEST)', 'ドイツ', 'de', 2, '16:00', '4番・5番', 'ヴィーガン弁当 ×2', 'expected', null, true,
+   'Anna Weber (TEST)', 'ドイツ', 'de', 2, '16:00', '4番・5番', 'ベジタリアン弁当 ×2', 'expected', null, true,
    '11111111-0000-0000-0000-000000000001'),
   ('22222222-0000-0000-0000-000000000004',
    to_char(((now() at time zone 'Asia/Tokyo')::date + 3), 'YYYY-MM-DD'),

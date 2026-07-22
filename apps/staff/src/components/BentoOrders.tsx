@@ -1,5 +1,5 @@
 import { AlertTriangle, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useBentoOrdersForDate, useGuestsAroundDate } from '../data/queries';
 import {
   hasPartialRefund,
@@ -57,14 +57,29 @@ function OrderRow({
         {linked ? (
           <button
             type="button"
-            onClick={() => unlinkOrder(order.id)}
+            onClick={() => {
+              if (window.confirm(`${linked.name} との紐づけを解除しますか？`)) {
+                unlinkOrder(order.id);
+              }
+            }}
             className="rounded-full bg-green-light/20 px-2 py-0.5 text-[0.72rem] text-ink"
-            title="タップで紐づけ解除"
           >
             → {linked.name}
           </button>
         ) : order.guest_id ? (
-          <span className="text-[0.72rem] text-ink-mute">→ 紐づけ済み</span>
+          // Linked, but the guest is outside the ±2day window or was cancelled —
+          // still allow undoing the link (confirm-guarded).
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('この紐づけを解除しますか？')) {
+                unlinkOrder(order.id);
+              }
+            }}
+            className="text-[0.72rem] text-ink-mute underline"
+          >
+            → 紐づけ済み（解除）
+          </button>
         ) : order.match === 'excluded' ? (
           <button
             type="button"
@@ -99,10 +114,18 @@ export function BentoDayPanel({ date, compact = false }: { date: string; compact
   const { data: nearbyGuests } = useGuestsAroundDate(date);
   const [open, setOpen] = useState(false);
   const [picking, setPicking] = useState<BentoOrderRow | null>(null);
+  // Watched queries only re-emit on data changes; tick every 5 min so the
+  // 45-min PENDING→hidden rule takes effect on an idle screen too.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 5 * 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const visible = orders.filter((order) => isVisibleOrder(order));
+  const visible = orders.filter((order) => isVisibleOrder(order, now));
   const meals = totalMeals(orders);
   const unmatchedCount = orders.filter(isUnmatched).length;
+  const cancelledCount = visible.filter((order) => isCancelledOrder(order)).length;
 
   if (visible.length === 0) {
     return null; // no orders — no panel, no noise
@@ -116,6 +139,9 @@ export function BentoDayPanel({ date, compact = false }: { date: string; compact
     return (
       <div className="mb-2 px-1 text-[0.78rem] text-ink-light">
         🍱 弁当注文 計{meals}食{summary ? `（${summary}）` : ''}
+        {cancelledCount > 0 ? (
+          <span className="ml-1 text-ink-mute">キャンセル{cancelledCount}件</span>
+        ) : null}
         {unmatchedCount > 0 ? (
           <span className="ml-1 text-orange-deep">未照合{unmatchedCount}件</span>
         ) : null}
@@ -132,6 +158,11 @@ export function BentoDayPanel({ date, compact = false }: { date: string; compact
       >
         <span className="flex-1 font-bold text-[0.9rem]">
           🍱 弁当注文 計{meals}食{summary ? ` （${summary}）` : ''}
+          {cancelledCount > 0 ? (
+            <span className="ml-1 font-normal text-[0.74rem] text-ink-mute">
+              キャンセル{cancelledCount}件
+            </span>
+          ) : null}
         </span>
         {unmatchedCount > 0 ? (
           <span className="flex items-center gap-1 text-[0.76rem] text-orange-deep">

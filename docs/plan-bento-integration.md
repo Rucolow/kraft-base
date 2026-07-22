@@ -60,7 +60,12 @@ create index if not exists bento_order_date_idx on public.bento_order (delivery_
 
 -- 専用書き込みロール（service key は渡さない）。漏洩時の被害を本表1つに限定し、
 -- 照合列(guest_id/match)は権限レベルで書けなくする。
-create role bento_writer nologin;
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'bento_writer') then
+    create role bento_writer nologin;
+  end if;
+end $$;
 grant bento_writer to authenticator;
 grant usage on schema public to bento_writer;
 grant select on public.bento_order to bento_writer;
@@ -105,6 +110,12 @@ create policy bento_order_select on public.bento_order
 create policy bento_order_update on public.bento_order
   for update to authenticated
   using (public.is_org_member()) with check (public.is_org_member());
+-- ★レビュー修正: RLSはポリシーの無いロールをデフォルト拒否する。これが無いと
+-- bento_writer の全書き込みが 42501 になり統合が初回から死ぬ。行レベル全許可でも
+-- 実防御は列grant＋ガードトリガーにあるため安全。
+drop policy if exists bento_order_writer on public.bento_order;
+create policy bento_order_writer on public.bento_order
+  for all to bento_writer using (true) with check (true);
 
 -- publication + powersync_role（0010/0018テンプレ）
 do $$
@@ -170,8 +181,9 @@ end $$;
 ■ 書き込み先（upsert・主キーid）:
   POST {KB_SUPABASE_URL}/rest/v1/bento_order?columns=id,status,channel,delivery_date,customer_name,items_label,items_json,total_yen,refunded_yen,note,payment_method,fulfilled_at,source_updated_at
   Headers:
-    apikey: {KB_BENTO_WRITER_JWT}
+    apikey: {KB_SUPABASE_ANON_KEY}                ← ゲートウェイ通過用（プロジェクトのanonキー）
     Authorization: Bearer {KB_BENTO_WRITER_JWT}   ← 専用ロールJWT（こちらで発行して渡す。service keyではない）
+    ※apikey にカスタムJWTを入れないこと（SupabaseゲートウェイはプロジェクトAPIキーのみ受理）
     Prefer: resolution=merge-duplicates,return=minimal
     Content-Type: application/json
   Body: 注文オブジェクトの配列。

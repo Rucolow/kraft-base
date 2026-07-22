@@ -432,7 +432,15 @@ export function GuestEdit() {
 
         <Labeled label="弁当（必要な数だけ）">
           <div className="rounded-[11px] border border-line">
-            {BENTO_ITEMS.map((item, index) => {
+            {[
+              ...BENTO_ITEMS,
+              // Legacy names in stored data (e.g. 旧称 ヴィーガン弁当) get their own
+              // visible row so staff can see and decrement them; previously they were
+              // preserved but invisible.
+              ...Object.keys(bento).filter(
+                (name) => !BENTO_ITEMS.includes(name) && (bento[name] ?? 0) > 0,
+              ),
+            ].map((item, index) => {
               const count = bento[item] ?? 0;
               return (
                 <div

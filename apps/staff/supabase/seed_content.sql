@@ -41,7 +41,7 @@ insert into public.content (id, kind, slug, title, body, phase, lang, photo_path
   (gen_random_uuid(), 'procedure', 'proc-kamidana', '神棚の作法', '二礼・二拍手・一礼。翌朝、希望者がご自分の手で安全祈願をできる。', null, null, '{}', 'ready', now()),
   (gen_random_uuid(), 'procedure', 'proc-hiuchi', '火打石（切り火）の進行', '出かける人の背後で火打石と火打金を打ち合わせ火花を散らし、安全を願う。固有の石・道具・保管場所・声かけ・辞退時対応はモーリーと実演して確定。', 'evening_close', null, '{}', 'needs_input', now()),
   (gen_random_uuid(), 'procedure', 'proc-payment', '決済の使い方（Square / PayPay）', '館内販売の決済手順。具体操作は要確認。', null, null, '{}', 'needs_input', now()),
-  (gen_random_uuid(), 'procedure', 'proc-bento', '弁当の受け取り・見分け', '肉のおくだの弁当。ヴィーガンは緑シール。受け取り方法・見分けは要確認。', null, null, '{}', 'needs_input', now()),
+  (gen_random_uuid(), 'procedure', 'proc-bento', '弁当の受け取り・見分け', '肉のおくだの弁当。ベジタリアンは緑シール。受け取り方法・見分けは要確認。', null, null, '{}', 'needs_input', now()),
   (gen_random_uuid(), 'procedure', 'proc-bbq', 'BBQ の運用', '火気の扱い、片付け、火の始末。固有の運用は要確認。', null, null, '{}', 'needs_input', now()),
   (gen_random_uuid(), 'procedure', 'proc-claim', 'クレーム対応', 'まず傾聴し謝意を示す。その場で判断せず運営に確認・連絡。', null, null, '{}', 'ready', now()),
   (gen_random_uuid(), 'procedure', 'proc-emergency', '緊急時手順', '緊急は電話。警察110／消防・救急119。重症は119。運営（肉のおくだ）080-8032-9762。', null, null, '{}', 'ready', now()),

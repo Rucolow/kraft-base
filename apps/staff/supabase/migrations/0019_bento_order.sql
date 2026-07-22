@@ -26,7 +26,12 @@ create index if not exists bento_order_date_idx on public.bento_order (delivery_
 
 -- Dedicated writer role (no service key handed out). A leak is contained to this
 -- one table, and the matching columns are unwritable at the privilege level.
-create role bento_writer nologin;
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'bento_writer') then
+    create role bento_writer nologin;
+  end if;
+end $$;
 grant bento_writer to authenticator;
 grant usage on schema public to bento_writer;
 grant select on public.bento_order to bento_writer;
@@ -73,6 +78,12 @@ drop policy if exists bento_order_update on public.bento_order;
 create policy bento_order_update on public.bento_order
   for update to authenticated
   using (public.is_org_member()) with check (public.is_org_member());
+-- RLS default-denies roles with no applicable policy — without this, every
+-- bento_writer request would 42501 and the mirror would stay empty. Row-level
+-- allow-all is safe: the real protection is the column grants + guard trigger.
+drop policy if exists bento_order_writer on public.bento_order;
+create policy bento_order_writer on public.bento_order
+  for all to bento_writer using (true) with check (true);
 
 -- publication + powersync_role (0010/0018 template)
 do $$
