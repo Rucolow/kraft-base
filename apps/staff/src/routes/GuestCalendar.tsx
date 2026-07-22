@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BentoDayPanel } from '../components/BentoOrders';
 import { GuestList, headcount, isActive } from '../components/GuestCard';
 import { Badge, EmptyState, SectionLabel } from '../components/ui';
 import { useGuestsInMonth, useShiftPlansInMonth, useStaff } from '../data/queries';
@@ -332,6 +333,7 @@ export function GuestCalendar() {
               <span className="font-sans tabular-nums">{selectedActive.length}</span>組{' '}
               <span className="font-sans tabular-nums">{selectedHeads}</span>名
             </SectionLabel>
+            <BentoDayPanel date={selectedDay} compact />
             {selectedGuests.length === 0 ? (
               <EmptyState>この日の予約はありません。</EmptyState>
             ) : (

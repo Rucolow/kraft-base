@@ -116,7 +116,7 @@ export async function ensureLocalSeed(): Promise<void> {
         party: 1,
         checkin: '15:00',
         bed: '3番',
-        bento: 'ヴィーガン弁当 ×1',
+        bento: 'ベジタリアン弁当 ×1',
         status: 'arrived',
       },
       {
@@ -147,6 +147,88 @@ export async function ensureLocalSeed(): Promise<void> {
         whole_house: 0,
         created_by: STAFF.owner.id,
         created_at: at,
+      });
+    }
+
+    // koguchi-bento order mirror — one of each display state so the bento panel,
+    // matching picker and badges are all exercisable in demo mode.
+    const bentoAt = (mins: number) => new Date(Date.parse(at) - mins * 60_000).toISOString();
+    const bentoOrders = [
+      {
+        id: 'bo-paid-1',
+        status: 'PAID',
+        name: 'Lukas Weber',
+        items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 2 }],
+        total: 2400,
+        note: null,
+        pay: null,
+        guest: weber,
+        match: 'manual',
+      },
+      {
+        id: 'bo-unmatched-1',
+        status: 'PAID',
+        name: 'MARCO ROSSI',
+        items: [{ slug: 'vegan', name: 'ベジタリアン弁当', qty: 1 }],
+        total: 1100,
+        note: '減塩でお願いします',
+        pay: null,
+        guest: null,
+        match: 'none',
+      },
+      {
+        id: 'bo-manual-1',
+        status: 'CONFIRMED',
+        name: '電話 注文',
+        items: [{ slug: 'onigiri', name: 'おむすび弁当', qty: 2 }],
+        total: 1600,
+        note: null,
+        pay: 'ONSITE',
+        guest: null,
+        match: 'none',
+      },
+      {
+        id: 'bo-cancelled-1',
+        status: 'CANCELLED',
+        name: 'Jonas Schmidt',
+        items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 1 }],
+        total: 1200,
+        note: null,
+        pay: null,
+        guest: schmidt,
+        match: 'manual',
+      },
+      {
+        id: 'bo-pending-old',
+        status: 'PENDING',
+        name: null,
+        items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 1 }],
+        total: 1200,
+        note: null,
+        pay: null,
+        guest: null,
+        match: 'none',
+      },
+    ];
+    for (const [i, o] of bentoOrders.entries()) {
+      await ins('bento_order', {
+        id: o.id,
+        status: o.status,
+        channel: 'GUEST',
+        delivery_date: today,
+        customer_name: o.name,
+        items_label: o.items.map((it) => `${it.name} ×${it.qty}`).join('・'),
+        items_json: JSON.stringify(o.items.map((it) => ({ ...it, unitPriceYen: 1200 }))),
+        total_yen: o.total,
+        refunded_yen: 0,
+        note: o.note,
+        payment_method: o.pay,
+        fulfilled_at: null,
+        // the stale PENDING must trip the 45-min rule; everything else is fresh
+        source_updated_at: o.id === 'bo-pending-old' ? bentoAt(60) : bentoAt(i),
+        synced_at: at,
+        guest_id: o.guest,
+        match: o.match,
       });
     }
 

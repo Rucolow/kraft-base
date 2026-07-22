@@ -3,9 +3,11 @@ import { ClipboardPen, Languages, Pencil, Pin, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
+import { guestOrderChip } from '../components/BentoOrders';
 import { BackButton, Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { LANG_LABEL } from '../content/kinds';
-import { useGuest, useGuestNotes } from '../data/queries';
+import { useBentoOrdersForGuest, useGuest, useGuestNotes } from '../data/queries';
+import { isCancelledOrder, isVisibleOrder, paymentLabel } from '../lib/bento';
 import { formatStayDate, nowIso } from '../lib/date';
 import { boolToInt, insertRow, parseList, serializeList, updateRow, uuid } from '../lib/db';
 import { GUEST_STATUSES, guestStatusLabel } from '../lib/guestStatus';
@@ -17,6 +19,7 @@ export function GuestDetail() {
   const { currentStaff, staff, isOwner } = useSession();
   const { data: guests } = useGuest(id);
   const { data: notes } = useGuestNotes(id);
+  const { data: bentoOrders } = useBentoOrdersForGuest(id);
   const { data: registers } = useQuery<{ id: string }>(
     'SELECT id FROM checkin_record WHERE guest_id = ? LIMIT 1',
     [id],
@@ -86,8 +89,12 @@ export function GuestDetail() {
     ['人数', `${guest.party_size ?? 1}名`],
     ['チェックイン', guest.checkin_time ?? '—'],
     ['ベッド', guest.bed ?? '—'],
-    ['弁当', guest.bento ?? '—'],
   ];
+  // Linked koguchi orders are the source of truth for meals; the manual bento
+  // field shrinks to a memo role (migration plan §5-5). When orders exist, show
+  // them first and grey the manual text.
+  const orderChip = guestOrderChip(bentoOrders);
+  const visibleOrders = bentoOrders.filter((order) => isVisibleOrder(order));
 
   return (
     <Screen>
@@ -135,6 +142,40 @@ export function GuestDetail() {
             <div className="border-line border-b px-3 py-2.5 text-[0.88rem]">{value}</div>
           </div>
         ))}
+        <div className="border-line border-b bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-orange">
+          弁当
+        </div>
+        <div className="border-line border-b px-3 py-2.5 text-[0.88rem]">
+          {orderChip ? <span className="font-bold">🍱 {orderChip}</span> : null}
+          {visibleOrders.map((order) =>
+            isCancelledOrder(order) ? (
+              <span key={order.id} className="ml-2 text-ink-mute line-through">
+                {order.items_label}（キャンセル）
+              </span>
+            ) : paymentLabel(order.payment_method) ? (
+              <Badge key={order.id} tone="wood">
+                {paymentLabel(order.payment_method)}
+              </Badge>
+            ) : null,
+          )}
+          {visibleOrders.map((order) =>
+            order.note ? (
+              <div
+                key={`n-${order.id}`}
+                className="mt-1 rounded-[8px] bg-orange/[0.07] px-2 py-1 text-[0.78rem]"
+              >
+                📝 {order.note}
+              </div>
+            ) : null,
+          )}
+          {guest.bento ? (
+            <div className={orderChip ? 'mt-1 text-[0.78rem] text-ink-mute' : ''}>
+              {orderChip ? `手入力: ${guest.bento}` : guest.bento}
+            </div>
+          ) : orderChip ? null : (
+            '—'
+          )}
+        </div>
         <div className="bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-orange">名簿</div>
         <div className="px-3 py-2.5 text-[0.88rem] md:col-span-3">
           {registered ? <Badge tone="ok">記入済み</Badge> : <Badge tone="warn">未記入</Badge>}

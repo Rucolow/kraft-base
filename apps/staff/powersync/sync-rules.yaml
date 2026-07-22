@@ -22,3 +22,4 @@ bucket_definitions:
       - SELECT * FROM checkin_record
       - SELECT * FROM product
       - SELECT * FROM shift_plan
+      - SELECT * FROM bento_order

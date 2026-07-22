@@ -1,6 +1,8 @@
 import { useQuery } from '@powersync/react';
 import { shiftDate } from '../lib/date';
+import { addDays } from '../lib/month';
 import type {
+  BentoOrderRow,
   ContentRow,
   EquipmentIssueRow,
   FollowupRow,
@@ -52,6 +54,33 @@ export function useShiftPlansInMonth(ym: string) {
   return useQuery<ShiftPlanRow>(
     'SELECT * FROM shift_plan WHERE date >= ? AND date <= ? ORDER BY date, created_at',
     [`${ym}-01`, `${ym}-31`],
+  );
+}
+
+// koguchi-bento order mirror ------------------------------------------------
+
+export function useBentoOrdersForDate(date: string) {
+  return useQuery<BentoOrderRow>('SELECT * FROM bento_order WHERE delivery_date = ? ORDER BY id', [
+    date,
+  ]);
+}
+
+export function useBentoOrdersForGuest(guestId: string) {
+  return useQuery<BentoOrderRow>(
+    'SELECT * FROM bento_order WHERE guest_id = ? ORDER BY delivery_date',
+    [guestId],
+  );
+}
+
+// Guests within ±2 days of a delivery date, for the manual-match picker. The
+// window covers multi-night stays whose per-day guest row wasn't created (link
+// to the first-day row instead).
+export function useGuestsAroundDate(date: string, days = 2) {
+  const from = addDays(date, -days);
+  const to = addDays(date, days);
+  return useQuery<GuestRow>(
+    "SELECT * FROM guest WHERE stay_date >= ? AND stay_date <= ? AND status != 'cancelled' ORDER BY stay_date, name",
+    [from, to],
   );
 }
 

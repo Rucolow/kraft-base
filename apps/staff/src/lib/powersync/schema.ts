@@ -174,6 +174,29 @@ const shift_plan = new Table(
   { indexes: { date: ['date'] } },
 );
 
+// Mirror of koguchi-bento orders (written server-side by the bento_writer role;
+// the app only reads and links guest_id/match).
+const bento_order = new Table(
+  {
+    status: column.text,
+    channel: column.text,
+    delivery_date: column.text,
+    customer_name: column.text,
+    items_label: column.text,
+    items_json: column.text,
+    total_yen: column.integer,
+    refunded_yen: column.integer,
+    note: column.text,
+    payment_method: column.text,
+    fulfilled_at: column.text,
+    source_updated_at: column.text,
+    synced_at: column.text,
+    guest_id: column.text,
+    match: column.text,
+  },
+  { indexes: { date: ['delivery_date'], guest: ['guest_id'] } },
+);
+
 export const AppSchema = new Schema({
   staff,
   device,
@@ -190,6 +213,7 @@ export const AppSchema = new Schema({
   checkin_record,
   product,
   shift_plan,
+  bento_order,
 });
 
 export type Database = (typeof AppSchema)['types'];
@@ -208,3 +232,4 @@ export type DailyResetRow = Database['daily_reset'];
 export type CheckinRecordRow = Database['checkin_record'];
 export type ProductRow = Database['product'];
 export type ShiftPlanRow = Database['shift_plan'];
+export type BentoOrderRow = Database['bento_order'];
