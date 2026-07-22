@@ -46,7 +46,7 @@ const check = (name, pass, detail='') => { R.push({name,pass,detail}); console.l
   await page.goto(`${BASE}/guests`,{waitUntil:'networkidle'}); await page.waitForTimeout(500);
   const after = await txt();
   const afterToday = (after.match(/今日 (\d+)/)||[])[1];
-  const headerCount = (after.match(/本日のゲスト — (\d+)名/)||[])[1];
+  const headerCount = (after.match(/本日のゲスト.*?(\d+)名/)||[])[1]; // "N組M名" → M (people)
   const rossiStillShown = /Marco Rossi/.test(after);
   check('#1 cancel lowers 今日 count', Number(afterToday) === Number(beforeToday)-1, `before=${beforeToday} after=${afterToday}`);
   check('#1 header count matches active', headerCount === afterToday, `header=${headerCount} tab=${afterToday}`);
