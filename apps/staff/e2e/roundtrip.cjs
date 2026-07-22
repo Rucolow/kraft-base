@@ -28,6 +28,12 @@ const R=[]; const ck=(n,p,d='')=>{R.push({n,p});console.log(`  ${p?'PASS':'FAIL'
   for(let i=0;i<2;i++) await page.getByRole('button',{name:'焼肉弁当を増やす'}).click();
   await page.getByRole('button',{name:'追加',exact:true}).last().click(); await wU(u=>u==='/guests'); await page.waitForTimeout(400);
 
+  // R4: the today header counts PEOPLE (Σparty_size), not bookings — Ronaldo's
+  // party of 3 makes people exceed the booking count.
+  const gh = (await body()).replace(/\n/g,' ');
+  const gm = gh.match(/(\d+)組\s*(\d+)名/);
+  ck('R4 today header shows headcount (people > bookings)', !!gm && Number(gm[2]) > Number(gm[1]), gm ? gm[0] : 'no 組名 match');
+
   // open detail, verify values
   await page.locator('text=Ronaldo Souza').first().click(); await wU(u=>/^\/guests\/[^/]+$/.test(u)); await page.waitForTimeout(300);
   const gid=new URL(page.url()).pathname.split('/')[2];

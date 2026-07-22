@@ -6,6 +6,12 @@ import { Badge, Card } from './ui';
 // prep — kept consistent with the home cockpit, which counts active guests only.
 export const isActive = (guest: GuestRow) => guest.status !== 'cancelled';
 
+// Total guests (people), not bookings: a single representative booking a party of
+// N counts as N. Cancelled bookings excluded. The one source of truth so lists,
+// tabs, the home badge and the calendar all agree.
+export const headcount = (guests: GuestRow[]): number =>
+  guests.filter(isActive).reduce((sum, guest) => sum + (guest.party_size ?? 1), 0);
+
 export function GuestCard({ guest, onOpen }: { guest: GuestRow; onOpen: () => void }) {
   const status = guestStatusMeta(guest.status);
   const cancelled = guest.status === 'cancelled';

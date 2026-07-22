@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GuestList, isActive } from '../components/GuestCard';
+import { GuestList, headcount, isActive } from '../components/GuestCard';
 import { EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useTodaysGuests, useUpcomingGuests } from '../data/queries';
 import { formatStayDate } from '../lib/date';
@@ -18,8 +18,11 @@ export function Guests() {
   const { data: upcoming } = useUpcomingGuests();
   const [tab, setTab] = useState<Tab>('today');
 
-  const todayCount = today.filter(isActive).length;
-  const upcomingCount = upcoming.filter(isActive).length;
+  // Tabs and headers count PEOPLE (Σ party_size), not bookings — a party of 3 on
+  // one reservation must read as 3, not 1. Keep the booking count for the "N組".
+  const todayGroups = today.filter(isActive).length;
+  const todayHeads = headcount(today);
+  const upcomingHeads = headcount(upcoming);
 
   // Upcoming stays are already ordered by date; collapse into per-date groups.
   const groups: Array<{ date: string; guests: GuestRow[] }> = [];
@@ -41,8 +44,8 @@ export function Guests() {
         <div className="flex flex-1 flex-wrap gap-2">
           {(
             [
-              ['today', '今日', todayCount],
-              ['upcoming', 'これから先', upcomingCount],
+              ['today', '今日', todayHeads],
+              ['upcoming', 'これから先', upcomingHeads],
               ['calendar', 'カレンダー', null],
             ] as const
           ).map(([key, label, count]) => (
@@ -75,7 +78,8 @@ export function Guests() {
       {tab === 'today' ? (
         <>
           <SectionLabel>
-            本日のゲスト — <span className="font-sans tabular-nums">{todayCount}</span>名
+            本日のゲスト — <span className="font-sans tabular-nums">{todayGroups}</span>組{' '}
+            <span className="font-sans tabular-nums">{todayHeads}</span>名
           </SectionLabel>
           {today.length === 0 ? (
             <EmptyState>
@@ -96,7 +100,7 @@ export function Guests() {
                 <span className="font-sans tabular-nums">
                   {group.guests.filter(isActive).length}
                 </span>
-                名
+                組 <span className="font-sans tabular-nums">{headcount(group.guests)}</span>名
               </SectionLabel>
               <GuestList guests={group.guests} onOpen={open} />
             </div>

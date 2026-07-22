@@ -1,6 +1,7 @@
 import { Bell, Check, Clock, ListChecks, ScrollText, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { headcount } from '../components/GuestCard';
 import { Badge, Card, CardHead, EmptyState, Screen } from '../components/ui';
 import { useManualTasks, useMentions, useOpenFollowups, useTodaysGuests } from '../data/queries';
 import { formatClock, jstHour, nowIso } from '../lib/date';
@@ -34,8 +35,10 @@ export function Today() {
   const { data: mentions } = useMentions(currentStaff?.id ?? null);
 
   const active = guests.filter((guest) => guest.status !== 'cancelled');
-  const arrived = active.filter((guest) => guest.status === 'arrived').length;
   const late = active.filter((guest) => guest.status === 'late');
+  // People, not bookings: a party of N on one reservation counts as N.
+  const activeHeads = headcount(guests);
+  const arrivedHeads = headcount(active.filter((guest) => guest.status === 'arrived'));
   const done = tasks.filter((task) => intToBool(task.done)).length;
 
   return (
@@ -104,7 +107,7 @@ export function Today() {
               title="本日のチェックイン"
               trailing={
                 <Badge tone="ok">
-                  {arrived} / {active.length}
+                  {arrivedHeads}名 / {activeHeads}名
                 </Badge>
               }
             />

@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GuestList, isActive } from '../components/GuestCard';
+import { GuestList, headcount, isActive } from '../components/GuestCard';
 import { Badge, EmptyState, SectionLabel } from '../components/ui';
 import { useGuestsInMonth, useShiftPlansInMonth, useStaff } from '../data/queries';
 import { formatStayDate, shiftDate } from '../lib/date';
@@ -62,7 +62,7 @@ export function GuestCalendar() {
 
   const selectedGuests = selectedDay ? (byDayGuests.get(selectedDay) ?? []) : [];
   const selectedActive = selectedGuests.filter(isActive);
-  const selectedHeads = selectedActive.reduce((sum, g) => sum + (g.party_size ?? 1), 0);
+  const selectedHeads = headcount(selectedGuests);
   const selectedPlans = selectedDay ? (byDayPlans.get(selectedDay) ?? []) : [];
 
   const openGuest = (id: string) => navigate(`/guests/${id}`);
@@ -188,8 +188,9 @@ export function GuestCalendar() {
           <div key={`blank-${index}`} />
         ))}
         {monthDays(month).map((day) => {
-          const dayActive = (byDayGuests.get(day) ?? []).filter(isActive);
-          const headCount = dayActive.reduce((sum, g) => sum + (g.party_size ?? 1), 0);
+          const dayGuests = byDayGuests.get(day) ?? [];
+          const dayActive = dayGuests.filter(isActive);
+          const headCount = headcount(dayGuests);
           const whole = dayActive.some((g) => g.whole_house === 1);
           const plans = byDayPlans.get(day) ?? [];
           const isToday = day === shiftDate();
