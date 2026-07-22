@@ -1,7 +1,7 @@
 # 実装計画: お弁当注文システム（koguchi-bento）連携 v2
 
-ステータス: **計画確定待ち（敵対レビュー3レンズ反映済み。koguchi への追加質問7件と
-オーナー確認5件の回答後に実装開始）**。
+ステータス: **契約凍結・実装可（2026-07-22）**。敵対レビュー3レンズ＋オーナー確認5件＋
+koguchi 追加質問8件の回答をすべて反映済み（§9/§11）。
 相手システム: `Rucolow/koguchi-bento`（Next.js/Vercel、DB=Neon Postgres/Prisma、Stripe、
 本番 koguchi.nikuda.jp）。v1→v2 の変更根拠は §10 レビュー記録。
 
@@ -45,7 +45,7 @@ create table if not exists public.bento_order (
   delivery_date text not null,       -- 'YYYY-MM-DD'（JST暦日）
   customer_name text,                -- 照合と表示に使用。メール/電話は同期しない（PII最小化）
   items_label text,                  -- 表示用スナップショット "焼肉弁当 ×2"
-  items_json text,                   -- [{"productId","name","qty","unitPriceYen"}] 集計はproductIdで
+  items_json text,                   -- [{"slug","name","qty","unitPriceYen"}] 集計は slug で（productIdは環境毎に変わる）
   total_yen integer,
   refunded_yen integer not null default 0,  -- 締切後の部分返金を可視化
   note text,
@@ -188,8 +188,9 @@ end $$;
     "delivery_date": ★下記の生成規則を厳守,
     "customer_name": customerName,          // null可
     "items_label": 例 "焼肉弁当 ×2・おむすび弁当 ×1",
-    "items_json": JSON.stringify(items.map(i => ({productId, name, qty, unitPriceYen}))),
-                                            // productId必須（KB側の集計キー）
+    "items_json": JSON.stringify(items.map(i => ({slug, name, qty, unitPriceYen}))),
+                                            // slug必須（KB側の集計キー。productIdは環境毎に変わるため使わない）
+                                            // 現行: yakiniku=焼肉弁当 / vegan=ベジタリアン弁当 / onigiri=おむすび弁当
     "total_yen": totalYen,
     "refunded_yen": refundedYen,            // 締切後の部分返金の可視化に必須
     "note": note,
@@ -205,13 +206,16 @@ end $$;
   受け入れテスト: DBに 2026-07-25 の注文 → ペイロードが文字列 "2026-07-25" に一致すること。
   cron等の「today」判定は JST で算出すること（UTCのtodayは 00:00-09:00 JST に1日ズレる）。
 
-■ 送信対象: KRAFT BASE 行きの注文のみ（判定方法は追加質問③④の回答で確定。
-  type一致より deliveryPointId のID直指定を推奨）
+■ 送信対象: deliveryPoint.type == 'KRAFTBASE' の注文のみ（本番に1件のみ・
+  urlToken='kraftbase'。IDのハードコードはしない。channel は KB行きなら常に GUEST が
+  サーバ導出される不変条件 — INN が届いたら想定外ログ）
 
 ■ 送信タイミング:
   A. イベント時 push（Slack通知と同パターン・コミット後ベストエフォート）:
      作成 / PAID確定 / EXPIRED / CANCELLED / REFUNDED(部分含む) / deliveryDate変更 /
      fulfilledAt記録 / note編集 / INVOICED / EXPIRED→PAID復旧
+     ※「コードパス」ではなく「状態遷移」に仕込むこと: EXPIRED は expireOrderTx の
+       全呼び出し元（webhook/日次バッチ/照合ボタン）、PAID復旧は自動＋手動2経路すべて
   B. Vercel Cron（15分毎・自己修復の正・★ウォーターマーク方式）:
      koguchi DB に kbSyncWatermark（最終成功時刻）を1行持つ。
      毎回 updatedAt >= (watermark - 30分) の対象注文を全件 upsert し、
@@ -227,23 +231,23 @@ end $$;
   もし削除運用があるなら申告してほしい（追加質問⑧）
 ```
 
-### koguchi セッションへの追加質問（契約確定に必要・8件）
+### koguchi 追加質問8件の回答要点（2026-07-22 受領・契約に反映済み）
 
-```
-① PENDING→EXPIRED は updatedAt を更新する明示的なDB書き込みか？
-   それとも参照時に pendingExpiresAt で判定するだけ（lazy）か？
-   lazyの場合、連携用に「EXPIRED確定時の書き込み＋push」を追加できるか？
-② EXPIRED→PAID 復旧は「PAID確定」pushと同一コードパスを通るか？
-③ 本番の DeliveryPoint 一覧のうち type=KRAFTBASE は何件？
-   KRAFT BASE 実ポイントの id / type / billingMode は？
-④ channel=INN の注文が KRAFTBASE 行きポイントに入るケースはあるか？
-⑤ スタッフ手打ち注文の channel には何が入るか？
-⑥ 現行3商品の productId と正式表示名は？
-   特に「ベジタリアン弁当」— KRAFT BASE側の既存表記は「ヴィーガン弁当」。
-   同一商品か？正しい呼称はどちらか（卵・乳の可否に関わるため要確定）
-⑦ 返金以外で明細（OrderItem）だけが編集されるケースはあるか？
-⑧ 注文行を物理削除する運用・管理機能はあるか？
-```
+① EXPIRED は**明示的DB書き込み**（updatedAt更新あり・expireOrderTx に集約、
+   webhook/日次4:00バッチ/照合ボタンの3契機）→ push はその全呼び出し元に仕込む。
+   §5 の「45分ルール」は保険としてそのまま維持。
+② EXPIRED→PAID 復旧は自動（PAID確定と同一パス）＋手動2経路 → 全経路に通知を仕込む。
+③ KRAFTBASE ポイントは本番1件のみ（urlToken='kraftbase'・IMMEDIATE）。テスト混入なし。
+   **type一致で判定・ID直指定しない**（v2の推奨を逆転）。
+④ KB行き注文の channel は常に GUEST（サーバ導出の不変条件）。
+⑤ 手打ち注文 = channel GUEST＋paymentMethod≠null＋Stripe系null → タグ表示の判別に使用。
+⑥ **連携キーは productId ではなく slug**（yakiniku/vegan/onigiri）。
+   「ベジタリアン弁当」は2026年6月に意図改名された正式名称（slugは歴史的に vegan のまま）。
+   ヴィーガン（動物性完全不使用）と案内してよいかは**モーリーに最終確認**（それまで
+   ゲスト案内は「ベジタリアン」に留める）。
+⑦ 明細の後変更は部分返金のみ（qty減 or 行削除）→ 全列現在値送信で自動的に整合。
+⑧ Order の物理削除なし（前提成立）。OrderItem 行の削除はあり得るが items_json
+   全量再送で吸収される。
 
 ## 7. フェーズ
 
