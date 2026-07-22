@@ -142,7 +142,7 @@ const procedures: Array<[string, string, string, Phase | null, ContentStatus]> =
   [
     'proc-bento',
     '弁当の受け取り・見分け',
-    '肉のおくだの弁当。ヴィーガンは緑シール。受け取り方法・見分けは要確認。',
+    '肉のおくだの弁当。ベジタリアンは緑シール。受け取り方法・見分けは要確認。',
     null,
     'needs_input',
   ],

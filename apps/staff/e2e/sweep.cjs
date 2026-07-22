@@ -53,7 +53,7 @@ const BASE = 'http://localhost:4173';
     await page.getByRole('button',{name:'追加',exact:true}).last().click(); await waitUrl(u=>u==='/guests'); await page.waitForTimeout(300);
   }
   label='create-guests';
-  await addGuest({name:'Família Silva', countryOther:'ブラジル', party:4, whole:true, time:'15:30', beds:['1番','2番','3番','4番'], bento:{'焼肉弁当':2,'ヴィーガン弁当':2}});
+  await addGuest({name:'Família Silva', countryOther:'ブラジル', party:4, whole:true, time:'15:30', beds:['1番','2番','3番','4番'], bento:{'焼肉弁当':2,'ベジタリアン弁当':2}});
   await addGuest({name:'空フィールドさん'}); // minimal: only name
 
   // guests today + upcoming

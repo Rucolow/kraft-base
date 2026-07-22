@@ -1,10 +1,11 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BentoDayPanel } from '../components/BentoOrders';
 import { GuestList, headcount, isActive } from '../components/GuestCard';
 import { EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useTodaysGuests, useUpcomingGuests } from '../data/queries';
-import { formatStayDate } from '../lib/date';
+import { formatStayDate, shiftDate } from '../lib/date';
 import type { GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
 import { GuestCalendar } from './GuestCalendar';
@@ -77,6 +78,7 @@ export function Guests() {
 
       {tab === 'today' ? (
         <>
+          <BentoDayPanel date={shiftDate()} />
           <SectionLabel>
             本日のゲスト — <span className="font-sans tabular-nums">{todayGroups}</span>組{' '}
             <span className="font-sans tabular-nums">{todayHeads}</span>名

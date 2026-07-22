@@ -45,7 +45,8 @@ const COUNTRIES = [
   '台湾',
 ];
 const BEDS = ['1番', '2番', '3番', '4番', '5番', '6番', '和室'];
-const BENTO_ITEMS = ['焼肉弁当', 'ヴィーガン弁当', 'おむすび弁当'];
+// 「ベジタリアン弁当」が正式名称（2026年6月に koguchi 側で意図改名。旧称ヴィーガン弁当）。
+const BENTO_ITEMS = ['焼肉弁当', 'ベジタリアン弁当', 'おむすび弁当'];
 const TIMES = ['15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
 
 // Opens the native date/time picker wherever the field is tapped.
@@ -431,7 +432,15 @@ export function GuestEdit() {
 
         <Labeled label="弁当（必要な数だけ）">
           <div className="rounded-[11px] border border-line">
-            {BENTO_ITEMS.map((item, index) => {
+            {[
+              ...BENTO_ITEMS,
+              // Legacy names in stored data (e.g. 旧称 ヴィーガン弁当) get their own
+              // visible row so staff can see and decrement them; previously they were
+              // preserved but invisible.
+              ...Object.keys(bento).filter(
+                (name) => !BENTO_ITEMS.includes(name) && (bento[name] ?? 0) > 0,
+              ),
+            ].map((item, index) => {
               const count = bento[item] ?? 0;
               return (
                 <div
