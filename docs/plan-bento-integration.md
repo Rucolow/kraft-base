@@ -155,8 +155,15 @@ create index if not exists bento_order_date_idx on public.bento_order (delivery_
 | フェーズ | 内容 | 検証 |
 |---|---|---|
 | P1 (KB) | 0019＋sync rules＋schema.ts＋UI（表示・照合）＋自動照合 | demo seed に bento_order を数件入れ e2e: チップ表示/未照合リスト/1タップ照合/打ち消し表示。CI緑 |
+| **P1.5 (配管証明)** | オーナーが 0019 SQL＋sync rules 適用後、**SQLで手書きテスト注文1行を INSERT** | スタッフ端末に表示されたら KB側配管は証明完了。**ここまで koguchi には一切触れない**＝問題が出ても切り分け済み |
 | P2 (koguchi) | 上記契約の実装（push＋cron） | koguchi側セッションが実装・単体確認 |
-| P3 (通し) | 本番: オーナーが 0019 SQL＋sync rules 適用 → koguchi に環境変数設定 → デプロイ | **テスト注文1件** → 数秒でスタッフ端末に出る → 照合 → キャンセル → 打ち消し表示（L3観測・拒否バッジ無し） |
+| P3 (通し) | koguchi に環境変数設定 → デプロイ | **テスト注文1件** → 数秒でスタッフ端末に出る → 照合 → キャンセル → 打ち消し表示（L3観測・拒否バッジ無し） |
+
+**安全性の根拠（純追加設計）**: bento_order は新テーブルで既存機能に触れない（失敗モードは
+「注文が出ない」だけ）。koguchi 側の送信はコミット後ベストエフォートで、**注文・決済業務は
+送信失敗でも無傷**（15分cronが後から自己修復）。撤退は sync rules 1行削除で完了。
+Neon の設定変更はゼロ（アプリコードに送信処理を足すだけ）。PowerSync のテーブル追加は
+0018 で実証済みの同型手順。
 
 デプロイ順序: KB側SQL/sync rules → KBアプリ → koguchi（逆だと upsert が 404/権限エラー）。
 
