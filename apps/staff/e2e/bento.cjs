@@ -103,20 +103,24 @@ const check = (n, p, d = '') => {
 
   // これから先 tab (R5): future orders surface as a per-date summary line and a
   // per-guest 🍱 chip. Seed has Sofia Lombardi (+2 days, linked 焼肉×2) with an
-  // unmatched vegetarian the same day, plus an order-only day (+4 days, no guest).
+  // unmatched vegetarian the same day (so her date aggregates 計3食（焼肉2・
+  // ベジタリアン1）未照合1件), plus an order-only day (+4 days, おむすび×2, no guest).
+  // The two future days have DISTINCT meal counts so each assertion isolates one.
   await page.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(400);
   await page.getByRole('button', { name: /これから先/ }).click();
   await page.waitForTimeout(400);
   const upcoming = await txt();
+  // Discriminating: 焼肉2・ベジタリアン1 is unique to the +2 day, so this validates
+  // totalMeals across BOTH orders AND that the same-day unmatched still counts.
   check(
-    'upcoming: date summary shows 計3食',
-    /弁当注文 計3食/.test(upcoming),
-    (upcoming.match(/弁当注文[^）]*）/) || [''])[0],
+    'upcoming: +2 day aggregates linked + same-day unmatched',
+    /計3食（焼肉2・ベジタリアン1）\s*未照合1件/.test(upcoming),
+    (upcoming.match(/弁当注文[^食]*食[^）]*）\s*(未照合\d件)?/) || [''])[0],
   );
-  check('upcoming: unmatched surfaced', /未照合1件/.test(upcoming));
+  check('upcoming: +2 day lists the staying guest', /Sofia Lombardi/.test(upcoming));
   check('upcoming: linked guest shows 🍱 chip', /🍱 焼肉×2/.test(upcoming));
-  check('upcoming: order-only day surfaces', /おむすび3/.test(upcoming));
+  check('upcoming: order-only day surfaces', /計2食（おむすび2）/.test(upcoming));
 
   check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 

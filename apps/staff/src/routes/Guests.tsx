@@ -5,7 +5,7 @@ import { BentoDayPanel, BentoSummaryLine, guestOrderChip } from '../components/B
 import { GuestList, headcount, isActive } from '../components/GuestCard';
 import { EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useBentoOrdersAfter, useTodaysGuests, useUpcomingGuests } from '../data/queries';
-import { isVisibleOrder } from '../lib/bento';
+import { totalMeals } from '../lib/bento';
 import { formatStayDate, shiftDate } from '../lib/date';
 import type { BentoOrderRow, GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
@@ -79,8 +79,11 @@ export function Guests() {
       guestsByDate.set(date, [guest]);
     }
   }
+  // Gate an order-only date on there being meals to prepare (active orders), not
+  // just any visible order — otherwise a lone fresh-PENDING or cancelled-linked
+  // order with no staying guest spawns a phantom "計0食" group with no context.
   const orderOnlyDates = [...ordersByDate.entries()]
-    .filter(([, orders]) => orders.some((order) => isVisibleOrder(order, now)))
+    .filter(([, orders]) => totalMeals(orders) > 0)
     .map(([date]) => date);
   const upcomingDates = [...new Set([...guestsByDate.keys(), ...orderOnlyDates])]
     .filter(Boolean)
