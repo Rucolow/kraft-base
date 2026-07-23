@@ -65,6 +65,16 @@ export function useBentoOrdersForDate(date: string) {
   ]);
 }
 
+// All orders delivering AFTER a date, in one watch — feeds the per-date summary
+// lines and per-guest chips on the "これから先" tab (R5). One range query beats
+// one useBentoOrdersForDate per date group (which would spawn a watch per date).
+export function useBentoOrdersAfter(date: string) {
+  return useQuery<BentoOrderRow>(
+    'SELECT * FROM bento_order WHERE delivery_date > ? ORDER BY delivery_date, id',
+    [date],
+  );
+}
+
 export function useBentoOrdersForGuest(guestId: string) {
   return useQuery<BentoOrderRow>(
     'SELECT * FROM bento_order WHERE guest_id = ? ORDER BY delivery_date',

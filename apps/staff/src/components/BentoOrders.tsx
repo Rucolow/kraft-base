@@ -107,6 +107,48 @@ function OrderRow({
   );
 }
 
+// One-line bento summary for a delivery date, rendered from a pre-fetched orders
+// array (no query of its own). Used by the calendar's compact panel and by every
+// date group on the "これから先" tab — where the parent fetches all future orders
+// in one watch and tick, so this component stays a pure presentation.
+// linkedNames: guests linked to this date's orders who are NOT staying this date
+// (a multi-night order delivering off the stay date). Their card sits under their
+// own stay date, so name them here to keep "who ordered" answerable per delivery.
+export function BentoSummaryLine({
+  orders,
+  now,
+  linkedNames,
+}: {
+  orders: BentoOrderRow[];
+  now: Date;
+  linkedNames?: string[];
+}) {
+  const visible = orders.filter((order) => isVisibleOrder(order, now));
+  if (visible.length === 0) {
+    return null; // no orders — no line, no noise
+  }
+  const meals = totalMeals(orders);
+  const unmatchedCount = orders.filter(isUnmatched).length;
+  const cancelledCount = visible.filter((order) => isCancelledOrder(order)).length;
+  const summary = mealsBySlug(orders)
+    .map((entry) => `${entry.name.replace('弁当', '')}${entry.qty}`)
+    .join('・');
+  return (
+    <div className="mb-2 px-1 text-[0.78rem] text-ink-light">
+      🍱 弁当注文 計{meals}食{summary ? `（${summary}）` : ''}
+      {cancelledCount > 0 ? (
+        <span className="ml-1 text-ink-mute">キャンセル{cancelledCount}件</span>
+      ) : null}
+      {unmatchedCount > 0 ? (
+        <span className="ml-1 text-orange-deep">未照合{unmatchedCount}件</span>
+      ) : null}
+      {linkedNames && linkedNames.length > 0 ? (
+        <span className="ml-1 text-ink">→ {linkedNames.join('・')}</span>
+      ) : null}
+    </div>
+  );
+}
+
 // The bento panel for one delivery date. compact: one summary line only (used on
 // the calendar); full (Guests today tab): expandable order list + matching.
 export function BentoDayPanel({ date, compact = false }: { date: string; compact?: boolean }) {
@@ -122,6 +164,10 @@ export function BentoDayPanel({ date, compact = false }: { date: string; compact
     return () => clearInterval(timer);
   }, []);
 
+  if (compact) {
+    return <BentoSummaryLine orders={orders} now={now} />;
+  }
+
   const visible = orders.filter((order) => isVisibleOrder(order, now));
   const meals = totalMeals(orders);
   const unmatchedCount = orders.filter(isUnmatched).length;
@@ -134,20 +180,6 @@ export function BentoDayPanel({ date, compact = false }: { date: string; compact
   const summary = mealsBySlug(orders)
     .map((entry) => `${entry.name.replace('弁当', '')}${entry.qty}`)
     .join('・');
-
-  if (compact) {
-    return (
-      <div className="mb-2 px-1 text-[0.78rem] text-ink-light">
-        🍱 弁当注文 計{meals}食{summary ? `（${summary}）` : ''}
-        {cancelledCount > 0 ? (
-          <span className="ml-1 text-ink-mute">キャンセル{cancelledCount}件</span>
-        ) : null}
-        {unmatchedCount > 0 ? (
-          <span className="ml-1 text-orange-deep">未照合{unmatchedCount}件</span>
-        ) : null}
-      </div>
-    );
-  }
 
   return (
     <div className="mb-4 rounded-kb border border-line bg-paper">

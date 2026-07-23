@@ -96,6 +96,7 @@ export async function ensureLocalSeed(): Promise<void> {
     const weber = uuid();
     const rossi = uuid();
     const schmidt = uuid();
+    const lombardi = uuid();
     const guests = [
       {
         id: weber,
@@ -149,6 +150,25 @@ export async function ensureLocalSeed(): Promise<void> {
         created_at: at,
       });
     }
+
+    // A future stay so the "これから先" tab (R5) shows the per-date bento summary
+    // line and a per-guest 🍱 chip in demo mode.
+    await ins('guest', {
+      id: lombardi,
+      stay_date: addDays(today, 2),
+      name: 'Sofia Lombardi',
+      country: 'イタリア',
+      language: 'it',
+      party_size: 2,
+      checkin_time: '17:00',
+      bed: '1・2番（下段）',
+      bento: null,
+      status: 'expected',
+      review_sent_at: null,
+      whole_house: 0,
+      created_by: STAFF.owner.id,
+      created_at: at,
+    });
 
     // koguchi-bento order mirror — one of each display state so the bento panel,
     // matching picker and badges are all exercisable in demo mode.
@@ -226,6 +246,70 @@ export async function ensureLocalSeed(): Promise<void> {
         fulfilled_at: null,
         // the stale PENDING must trip the 45-min rule; everything else is fresh
         source_updated_at: o.id === 'bo-pending-old' ? bentoAt(60) : bentoAt(i),
+        synced_at: at,
+        guest_id: o.guest,
+        match: o.match,
+      });
+    }
+
+    // Future-dated orders for the "これから先" tab (R5): one linked to Sofia (chip),
+    // one unmatched on the same day (summary shows 未照合), and one on a day with no
+    // staying guest (proves order-only dates still surface).
+    const futureBento = [
+      {
+        id: 'bo-future-linked',
+        date: addDays(today, 2),
+        name: 'Sofia Lombardi',
+        items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 2 }],
+        total: 2400,
+        guest: lombardi,
+        match: 'manual',
+      },
+      {
+        id: 'bo-future-unmatched',
+        date: addDays(today, 2),
+        name: 'K. TANAKA',
+        items: [{ slug: 'vegan', name: 'ベジタリアン弁当', qty: 1 }],
+        total: 1100,
+        guest: null,
+        match: 'none',
+      },
+      {
+        // Off-date delivery: linked to Sofia (who stays +2) but delivers +3, so the
+        // +3 summary must name her even though no one stays +3 (R5 review fix).
+        id: 'bo-future-offdate',
+        date: addDays(today, 3),
+        name: 'Sofia Lombardi',
+        items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 1 }],
+        total: 1200,
+        guest: lombardi,
+        match: 'manual',
+      },
+      {
+        id: 'bo-future-orphan',
+        date: addDays(today, 4),
+        name: '電話 注文',
+        items: [{ slug: 'onigiri', name: 'おむすび弁当', qty: 2 }],
+        total: 1600,
+        guest: null,
+        match: 'none',
+      },
+    ];
+    for (const o of futureBento) {
+      await ins('bento_order', {
+        id: o.id,
+        status: 'PAID',
+        channel: 'GUEST',
+        delivery_date: o.date,
+        customer_name: o.name,
+        items_label: o.items.map((it) => `${it.name} ×${it.qty}`).join('・'),
+        items_json: JSON.stringify(o.items.map((it) => ({ ...it, unitPriceYen: 1200 }))),
+        total_yen: o.total,
+        refunded_yen: 0,
+        note: null,
+        payment_method: null,
+        fulfilled_at: null,
+        source_updated_at: bentoAt(0),
         synced_at: at,
         guest_id: o.guest,
         match: o.match,

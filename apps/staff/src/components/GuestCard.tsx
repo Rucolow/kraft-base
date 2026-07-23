@@ -12,7 +12,18 @@ export const isActive = (guest: GuestRow) => guest.status !== 'cancelled';
 export const headcount = (guests: GuestRow[]): number =>
   guests.filter(isActive).reduce((sum, guest) => sum + (guest.party_size ?? 1), 0);
 
-export function GuestCard({ guest, onOpen }: { guest: GuestRow; onOpen: () => void }) {
+export function GuestCard({
+  guest,
+  onOpen,
+  bentoChip,
+}: {
+  guest: GuestRow;
+  onOpen: () => void;
+  // A "焼肉×2・ベジタリアン×1" summary of this guest's linked bento orders, shown
+  // as a chip so a list of guests reads who has ordered at a glance (R5). Omitted
+  // (undefined) where the caller doesn't wire bento data.
+  bentoChip?: string | null;
+}) {
   const status = guestStatusMeta(guest.status);
   const cancelled = guest.status === 'cancelled';
   // Build the meta line from present fields only, so a missing country, time or
@@ -39,6 +50,13 @@ export function GuestCard({ guest, onOpen }: { guest: GuestRow; onOpen: () => vo
             {meta}
             {inParts ? ` ／ IN ${inParts}` : ''}
           </div>
+          {bentoChip ? (
+            <div className="mt-1">
+              <span className="inline-block rounded-full bg-orange/[0.09] px-2 py-0.5 font-bold text-[0.72rem] text-orange-deep">
+                🍱 {bentoChip}
+              </span>
+            </div>
+          ) : null}
         </div>
         <Badge tone={status.tone}>{status.label}</Badge>
       </div>
@@ -49,14 +67,23 @@ export function GuestCard({ guest, onOpen }: { guest: GuestRow; onOpen: () => vo
 export function GuestList({
   guests,
   onOpen,
+  bentoByGuest,
 }: {
   guests: GuestRow[];
   onOpen: (id: string) => void;
+  // guest.id → bento chip text. When passed, cards show a 🍱 chip for guests with
+  // linked orders. Omitted where the caller has no bento data to show.
+  bentoByGuest?: Map<string, string | null>;
 }) {
   return (
     <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-3 xl:grid-cols-3">
       {guests.map((guest) => (
-        <GuestCard key={guest.id} guest={guest} onOpen={() => onOpen(guest.id)} />
+        <GuestCard
+          key={guest.id}
+          guest={guest}
+          onOpen={() => onOpen(guest.id)}
+          bentoChip={bentoByGuest?.get(guest.id)}
+        />
       ))}
     </div>
   );

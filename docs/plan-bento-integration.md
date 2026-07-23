@@ -1,9 +1,27 @@
 # 実装計画: お弁当注文システム（koguchi-bento）連携 v2
 
-ステータス: **契約凍結・実装可（2026-07-22）**。敵対レビュー3レンズ＋オーナー確認5件＋
-koguchi 追加質問8件の回答をすべて反映済み（§9/§11）。
+ステータス: **全フェーズ完了・本番稼働中（2026-07-23）**。
+P1: KB側実装（PR #36・敵対レビュー11件修正）／P1.5: 配管証明成功／
+P2: koguchi側実装＋bento_writer JWT設定完了／P3: 通しテスト完了（オーナー報告）。
+以後は運用: 毎日17時の🍱パネル確認＋照合、拒否バッジ監視、電話注文のkoguchi手打ち徹底。
+残バックログ: ①2週間運用後に guest.bento カウンター撤去（§5-5・別PR）
+②ヴィーガン表記可否のモーリー最終確認（§9-5）③自動照合v2はヒット率実測後に再検討（§2）。
 相手システム: `Rucolow/koguchi-bento`（Next.js/Vercel、DB=Neon Postgres/Prisma、Stripe、
 本番 koguchi.nikuda.jp）。v1→v2 の変更根拠は §10 レビュー記録。
+
+### 運用記録: 稼働初日の 42501 障害（2026-07-23 解決済み）
+
+- 事象: koguchi の全 push/cron が `42501 permission denied for table bento_order` で拒否。
+- 原因: 本番DBで bento_writer への GRANT（§3 の列限定 insert/update）が未反映だった。
+  P1.5 の配管証明は SQL Editor（postgres 権限）経由だったため writer ロール自体は
+  未検証で、この欠落を検出できなかった。koguchi 側のリクエスト形式は契約どおりで無罪。
+- 対応: §3 と同一の冪等な修正SQL（schema usage / select / 13列 insert・update GRANT ＋
+  `bento_order_writer` ポリシー再作成）をオーナーが実行 → curl プローブで INSERT(201)・
+  upsert UPDATE(200) を確認 → 次の cron（09:00 JST）で滞留53件が自動再送され復旧。
+- 教訓: ①writer 経路の疎通確認は**本番と同じロール（writer JWT の curl）**で行うこと。
+  SQL Editor での成功は権限検証にならない。②koguchi 提案の「テーブル全体 GRANT」は
+  guest_id/match の防御を壊すため不採用（列限定 GRANT が正）。koguchi 側は 13列契約を
+  コード定数・型・CIテストで三重固定済み。
 
 ## 0. 目的と前提
 
