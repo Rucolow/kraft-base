@@ -1,12 +1,13 @@
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BentoDayPanel } from '../components/BentoOrders';
+import { BentoDayPanel, BentoSummaryLine, guestOrderChip } from '../components/BentoOrders';
 import { GuestList, headcount, isActive } from '../components/GuestCard';
 import { EmptyState, Screen, SectionLabel } from '../components/ui';
-import { useTodaysGuests, useUpcomingGuests } from '../data/queries';
+import { useBentoOrdersAfter, useTodaysGuests, useUpcomingGuests } from '../data/queries';
+import { isVisibleOrder } from '../lib/bento';
 import { formatStayDate, shiftDate } from '../lib/date';
-import type { GuestRow } from '../lib/powersync/schema';
+import type { BentoOrderRow, GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
 import { GuestCalendar } from './GuestCalendar';
 
@@ -17,7 +18,16 @@ export function Guests() {
   const { isOwner } = useSession();
   const { data: today } = useTodaysGuests();
   const { data: upcoming } = useUpcomingGuests();
+  const { data: futureOrders } = useBentoOrdersAfter(shiftDate());
   const [tab, setTab] = useState<Tab>('today');
+
+  // One tick drives the 45-min PENDING→hidden rule for every future date's
+  // summary line (the parent owns it so we don't spawn a timer per date group).
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 5 * 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Tabs and headers count PEOPLE (Σ party_size), not bookings — a party of 3 on
   // one reservation must read as 3, not 1. Keep the booking count for the "N組".
@@ -25,17 +35,56 @@ export function Guests() {
   const todayHeads = headcount(today);
   const upcomingHeads = headcount(upcoming);
 
-  // Upcoming stays are already ordered by date; collapse into per-date groups.
-  const groups: Array<{ date: string; guests: GuestRow[] }> = [];
-  for (const guest of upcoming) {
-    const date = guest.stay_date ?? '';
-    const last = groups.at(-1);
-    if (last && last.date === date) {
-      last.guests.push(guest);
+  // Future bento orders (one watch), grouped by delivery date and by linked guest.
+  const ordersByDate = new Map<string, BentoOrderRow[]>();
+  for (const order of futureOrders) {
+    const date = order.delivery_date ?? '';
+    if (!date) {
+      continue;
+    }
+    const arr = ordersByDate.get(date);
+    if (arr) {
+      arr.push(order);
     } else {
-      groups.push({ date, guests: [guest] });
+      ordersByDate.set(date, [order]);
     }
   }
+  const chipByGuest = new Map<string, string | null>();
+  const linkedByGuest = new Map<string, BentoOrderRow[]>();
+  for (const order of futureOrders) {
+    if (!order.guest_id) {
+      continue;
+    }
+    const arr = linkedByGuest.get(order.guest_id);
+    if (arr) {
+      arr.push(order);
+    } else {
+      linkedByGuest.set(order.guest_id, [order]);
+    }
+  }
+  for (const [guestId, orders] of linkedByGuest) {
+    chipByGuest.set(guestId, guestOrderChip(orders));
+  }
+
+  // Upcoming stays grouped by date, unioned with order-only dates (bento but no
+  // staying guest yet) so meals to prepare are never hidden. upcoming is already
+  // date-sorted, so per-date guest order (by checkin) is preserved in the Map.
+  const guestsByDate = new Map<string, GuestRow[]>();
+  for (const guest of upcoming) {
+    const date = guest.stay_date ?? '';
+    const arr = guestsByDate.get(date);
+    if (arr) {
+      arr.push(guest);
+    } else {
+      guestsByDate.set(date, [guest]);
+    }
+  }
+  const orderOnlyDates = [...ordersByDate.entries()]
+    .filter(([, orders]) => orders.some((order) => isVisibleOrder(order, now)))
+    .map(([date]) => date);
+  const upcomingDates = [...new Set([...guestsByDate.keys(), ...orderOnlyDates])]
+    .filter(Boolean)
+    .sort();
 
   const open = (id: string) => navigate(`/guests/${id}`);
 
@@ -92,21 +141,33 @@ export function Guests() {
           )}
         </>
       ) : tab === 'upcoming' ? (
-        groups.length === 0 ? (
+        upcomingDates.length === 0 ? (
           <EmptyState>これから先の予約はありません。</EmptyState>
         ) : (
-          groups.map((group) => (
-            <div key={group.date} className="mb-5">
-              <SectionLabel>
-                {formatStayDate(group.date)} —{' '}
-                <span className="font-sans tabular-nums">
-                  {group.guests.filter(isActive).length}
-                </span>
-                組 <span className="font-sans tabular-nums">{headcount(group.guests)}</span>名
-              </SectionLabel>
-              <GuestList guests={group.guests} onOpen={open} />
-            </div>
-          ))
+          upcomingDates.map((date) => {
+            const dayGuests = guestsByDate.get(date) ?? [];
+            const dayOrders = ordersByDate.get(date) ?? [];
+            return (
+              <div key={date} className="mb-5">
+                <SectionLabel>
+                  {formatStayDate(date)}
+                  {dayGuests.length > 0 ? (
+                    <>
+                      {' — '}
+                      <span className="font-sans tabular-nums">
+                        {dayGuests.filter(isActive).length}
+                      </span>
+                      組 <span className="font-sans tabular-nums">{headcount(dayGuests)}</span>名
+                    </>
+                  ) : null}
+                </SectionLabel>
+                {dayOrders.length > 0 ? <BentoSummaryLine orders={dayOrders} now={now} /> : null}
+                {dayGuests.length > 0 ? (
+                  <GuestList guests={dayGuests} onOpen={open} bentoByGuest={chipByGuest} />
+                ) : null}
+              </div>
+            );
+          })
         )
       ) : (
         <GuestCalendar />

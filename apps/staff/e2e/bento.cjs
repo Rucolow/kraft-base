@@ -101,6 +101,23 @@ const check = (n, p, d = '') => {
   check('detail: order chip 焼肉×2', /🍱 焼肉×2/.test(detail), (detail.match(/🍱[^ ]*/) || [''])[0]);
   check('detail: manual bento demoted to 手入力', /手入力: 焼肉弁当 ×2/.test(detail));
 
+  // これから先 tab (R5): future orders surface as a per-date summary line and a
+  // per-guest 🍱 chip. Seed has Sofia Lombardi (+2 days, linked 焼肉×2) with an
+  // unmatched vegetarian the same day, plus an order-only day (+4 days, no guest).
+  await page.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(400);
+  await page.getByRole('button', { name: /これから先/ }).click();
+  await page.waitForTimeout(400);
+  const upcoming = await txt();
+  check(
+    'upcoming: date summary shows 計3食',
+    /弁当注文 計3食/.test(upcoming),
+    (upcoming.match(/弁当注文[^）]*）/) || [''])[0],
+  );
+  check('upcoming: unmatched surfaced', /未照合1件/.test(upcoming));
+  check('upcoming: linked guest shows 🍱 chip', /🍱 焼肉×2/.test(upcoming));
+  check('upcoming: order-only day surfaces', /おむすび3/.test(upcoming));
+
   check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 
   const passed = R.filter((r) => r.p).length;
