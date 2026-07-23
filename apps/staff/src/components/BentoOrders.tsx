@@ -111,7 +111,18 @@ function OrderRow({
 // array (no query of its own). Used by the calendar's compact panel and by every
 // date group on the "これから先" tab — where the parent fetches all future orders
 // in one watch and tick, so this component stays a pure presentation.
-export function BentoSummaryLine({ orders, now }: { orders: BentoOrderRow[]; now: Date }) {
+// linkedNames: guests linked to this date's orders who are NOT staying this date
+// (a multi-night order delivering off the stay date). Their card sits under their
+// own stay date, so name them here to keep "who ordered" answerable per delivery.
+export function BentoSummaryLine({
+  orders,
+  now,
+  linkedNames,
+}: {
+  orders: BentoOrderRow[];
+  now: Date;
+  linkedNames?: string[];
+}) {
   const visible = orders.filter((order) => isVisibleOrder(order, now));
   if (visible.length === 0) {
     return null; // no orders — no line, no noise
@@ -130,6 +141,9 @@ export function BentoSummaryLine({ orders, now }: { orders: BentoOrderRow[]; now
       ) : null}
       {unmatchedCount > 0 ? (
         <span className="ml-1 text-orange-deep">未照合{unmatchedCount}件</span>
+      ) : null}
+      {linkedNames && linkedNames.length > 0 ? (
+        <span className="ml-1 text-ink">→ {linkedNames.join('・')}</span>
       ) : null}
     </div>
   );

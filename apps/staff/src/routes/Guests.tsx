@@ -49,21 +49,12 @@ export function Guests() {
       ordersByDate.set(date, [order]);
     }
   }
-  const chipByGuest = new Map<string, string | null>();
-  const linkedByGuest = new Map<string, BentoOrderRow[]>();
-  for (const order of futureOrders) {
-    if (!order.guest_id) {
-      continue;
-    }
-    const arr = linkedByGuest.get(order.guest_id);
-    if (arr) {
-      arr.push(order);
-    } else {
-      linkedByGuest.set(order.guest_id, [order]);
-    }
-  }
-  for (const [guestId, orders] of linkedByGuest) {
-    chipByGuest.set(guestId, guestOrderChip(orders));
+  // Name lookup for guests linked to future orders (to name off-date deliveries in
+  // the delivery-date summary). today + upcoming covers a currently-staying
+  // multi-night guest whose order delivers on a later day.
+  const guestById = new Map<string, GuestRow>();
+  for (const guest of [...today, ...upcoming]) {
+    guestById.set(guest.id, guest);
   }
 
   // Upcoming stays grouped by date, unioned with order-only dates (bento but no
@@ -150,6 +141,35 @@ export function Guests() {
           upcomingDates.map((date) => {
             const dayGuests = guestsByDate.get(date) ?? [];
             const dayOrders = ordersByDate.get(date) ?? [];
+            // Chips are scoped to THIS delivery date's orders (not a guest's whole
+            // future), keyed by the guest staying this date. Orders linked to a
+            // guest staying elsewhere surface as names on the summary instead.
+            const stayingIds = new Set(dayGuests.map((guest) => guest.id));
+            const linkedThisDate = new Map<string, BentoOrderRow[]>();
+            for (const order of dayOrders) {
+              if (!order.guest_id) {
+                continue;
+              }
+              const arr = linkedThisDate.get(order.guest_id);
+              if (arr) {
+                arr.push(order);
+              } else {
+                linkedThisDate.set(order.guest_id, [order]);
+              }
+            }
+            const chipForDate = new Map<string, string | null>();
+            const offDateNames: string[] = [];
+            for (const [guestId, orders] of linkedThisDate) {
+              const chip = guestOrderChip(orders);
+              if (stayingIds.has(guestId)) {
+                chipForDate.set(guestId, chip);
+              } else if (chip) {
+                const name = guestById.get(guestId)?.name;
+                if (name) {
+                  offDateNames.push(name);
+                }
+              }
+            }
             return (
               <div key={date} className="mb-5">
                 <SectionLabel>
@@ -164,9 +184,11 @@ export function Guests() {
                     </>
                   ) : null}
                 </SectionLabel>
-                {dayOrders.length > 0 ? <BentoSummaryLine orders={dayOrders} now={now} /> : null}
+                {dayOrders.length > 0 ? (
+                  <BentoSummaryLine orders={dayOrders} now={now} linkedNames={offDateNames} />
+                ) : null}
                 {dayGuests.length > 0 ? (
-                  <GuestList guests={dayGuests} onOpen={open} bentoByGuest={chipByGuest} />
+                  <GuestList guests={dayGuests} onOpen={open} bentoByGuest={chipForDate} />
                 ) : null}
               </div>
             );

@@ -121,6 +121,9 @@ const check = (n, p, d = '') => {
   check('upcoming: +2 day lists the staying guest', /Sofia Lombardi/.test(upcoming));
   check('upcoming: linked guest shows 🍱 chip', /🍱 焼肉×2/.test(upcoming));
   check('upcoming: order-only day surfaces', /計2食（おむすび2）/.test(upcoming));
+  // Off-date delivery: Sofia stays +2 but has an order delivering +3. The +3 group
+  // has no staying guest, so her name must appear on that day's summary line.
+  check('upcoming: off-date delivery names the guest', /計1食（焼肉1）\s*→ Sofia Lombardi/.test(upcoming));
 
   check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 

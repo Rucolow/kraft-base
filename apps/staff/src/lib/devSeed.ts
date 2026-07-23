@@ -275,6 +275,17 @@ export async function ensureLocalSeed(): Promise<void> {
         match: 'none',
       },
       {
+        // Off-date delivery: linked to Sofia (who stays +2) but delivers +3, so the
+        // +3 summary must name her even though no one stays +3 (R5 review fix).
+        id: 'bo-future-offdate',
+        date: addDays(today, 3),
+        name: 'Sofia Lombardi',
+        items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 1 }],
+        total: 1200,
+        guest: lombardi,
+        match: 'manual',
+      },
+      {
         id: 'bo-future-orphan',
         date: addDays(today, 4),
         name: '電話 注文',
