@@ -43,7 +43,7 @@ export function SyncBadge() {
     status.dataFlowStatus.downloading
   ) {
     statusEl = (
-      <span className="flex items-center gap-1 text-[0.62rem] text-orange-light">
+      <span className="flex items-center gap-1 text-[0.62rem] text-orange-text">
         <RefreshCw size={12} className="animate-spin" />
         同期中{pendingCount > 0 ? ` ${pendingCount}件` : ''}
       </span>
@@ -51,7 +51,7 @@ export function SyncBadge() {
   } else {
     const last = status.lastSyncedAt ? formatClock(status.lastSyncedAt.toISOString()) : null;
     statusEl = (
-      <span className="flex items-center gap-1 text-[0.62rem] text-orange-light">
+      <span className="flex items-center gap-1 text-[0.62rem] text-orange-text">
         <Cloud size={12} /> 同期済み{last ? ` ${last}` : ''}
       </span>
     );

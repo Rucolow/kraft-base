@@ -103,6 +103,48 @@ export function CheckIn() {
     });
   }, [partySize]);
 
+  // Kiosk lock. The iPad is in the guest's hands on this route, and the in-app
+  // exit is long-press guarded — but a browser/PWA back (the iPad edge-swipe)
+  // bypassed that entirely and landed on the staff guest-detail page, one tap
+  // from the whole day's guest list. Trap history: re-push our own entry on every
+  // popstate so back keeps the guest here.
+  //
+  // Because back is now sealed, EVERY screen on this route must render `staffExit`
+  // below — otherwise staff who opened the kiosk by mistake would have no way out
+  // but force-quitting the app. Re-push the CURRENT history state rather than null
+  // so react-router's internal index survives the trap.
+  useEffect(() => {
+    const repush = () => window.history.pushState(window.history.state, '', window.location.href);
+    repush();
+    window.addEventListener('popstate', repush);
+    return () => window.removeEventListener('popstate', repush);
+  }, []);
+
+  // Long-press exit to the staff side. Long-press (not tap) so a guest can't
+  // casually reach the staff screens (guest list / other guests' PII), while a
+  // staff member returning the device just holds it.
+  const startHold = () => {
+    holdTimer.current = setTimeout(() => navigate(`/guests/${id}`), 700);
+  };
+  const cancelHold = () => {
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  };
+  const staffExit = (
+    <button
+      type="button"
+      onPointerDown={startHold}
+      onPointerUp={cancelHold}
+      onPointerLeave={cancelHold}
+      onPointerCancel={cancelHold}
+      className="mt-8 min-h-[44px] rounded-full border border-line px-6 text-[0.84rem] text-ink-light"
+    >
+      スタッフ画面へ戻る（長押し）
+    </button>
+  );
+
   if (!guest) {
     // The local query hasn't resolved yet — show the brand splash rather than
     // flashing the invalid-link screen for a guest whose record is about to load.
@@ -129,6 +171,7 @@ export function CheckIn() {
             <br />
             Please ask a member of our staff for help.
           </p>
+          {staffExit}
         </div>
       </div>
     );
@@ -204,20 +247,6 @@ export function CheckIn() {
     setRedo(true);
   }
 
-  // The completed screen is shown while a guest still holds the iPad (kiosk hand-
-  // off). Gate the "back to staff" exit behind a long-press so a guest can't
-  // casually tap straight into the staff screens (guest list / other guests' PII);
-  // a staff member returning the device just holds the button.
-  const startHold = () => {
-    holdTimer.current = setTimeout(() => navigate(`/guests/${id}`), 700);
-  };
-  const cancelHold = () => {
-    if (holdTimer.current) {
-      clearTimeout(holdTimer.current);
-      holdTimer.current = null;
-    }
-  };
-
   if ((done || registered) && !redo) {
     return (
       <div className="mx-auto flex h-dvh max-w-xl flex-col items-center justify-center bg-paper px-6 text-center">
@@ -231,16 +260,7 @@ export function CheckIn() {
           <br />
           Please hand the device back to our staff.
         </p>
-        <button
-          type="button"
-          onPointerDown={startHold}
-          onPointerUp={cancelHold}
-          onPointerLeave={cancelHold}
-          onPointerCancel={cancelHold}
-          className="mt-8 min-h-[44px] rounded-full border border-line px-6 text-[0.84rem] text-ink-light"
-        >
-          スタッフ画面へ戻る（長押し）
-        </button>
+        {staffExit}
         <button
           type="button"
           onClick={reenter}
@@ -289,6 +309,7 @@ export function CheckIn() {
               <span className="block text-[0.8rem] text-ink-light">海外からお越しの方</span>
             </span>
           </button>
+          {staffExit}
         </div>
       </div>
     );
@@ -396,6 +417,7 @@ export function CheckIn() {
             ? 'Used only for the legal guest register. / 記入内容は宿泊者名簿としてのみ利用します。'
             : '記入内容は宿泊者名簿としてのみ利用します。 / Used only for the legal guest register.'}
         </p>
+        <div className="flex justify-center">{staffExit}</div>
       </div>
     </div>
   );

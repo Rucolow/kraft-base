@@ -40,6 +40,16 @@ export function Products() {
     });
   };
 
+  // The delete button sits directly beside the two price inputs the owner is
+  // tapping into, and the write syncs immediately with no undo — so confirm,
+  // matching the guard already on task delete and shift end.
+  async function removeProduct(product: ProductRow) {
+    if (!window.confirm(`「${product.name}」を削除しますか？`)) {
+      return;
+    }
+    await deleteRow('product', product.id);
+  }
+
   async function add() {
     if (!name.trim() || adding.current) {
       return;
@@ -121,7 +131,7 @@ export function Products() {
                     <button
                       type="button"
                       aria-label={`${product.name}を削除`}
-                      onClick={() => deleteRow('product', product.id)}
+                      onClick={() => removeProduct(product)}
                       className="grid h-9 w-20 place-items-center text-ink-mute"
                     >
                       <Trash2 size={16} />

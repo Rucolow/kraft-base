@@ -1,5 +1,5 @@
 import { useQuery } from '@powersync/react';
-import { shiftDate } from '../lib/date';
+import { shiftBoundaryIso, shiftDate } from '../lib/date';
 import { addDays } from '../lib/month';
 import type {
   BentoOrderRow,
@@ -122,11 +122,19 @@ export function useTasks() {
   );
 }
 
+// Cockpit checklist: the routine tasks for the current phase(s), PLUS one-off
+// tasks staff add during a shift. Those are stored with source='adhoc' and no
+// phase, so a phase-and-source filter alone made them invisible on 本日 forever —
+// they only ever showed on the タスク tab. Done one-offs stay listed for the rest
+// of the shift-day (like routine ones) so ticking a task doesn't make it vanish.
 export function useManualTasks(phases: string[]) {
   const placeholders = phases.map(() => '?').join(', ') || 'NULL';
   return useQuery<TaskRow>(
-    `SELECT * FROM task WHERE source = 'manual' AND phase IN (${placeholders}) ORDER BY phase, created_at`,
-    phases,
+    `SELECT * FROM task
+       WHERE (source = 'manual' AND phase IN (${placeholders}))
+          OR ("group" = 'oneoff' AND (done = 0 OR done_at >= ?))
+     ORDER BY CASE WHEN "group" = 'oneoff' THEN 1 ELSE 0 END, phase, created_at`,
+    [...phases, shiftBoundaryIso()],
   );
 }
 

@@ -366,7 +366,15 @@ export function GuestCalendar() {
                         <button
                           type="button"
                           aria-label="削除"
-                          onClick={() => removeShiftPlan(plan.id)}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `${member?.name ?? 'このスタッフ'} のシフトを削除しますか？`,
+                              )
+                            ) {
+                              removeShiftPlan(plan.id);
+                            }
+                          }}
                           className="grid h-9 w-9 place-items-center text-ink-mute"
                         >
                           <Trash2 size={16} />

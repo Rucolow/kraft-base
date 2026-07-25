@@ -55,7 +55,7 @@ export function CardHead({
   const bubble = {
     green: 'bg-orange/15 text-orange',
     orange: 'bg-orange/15 text-orange',
-    wood: 'bg-wood/20 text-wood-light',
+    wood: 'bg-wood/20 text-wood-text',
   }[tone];
   return (
     <div className="mb-2 flex items-center gap-2.5">
@@ -75,8 +75,11 @@ export type BadgeTone = 'ok' | 'warn' | 'wood' | 'neutral';
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: BadgeTone }) {
   const styles: Record<BadgeTone, string> = {
     ok: 'bg-green-light text-ondark',
-    warn: 'bg-orange/20 text-orange-light',
-    wood: 'bg-wood/20 text-wood-light',
+    // -text shades, not -light: on the 20% tint the light shades fall to ~1.8:1
+    // in the light theme, which is where these status chips are read (daylight
+    // reception iPad). See tokens.css.
+    warn: 'bg-orange/20 text-orange-text',
+    wood: 'bg-wood/20 text-wood-text',
     neutral: 'bg-cream-dark text-ink-light',
   };
   return (

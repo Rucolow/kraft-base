@@ -24,6 +24,12 @@
      dark ink passes AA in both themes (~6.7:1 dark / ~5.7:1 light). Defined once
      — text on orange is always dark, so .theme-light inherits it. */
   --kb-on-accent: 13 42 37;
+  /* Text on the 20%-tinted status chips (Badge warn/wood). The plain -light
+     shades sit at ~1.8:1 on the light theme's tint — the reception iPad in
+     daylight is exactly where 未対応/要確認 must stay readable. Dark theme keeps
+     the light shades (4.7:1); .theme-light overrides with darker ones (4.7–4.9:1). */
+  --kb-orange-text: 244 179 102;
+  --kb-wood-text: 221 190 126;
 
   --kb-line: rgba(243, 237, 221, 0.13);
   --kb-app-bg: radial-gradient(ellipse at 12% 0%, rgba(235, 154, 60, 0.12) 0%, transparent 46%),
@@ -51,6 +57,8 @@
   --kb-ink-mute: 147 141 125;
   --kb-paper: 252 249 241;
   --kb-on-dark: 244 238 223;
+  --kb-orange-text: 150 84 18;
+  --kb-wood-text: 120 88 12;
 
   --kb-line: rgba(15, 61, 54, 0.12);
   --kb-app-bg: radial-gradient(ellipse at 12% 0%, rgba(224, 138, 46, 0.1) 0%, transparent 44%),

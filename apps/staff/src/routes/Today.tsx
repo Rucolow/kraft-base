@@ -35,7 +35,10 @@ export function Today() {
   const { data: mentions } = useMentions(currentStaff?.id ?? null);
 
   const active = guests.filter((guest) => guest.status !== 'cancelled');
-  const late = active.filter((guest) => guest.status === 'late');
+  // Not-yet-arrived = expected AND late. Counting only 'late' made the card claim
+  // 「全員到着済み」 every morning (nobody is marked 遅着 until they are overdue),
+  // contradicting the 0名/4名 badge right beside it.
+  const pending = active.filter((guest) => guest.status !== 'arrived');
   // People, not bookings: a party of N on one reservation counts as N.
   const activeHeads = headcount(guests);
   const arrivedHeads = headcount(active.filter((guest) => guest.status === 'arrived'));
@@ -114,8 +117,10 @@ export function Today() {
             <div className="text-[0.86rem] text-ink-light">
               {active.length === 0
                 ? '本日のゲストはいません。'
-                : late.length > 0
-                  ? `未着：${late.map((guest) => `${guest.name}様`).join('・')}`
+                : pending.length > 0
+                  ? `未着：${pending
+                      .map((guest) => `${guest.name}様${guest.status === 'late' ? '（遅着）' : ''}`)
+                      .join('・')}`
                   : '全員到着済み'}
             </div>
           </Card>

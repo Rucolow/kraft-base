@@ -21,11 +21,13 @@ export const brandPreset = {
           DEFAULT: 'rgb(var(--kb-wood) / <alpha-value>)',
           light: 'rgb(var(--kb-wood-light) / <alpha-value>)',
           pale: 'rgb(var(--kb-wood-pale) / <alpha-value>)',
+          text: 'rgb(var(--kb-wood-text) / <alpha-value>)',
         },
         orange: {
           DEFAULT: 'rgb(var(--kb-orange) / <alpha-value>)',
           light: 'rgb(var(--kb-orange-light) / <alpha-value>)',
           deep: 'rgb(var(--kb-orange-deep) / <alpha-value>)',
+          text: 'rgb(var(--kb-orange-text) / <alpha-value>)',
         },
         cream: {
           DEFAULT: 'rgb(var(--kb-cream) / <alpha-value>)',
