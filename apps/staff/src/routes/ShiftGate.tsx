@@ -12,10 +12,14 @@ import { useSession } from '../lib/session';
 import { deriveDigest } from '../lib/shift';
 import { endShift, startShift } from '../lib/shiftOps';
 
+// How many handover entries show before the "ほか N 件" expander.
+const DIGEST_PREVIEW = 8;
+
 export function ShiftGate() {
   const navigate = useNavigate();
   const { device, staff, currentStaff, activeSession } = useSession();
   const [starting, setStarting] = useState(false);
+  const [showAllEntries, setShowAllEntries] = useState(false);
   const { data: timeline } = useTimeline();
   const { data: followups } = useOpenFollowups();
   const { data: previous } = useQuery<ShiftSessionRow>(
@@ -209,17 +213,30 @@ export function ShiftGate() {
         <EmptyState>新しい記録はありません。</EmptyState>
       ) : (
         <div className="mb-2 rounded-[13px] border border-line bg-cream px-3.5 py-2">
-          {digest.entries.slice(0, 6).map((entry) => (
-            <div
-              key={entry.id}
-              className="border-line border-b py-2 text-[0.84rem] last:border-none"
+          {(showAllEntries ? digest.entries : digest.entries.slice(0, DIGEST_PREVIEW)).map(
+            (entry) => (
+              <div
+                key={entry.id}
+                className="border-line border-b py-2 text-[0.84rem] last:border-none"
+              >
+                <span className="mr-2 font-semibold text-[0.74rem] text-wood tabular-nums">
+                  {entry.created_at ? formatClock(entry.created_at) : ''}
+                </span>
+                {entry.body}
+              </div>
+            ),
+          )}
+          {/* A busy night writes more than fits. Never drop the rest silently —
+              say how many are hidden and let the incoming staff open them. */}
+          {!showAllEntries && digest.entries.length > DIGEST_PREVIEW ? (
+            <button
+              type="button"
+              onClick={() => setShowAllEntries(true)}
+              className="min-h-[44px] w-full text-left font-bold text-[0.8rem] text-orange-deep"
             >
-              <span className="mr-2 font-semibold text-[0.74rem] text-wood tabular-nums">
-                {entry.created_at ? formatClock(entry.created_at) : ''}
-              </span>
-              {entry.body}
-            </div>
-          ))}
+              ほか {digest.entries.length - DIGEST_PREVIEW} 件を表示
+            </button>
+          ) : null}
         </div>
       )}
 

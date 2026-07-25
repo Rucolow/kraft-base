@@ -46,9 +46,27 @@ describe('handover digest range', () => {
   ];
   const followups = [followup('f1', 'open'), followup('f2', 'done')];
 
-  it('includes only entries after the previous session ended', () => {
-    const digest = deriveDigest({ ended_at: '2026-06-09T08:00:00.000Z' }, timeline, followups);
+  it('includes entries from the previous shift onward', () => {
+    const digest = deriveDigest({ started_at: '2026-06-09T08:00:00.000Z' }, timeline, followups);
     expect(digest.entries.map((e) => e.id)).toEqual(['b', 'c']);
+  });
+
+  // The handover exists to carry the previous staff's notes forward. Anchoring on
+  // ended_at dropped every one of them (they all predate the clock-out).
+  it('keeps notes the previous staff wrote during their own shift', () => {
+    const digest = deriveDigest({ started_at: '2026-06-09T05:00:00.000Z' }, timeline, followups);
+    expect(digest.entries.map((e) => e.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  // Forgotten 退勤 → closeStaleSessions stamps ended_at at today's 04:00, which is
+  // later than everything written the evening before. started_at is unaffected.
+  it('survives an auto-closed session (forgotten clock-out)', () => {
+    const autoClosed = {
+      started_at: '2026-06-09T05:00:00.000Z',
+      ended_at: '2026-06-09T19:00:00.000Z', // 04:00 JST boundary, after every entry
+    };
+    const digest = deriveDigest(autoClosed, timeline, followups);
+    expect(digest.entries.map((e) => e.id)).toEqual(['a', 'b', 'c']);
   });
 
   it('includes the whole timeline when there is no previous session', () => {

@@ -60,13 +60,21 @@ export function canStartShift(handoverReviewedAtIso: string | null): boolean {
   return handoverReviewedAtIso !== null && handoverReviewedAtIso !== '';
 }
 
-// Digest = timeline since the previous session ended + still-open followups (spec §6).
+// Digest = the previous shift's timeline + everything since + still-open
+// followups (spec §6).
+//
+// The window opens at the previous session's START, not its end. Anchoring on
+// ended_at dropped exactly what a handover is for: notes the previous staff
+// wrote *during* their shift all predate their clock-out, so 「前シフトの記録」
+// was near-permanently empty. The 04:00 auto-close made it worse — a forgotten
+// 退勤 stamps ended_at at today's boundary, filtering out the whole previous
+// evening on the morning someone most needs to read it.
 export function deriveDigest(
-  previousSession: Pick<ShiftSessionRow, 'ended_at'> | null,
+  previousSession: Pick<ShiftSessionRow, 'started_at'> | null,
   timeline: TimelineEntryRow[],
   followups: FollowupRow[],
 ): HandoverDigest {
-  const since = previousSession?.ended_at ?? null;
+  const since = previousSession?.started_at || null;
   const entries = since ? timeline.filter((entry) => (entry.created_at ?? '') >= since) : timeline;
   const openFollowups = followups.filter((followup) => followup.status === 'open');
   return { entries, followups: openFollowups, since };

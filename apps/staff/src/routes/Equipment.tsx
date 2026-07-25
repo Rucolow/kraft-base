@@ -20,6 +20,23 @@ export function Equipment() {
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const adding = useRef(false);
 
+  // One tap advances 未対応 → 発注済 → 解決 → 未対応. Confirm only the wrap-around,
+  // which silently re-opens a closed issue and clears its resolved_at — the same
+  // guard the lost-item list already applies when leaving a closed state.
+  async function advance(issue: { id: string; status: string | null; title: string | null }) {
+    const next = FLOW[issue.status ?? 'open'] ?? 'open';
+    if (
+      issue.status === 'resolved' &&
+      !window.confirm(`「${issue.title ?? ''}」を未対応に戻しますか？`)
+    ) {
+      return;
+    }
+    await updateRow('equipment_issue', issue.id, {
+      status: next,
+      resolved_at: next === 'resolved' ? nowIso() : null,
+    });
+  }
+
   async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) {
@@ -115,12 +132,9 @@ export function Equipment() {
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  updateRow('equipment_issue', issue.id, {
-                    status: FLOW[issue.status ?? 'open'] ?? 'open',
-                    resolved_at: FLOW[issue.status ?? 'open'] === 'resolved' ? nowIso() : null,
-                  })
-                }
+                aria-label={`${issue.title ?? ''}の状態を変更`}
+                onClick={() => advance(issue)}
+                className="grid min-h-[44px] min-w-[44px] place-items-center"
               >
                 <Badge tone={issue.status === 'resolved' ? 'ok' : 'warn'}>
                   {LABEL[issue.status ?? 'open']}

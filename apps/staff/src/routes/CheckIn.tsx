@@ -103,6 +103,21 @@ export function CheckIn() {
     });
   }, [partySize]);
 
+  // Kiosk lock. The iPad is in the guest's hands on this route, and the in-app
+  // exit is long-press guarded — but a browser/PWA back (the iPad edge-swipe)
+  // bypassed that entirely and landed on the staff guest-detail page, one tap
+  // from the whole day's guest list. Trap history: re-push our own entry on every
+  // popstate so back keeps the guest here. The long-press exit navigates forward
+  // and unmounts this effect, so staff are unaffected.
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const onPop = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   if (!guest) {
     // The local query hasn't resolved yet — show the brand splash rather than
     // flashing the invalid-link screen for a guest whose record is about to load.
