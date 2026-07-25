@@ -61,6 +61,12 @@ const check = (n, p, d = '') => {
   const expanded = await txt();
   check('expanded: linked order shows guest name', /→ Lukas & Anna Weber/.test(expanded));
   check('expanded: note visible', /減塩でお願いします/.test(expanded));
+  // Contract v3: the booking name shows only when it differs from the payer name.
+  // Seed: bo-unmatched-1 pays as MARCO ROSSI but booked as ロッシ マルコ (shown);
+  // bo-paid-1 pays as Lukas Weber and booked as "LUKAS  WEBER" (same person —
+  // must stay hidden, or the chip becomes noise staff learn to ignore).
+  check('expanded: differing 予約名 shown', /予約名 ロッシ マルコ/.test(expanded));
+  check('expanded: same-name 予約名 hidden', !/予約名 LUKAS/i.test(expanded));
   check('expanded: manual-entry tag 現地決済', /現地決済/.test(expanded));
   check('expanded: cancelled order struck with badge', /キャンセル/.test(expanded));
   check('expanded: stale PENDING hidden', !/決済待ち/.test(expanded));

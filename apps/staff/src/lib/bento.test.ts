@@ -7,6 +7,7 @@ import {
   mealsBySlug,
   parseItems,
   paymentLabel,
+  reservationNameHint,
   totalMeals,
 } from './bento';
 import type { BentoOrderRow } from './powersync/schema';
@@ -125,5 +126,37 @@ describe('labels', () => {
     expect(hasPartialRefund(base({ refunded_yen: 500 }))).toBe(true);
     expect(hasPartialRefund(base({ refunded_yen: 0 }))).toBe(false);
     expect(hasPartialRefund(base({ status: 'CONFIRMED', refunded_yen: 500 }))).toBe(false);
+  });
+});
+
+// koguchi sends reservation_name unnormalised (contract v3), so the "is this a
+// different name?" test has to absorb width/kana-case/whitespace noise — showing
+// 予約名 for what is plainly the same person would train staff to ignore the chip.
+describe('reservation name hint', () => {
+  it('hides the hint when it is the payer name in disguise', () => {
+    for (const reservation of ['テスト 太郎', 'テスト太郎', '  テスト　太郎  ', 'ﾃｽﾄ 太郎']) {
+      expect(reservationNameHint(base({ reservation_name: reservation }))).toBeNull();
+    }
+  });
+
+  it('shows a genuinely different booking name', () => {
+    expect(reservationNameHint(base({ reservation_name: '山田 花子' }))).toBe('山田 花子');
+  });
+
+  it('folds case for romanised names', () => {
+    expect(
+      reservationNameHint(base({ customer_name: 'Lukas Weber', reservation_name: 'LUKAS  WEBER' })),
+    ).toBeNull();
+  });
+
+  it('is null when absent, empty or whitespace only', () => {
+    expect(reservationNameHint(base({ reservation_name: null }))).toBeNull();
+    expect(reservationNameHint(base({ reservation_name: '   ' }))).toBeNull();
+  });
+
+  it('shows the booking name even when the payer name is missing', () => {
+    expect(reservationNameHint(base({ customer_name: null, reservation_name: '田中 一郎' }))).toBe(
+      '田中 一郎',
+    );
   });
 });

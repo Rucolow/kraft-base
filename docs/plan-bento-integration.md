@@ -1,6 +1,6 @@
-# 実装計画: お弁当注文システム（koguchi-bento）連携 v2
+# 実装計画: お弁当注文システム（koguchi-bento）連携 v3
 
-ステータス: **全フェーズ完了・本番稼働中（2026-07-23）**。
+ステータス: **全フェーズ完了・本番稼働中（2026-07-23）／契約 v3 = reservation_name 追加（2026-07-25）**。
 P1: KB側実装（PR #36・敵対レビュー11件修正）／P1.5: 配管証明成功／
 P2: koguchi側実装＋bento_writer JWT設定完了／P3: 通しテスト完了（オーナー報告）。
 以後は運用: 毎日17時の🍱パネル確認＋照合、拒否バッジ監視、電話注文のkoguchi手打ち徹底。
@@ -8,6 +8,48 @@ P2: koguchi側実装＋bento_writer JWT設定完了／P3: 通しテスト完了�
 ②ヴィーガン表記可否のモーリー最終確認（§9-5）③自動照合v2はヒット率実測後に再検討（§2）。
 相手システム: `Rucolow/koguchi-bento`（Next.js/Vercel、DB=Neon Postgres/Prisma、Stripe、
 本番 koguchi.nikuda.jp）。v1→v2 の変更根拠は §10 レビュー記録。
+
+### 契約 v3: reservation_name の追加（2026-07-25）
+
+koguchi が注文時に「宿の予約名（チェックイン名）」を取得するようになり、ミラーに
+`reservation_name`（text, nullable）を追加。**送信列 13 → 14**（§6 の `?columns=` 更新済み）。
+`guest_id`/`match`/`synced_at` を送らない原則は不変。部屋番号は当日決まるため扱わない。
+
+- 値の性質: **お客様の入力そのまま**（trim・60字上限のみ、正規化なし）。決済名と同じ／
+  連れ・会社名義で異なる／未取得で null の3系統。運営者が後から修正すると更新が push される。
+- KB側の対応: migration 0020（列追加＋列単位GRANT）、client `schema.ts` に列宣言、
+  UI は**決済名と異なるときだけ**「予約名 ◯◯」を表示（注文行と照合ピッカーの両方）。
+- **sync-rules.yaml は変更不要**（`SELECT * FROM bento_order` のため列は自動追随）。
+  代わりに **client schema への列宣言が必須** — ここが漏れると同期されても端末で読めない。
+  koguchi 側は「Sync Rules に追加が必要」と認識していたが、実際の急所はこちら。
+- 比較は表示専用の緩い正規化（NFKC＋空白除去＋小文字化）。同一人物の表記ゆれで
+  「別名」と誤表示してチップが信用されなくなるのを防ぐため。**照合の自動化には使わない**。
+- 自動照合: 完全一致のみ自動という案は koguchi から提案あり。未正規化データで誤爆＝
+  弁当の渡し間違いのため、**オーナー判断待ちの保留**（§2 の v1 方針を維持）。
+  必要になれば koguchi 側で正規化済みの比較用カラムを別に持って送る対応も可能（申し出あり）。
+
+#### 埋まり方（2026-07-25 送信開始・koguchi 申告）
+
+- 直後は15分ごとの**差分**送信のため、直近に更新のあった注文だけが埋まる。
+- JST深夜の洗い替えで**直近90日以内に更新のあった注文**がまとめて埋まる。
+- それより古い注文は再送対象外で **null のまま**（過去分の全件送信はしない）。
+- → 「送信開始したのに入っていない」時間帯が正常に存在する。確認は翌午前が確実。
+
+#### ★入力率を測るときの落とし穴（自動照合の判断前に必読）
+
+- 客の `/g` 注文: 「決済名と同じ」を選べば決済名と同一文字列、別名義なら入力値。
+- **運営者の手入力注文（電話・直前）: 予約名欄が空なら注文者名が自動で入る。**
+  つまり手入力分は**必ず埋まる**が、中身は「本人申告の予約名」ではなく
+  スタッフが聞き取った名前。**入力率を素で集計すると手入力分で水増しされる** —
+  自動照合のヒット率を評価するときは客注文分と手入力分を分けて見ること。
+- カゴ落ち（決済前離脱）は null。
+- 運営者が管理画面で予約名を直すと**即座に更新が push される**（後から変わる前提で読む）。
+
+#### 実データ観測（2026-07-25）
+
+決済名に `'Kate Burrows '`（末尾スペース）の実例あり。厳密一致で比較していたら
+同一人物に「予約名」チップが誤表示されるところだった。表示判定を NFKC＋空白除去＋
+小文字化の緩い比較にした判断は実データで裏取り済み。
 
 ### 運用記録: 稼働初日の 42501 障害（2026-07-23 解決済み）
 
@@ -194,10 +236,10 @@ end $$;
 ## 6. koguchi 側への実装依頼（契約 v2）— 相手セッションにこのまま渡す
 
 ```
-【KRAFT BASE 連携仕様 v2】
+【KRAFT BASE 連携仕様 v3】（v2 からの差分: reservation_name を追加し 13 → 14 列）
 
 ■ 書き込み先（upsert・主キーid）:
-  POST {KB_SUPABASE_URL}/rest/v1/bento_order?columns=id,status,channel,delivery_date,customer_name,items_label,items_json,total_yen,refunded_yen,note,payment_method,fulfilled_at,source_updated_at
+  POST {KB_SUPABASE_URL}/rest/v1/bento_order?columns=id,status,channel,delivery_date,customer_name,reservation_name,items_label,items_json,total_yen,refunded_yen,note,payment_method,fulfilled_at,source_updated_at
   Headers:
     apikey: {KB_SUPABASE_ANON_KEY}                ← ゲートウェイ通過用（プロジェクトのanonキー）
     Authorization: Bearer {KB_BENTO_WRITER_JWT}   ← 専用ロールJWT（こちらで発行して渡す。service keyではない）

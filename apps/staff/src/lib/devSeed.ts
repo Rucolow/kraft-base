@@ -178,6 +178,8 @@ export async function ensureLocalSeed(): Promise<void> {
         id: 'bo-paid-1',
         status: 'PAID',
         name: 'Lukas Weber',
+        // Same person, spaced differently — must NOT render a 予約名 chip.
+        reservation: 'LUKAS  WEBER',
         items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 2 }],
         total: 2400,
         note: null,
@@ -189,6 +191,8 @@ export async function ensureLocalSeed(): Promise<void> {
         id: 'bo-unmatched-1',
         status: 'PAID',
         name: 'MARCO ROSSI',
+        // Booked under a companion's name — the case reservation_name exists for.
+        reservation: 'ロッシ マルコ',
         items: [{ slug: 'vegan', name: 'ベジタリアン弁当', qty: 1 }],
         total: 1100,
         note: '減塩でお願いします',
@@ -237,6 +241,7 @@ export async function ensureLocalSeed(): Promise<void> {
         channel: 'GUEST',
         delivery_date: today,
         customer_name: o.name,
+        reservation_name: 'reservation' in o ? (o.reservation as string | null) : null,
         items_label: o.items.map((it) => `${it.name} ×${it.qty}`).join('・'),
         items_json: JSON.stringify(o.items.map((it) => ({ ...it, unitPriceYen: 1200 }))),
         total_yen: o.total,
@@ -302,6 +307,7 @@ export async function ensureLocalSeed(): Promise<void> {
         channel: 'GUEST',
         delivery_date: o.date,
         customer_name: o.name,
+        reservation_name: 'reservation' in o ? (o.reservation as string | null) : null,
         items_label: o.items.map((it) => `${it.name} ×${it.qty}`).join('・'),
         items_json: JSON.stringify(o.items.map((it) => ({ ...it, unitPriceYen: 1200 }))),
         total_yen: o.total,

@@ -9,6 +9,7 @@ import {
   mealsBySlug,
   parseItems,
   paymentLabel,
+  reservationNameHint,
   totalMeals,
 } from '../lib/bento';
 import { formatStayDate } from '../lib/date';
@@ -54,6 +55,14 @@ function OrderRow({
       </div>
       <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[0.78rem] text-ink-light">
         <span>{order.customer_name || '（氏名なし）'}</span>
+        {/* Booking name, shown only when it differs from the payer name — that is
+            exactly the case staff can't resolve from the order alone (booked
+            under a companion's or a company's name). */}
+        {reservationNameHint(order) ? (
+          <span className="rounded-full bg-wood/15 px-2 py-0.5 text-[0.72rem] text-wood-text">
+            予約名 {reservationNameHint(order)}
+          </span>
+        ) : null}
         {linked ? (
           <button
             type="button"
@@ -215,7 +224,9 @@ export function BentoDayPanel({ date, compact = false }: { date: string; compact
         <div className="border-line border-t px-3.5 py-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="font-bold text-[0.84rem]">
-              「{picking.items_label ?? ''}」（{picking.customer_name || '氏名なし'}）を誰に？
+              「{picking.items_label ?? ''}」（{picking.customer_name || '氏名なし'}
+              {reservationNameHint(picking) ? ` / 予約名 ${reservationNameHint(picking)}` : ''}
+              ）を誰に？
             </span>
             <button type="button" aria-label="閉じる" onClick={() => setPicking(null)}>
               <X size={16} className="text-ink-mute" />
