@@ -182,6 +182,10 @@ const bento_order = new Table(
     channel: column.text,
     delivery_date: column.text,
     customer_name: column.text,
+    // The inn-booking name given when ordering (contract v3). Sync rules use
+    // SELECT *, so replication picks the column up automatically — but the client
+    // schema still has to declare it or it never materialises locally.
+    reservation_name: column.text,
     items_label: column.text,
     items_json: column.text,
     total_yen: column.integer,

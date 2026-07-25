@@ -756,6 +756,7 @@ create table if not exists public.bento_order (
   channel text,
   delivery_date text not null,       -- 'YYYY-MM-DD' (JST calendar day)
   customer_name text,                -- for matching/display; email/phone deliberately NOT mirrored
+  reservation_name text,             -- 0020: inn-booking name as typed by the customer (not normalised)
   items_label text,                  -- display snapshot "焼肉弁当 ×2"
   items_json text,                   -- [{"slug","name","qty","unitPriceYen"}]; aggregate by slug
   total_yen integer,
@@ -781,11 +782,11 @@ end $$;
 grant bento_writer to authenticator;
 grant usage on schema public to bento_writer;
 grant select on public.bento_order to bento_writer;
-grant insert (id, status, channel, delivery_date, customer_name, items_label,
+grant insert (id, status, channel, delivery_date, customer_name, reservation_name, items_label,
               items_json, total_yen, refunded_yen, note, payment_method,
               fulfilled_at, source_updated_at)
   on public.bento_order to bento_writer;
-grant update (status, channel, delivery_date, customer_name, items_label,
+grant update (status, channel, delivery_date, customer_name, reservation_name, items_label,
               items_json, total_yen, refunded_yen, note, payment_method,
               fulfilled_at, source_updated_at)
   on public.bento_order to bento_writer;

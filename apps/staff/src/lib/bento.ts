@@ -133,3 +133,25 @@ export function mealsBySlug(
 export function hasPartialRefund(order: BentoOrderRow): boolean {
   return order.status === 'PAID' && (order.refunded_yen ?? 0) > 0;
 }
+
+// Loose name comparison for display only. koguchi sends reservation_name exactly
+// as the customer typed it (no normalisation), so 「山田 太郎」 and 「山田太郎」 are
+// the same person to a human. Fold width, kana case and all whitespace away
+// before comparing — used to decide whether the booking name adds information,
+// never to decide a match.
+export function normalizeName(value: string | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+  return value.normalize('NFKC').replace(/\s+/gu, '').toLowerCase();
+}
+
+// The booking name worth showing: present, and actually different from the payer
+// name already on screen. Staff use it to find which stay an order belongs to.
+export function reservationNameHint(order: BentoOrderRow): string | null {
+  const reservation = order.reservation_name?.trim();
+  if (!reservation) {
+    return null;
+  }
+  return normalizeName(reservation) === normalizeName(order.customer_name) ? null : reservation;
+}
