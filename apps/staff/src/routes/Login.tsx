@@ -106,7 +106,7 @@ export function Login() {
             onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 10))}
             placeholder="コードを入力"
           />
-          {notice ? <p className="mb-2 text-[0.8rem] text-orange-light">{notice}</p> : null}
+          {notice ? <p className="mb-2 text-[0.8rem] text-orange-text">{notice}</p> : null}
           {error ? (
             <div className="mb-2">
               <p className="text-[0.8rem] text-orange-deep">{error.message}</p>

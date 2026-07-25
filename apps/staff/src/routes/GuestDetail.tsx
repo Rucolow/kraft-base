@@ -240,7 +240,7 @@ export function GuestDetail() {
               </div>
               <div className="text-[0.86rem]">{note.body}</div>
               {readers.length > 0 ? (
-                <div className="mt-1 text-[0.64rem] text-orange-light">
+                <div className="mt-1 text-[0.64rem] text-orange-text">
                   既読 {readers.join('・')}
                 </div>
               ) : null}
