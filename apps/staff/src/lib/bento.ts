@@ -7,6 +7,8 @@ export interface BentoItem {
   slug: string;
   name: string;
   qty: number;
+  /** 「特盛（ご飯+焼肉）」等。数え方は slug 単位のままなので集計には使わない。 */
+  size: string | null;
 }
 
 // Payment tags a staff manual entry carries (online orders have null).
@@ -24,6 +26,24 @@ export function paymentLabel(method: string | null | undefined): string | null {
   return PAYMENT_LABELS[method] ?? method;
 }
 
+const str = (value: unknown): string | null =>
+  typeof value === 'string' && value.trim() !== '' ? value : null;
+
+// Product name, most trustworthy source first. The contract (§6) specified
+// `name`, but production actually ships `name_ja` — every item rendered as
+// 「不明な商品」 until this fallback existed. Falling back to the raw slug rather
+// than a hardcoded slug→name table is deliberate: koguchi renames products
+// (ヴィーガン弁当 → ベジタリアン弁当), and a stale local label would confidently
+// show the WRONG product, which in this domain means handing a guest the wrong
+// meal. 'yakiniku' is ugly but honest, and it makes a contract break visible.
+function itemName(item: Record<string, unknown>): string {
+  return str(item.name) ?? str(item.name_ja) ?? str(item.slug) ?? '不明な商品';
+}
+
+// Tolerant by design: this parses data from another system, so unknown or
+// renamed keys must degrade to a readable line, never to an empty panel.
+// Aggregation stays slug-based (see mealsBySlug), so a size variant still counts
+// as one meal of its product — 計N食 is unaffected by any of this.
 export function parseItems(itemsJson: string | null | undefined): BentoItem[] {
   if (!itemsJson) {
     return [];
@@ -34,11 +54,12 @@ export function parseItems(itemsJson: string | null | undefined): BentoItem[] {
       return [];
     }
     return parsed
-      .filter((item) => item && typeof item === 'object')
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
       .map((item) => ({
-        slug: typeof item.slug === 'string' ? item.slug : '',
-        name: typeof item.name === 'string' ? item.name : '不明な商品',
+        slug: str(item.slug) ?? '',
+        name: itemName(item),
         qty: typeof item.qty === 'number' && item.qty > 0 ? item.qty : 0,
+        size: str(item.size_label) ?? str(item.sizeLabel),
       }))
       .filter((item) => item.qty > 0);
   } catch {

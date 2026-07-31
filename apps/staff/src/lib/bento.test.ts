@@ -38,7 +38,7 @@ describe('parseItems', () => {
     const items = parseItems(
       '[{"slug":"yakiniku","name":"焼肉弁当","qty":2},{"slug":"onigiri","name":"おむすび弁当","qty":0}]',
     );
-    expect(items).toEqual([{ slug: 'yakiniku', name: '焼肉弁当', qty: 2 }]);
+    expect(items).toEqual([{ slug: 'yakiniku', name: '焼肉弁当', qty: 2, size: null }]);
   });
   it('is safe on null / broken JSON / non-arrays', () => {
     expect(parseItems(null)).toEqual([]);
@@ -113,6 +113,57 @@ describe('meal totals (slug aggregation)', () => {
     expect(by.find((e) => e.slug === 'yakiniku')?.qty).toBe(3);
     expect(by.find((e) => e.slug === 'vegan')?.qty).toBe(1);
     expect(by.find((e) => e.slug === 'mystery')?.qty).toBe(3); // unknown still counted
+  });
+});
+
+// Verbatim copies of production rows (2026-07-26). The contract said `name` /
+// `unitPriceYen`; production ships `name_ja` / `unit_price_yen` / `size_label`,
+// and the mismatch reached staff as 「不明な商品」 on every line because the demo
+// seed had been written to match the contract instead of reality. These fixtures
+// exist so the tests fail when reality changes, not when the document does.
+const PROD_TWO_ITEMS =
+  '[{"slug":"yakiniku","name_ja":"焼肉弁当","size_label":null,"qty":1,"unit_price_yen":1700},{"slug":"onigiri","name_ja":"おむすび弁当","size_label":null,"qty":1,"unit_price_yen":750}]';
+const PROD_WITH_SIZE =
+  '[{"slug":"yakiniku","name_ja":"焼肉弁当","size_label":"特盛（ご飯+焼肉）","qty":2,"unit_price_yen":2200},{"slug":"vegan","name_ja":"ベジタリアン弁当","size_label":null,"qty":1,"unit_price_yen":1100}]';
+
+describe('parseItems — production shapes', () => {
+  it('reads name_ja (the shape production actually sends)', () => {
+    expect(parseItems(PROD_TWO_ITEMS).map((i) => i.name)).toEqual(['焼肉弁当', 'おむすび弁当']);
+  });
+
+  it('still reads the contract shape (name)', () => {
+    expect(
+      parseItems('[{"slug":"yakiniku","name":"焼肉弁当","qty":2,"unitPriceYen":1200}]').map(
+        (i) => i.name,
+      ),
+    ).toEqual(['焼肉弁当']);
+  });
+
+  it('keeps size_label without letting it split the count', () => {
+    expect(parseItems(PROD_WITH_SIZE).map((i) => i.size)).toEqual(['特盛（ご飯+焼肉）', null]);
+    // 3 meals across 2 products — a size variant is not a separate product.
+    expect(totalMeals([base({ items_json: PROD_WITH_SIZE })])).toBe(3);
+    expect(mealsBySlug([base({ items_json: PROD_WITH_SIZE })]).map((e) => e.slug)).toEqual([
+      'yakiniku',
+      'vegan',
+    ]);
+  });
+
+  it('falls back to the slug rather than a possibly-stale local name', () => {
+    // Products get renamed upstream (ヴィーガン弁当 → ベジタリアン弁当); showing a
+    // hardcoded old name would confidently mislabel a meal.
+    expect(parseItems('[{"slug":"vegan","qty":1}]').map((i) => i.name)).toEqual(['vegan']);
+  });
+
+  it('only says 不明な商品 when there is nothing at all to show', () => {
+    expect(parseItems('[{"qty":1}]').map((i) => i.name)).toEqual(['不明な商品']);
+  });
+
+  it('survives malformed payloads', () => {
+    expect(parseItems('not json')).toEqual([]);
+    expect(parseItems('{"slug":"x"}')).toEqual([]);
+    expect(parseItems(null)).toEqual([]);
+    expect(parseItems('[null,{"slug":"yakiniku","name_ja":"焼肉弁当","qty":0}]')).toEqual([]);
   });
 });
 
