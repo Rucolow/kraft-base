@@ -10,6 +10,29 @@ P2: koguchi側実装＋bento_writer JWT設定完了／P3: 通しテスト完了�
 相手システム: `Rucolow/koguchi-bento`（Next.js/Vercel、DB=Neon Postgres/Prisma、Stripe、
 本番 koguchi.nikuda.jp）。v1→v2 の変更根拠は §10 レビュー記録。
 
+### 障害記録: 全品目が「不明な商品」表示（2026-07-26 解決済み）
+
+- 事象: スタッフ画面の弁当サマリーが全て「不明な商品1・不明な商品2」と表示。
+- 原因: **`items_json` の中身のキー名が契約書と実態でズレていた**。
+  契約書 `{"slug","name","qty","unitPriceYen"}` に対し、実際に届いていたのは
+  `{"slug","name_ja","size_label","qty","unit_price_yen"}`。`parseItems` は `name`
+  だけを見ていたため全品目が既定値に落ちた。**集計は slug 基準なので食数・未照合
+  件数・照合機能は正常**で、壊れていたのは品名の表示のみ（展開行は items_label を
+  そのまま出すため正しく見えており、発見が遅れた一因）。
+- 対応: `parseItems` を寛容化（`name` → `name_ja` → `slug` → 「不明な商品」）。
+  `size_label` も取り込む（集計は slug 単位のままなので食数の定義は不変）。
+- **slug→商品名のハードコード表は意図的に作らない**。koguchi は商品名を改称する
+  （ヴィーガン弁当→ベジタリアン弁当の実績あり）ため、古い表が「自信を持って誤った
+  商品名」を表示しうる。この領域の誤表示は弁当の渡し間違いに直結するので、
+  素の slug（`yakiniku`）を出すほうが安全かつ契約破れが可視化される。
+- **★教訓: デモシードを契約書どおりに書いていたため、テストは全部緑のまま実データ
+  だけ壊れていた。** 契約書と実データが食い違うとき、契約書に忠実なテストは何も
+  守らない。対策として ①単体テストに**本番の実JSONを逐語コピー**して固定
+  ②デモシードを**実データの形**に切替（旧形式は bo-paid-1 の1件だけ残して両対応を担保）。
+  → 今後この種の不一致はテストが落ちて気づける。
+- 契約の穴: koguchi 側の三重固定（CI）は**外側の14カラム**が対象で、`items_json`
+  の中身の形は両者とも固定していなかった。中身を変えるときは事前連絡が必要。
+
 ### 契約 v3: reservation_name の追加（2026-07-25）
 
 koguchi が注文時に「宿の予約名（チェックイン名）」を取得するようになり、ミラーに
@@ -169,7 +192,7 @@ create table if not exists public.bento_order (
   delivery_date text not null,       -- 'YYYY-MM-DD'（JST暦日）
   customer_name text,                -- 照合と表示に使用。メール/電話は同期しない（PII最小化）
   items_label text,                  -- 表示用スナップショット "焼肉弁当 ×2"
-  items_json text,                   -- [{"slug","name","qty","unitPriceYen"}] 集計は slug で（productIdは環境毎に変わる）
+  items_json text,                   -- 実態: [{"slug","name_ja","size_label","qty","unit_price_yen"}] 集計は slug で（productIdは環境毎に変わる）
   total_yen integer,
   refunded_yen integer not null default 0,  -- 締切後の部分返金を可視化
   note text,
@@ -324,7 +347,7 @@ end $$;
     "delivery_date": ★下記の生成規則を厳守,
     "customer_name": customerName,          // null可
     "items_label": 例 "焼肉弁当 ×2・おむすび弁当 ×1",
-    "items_json": JSON.stringify(items.map(i => ({slug, name, qty, unitPriceYen}))),
+    "items_json": JSON.stringify(items.map(i => ({slug, name_ja, size_label, qty, unit_price_yen}))),  ← 実態（当初 name/unitPriceYen と記載していたが誤り）
                                             // slug必須（KB側の集計キー。productIdは環境毎に変わるため使わない）
                                             // 現行: yakiniku=焼肉弁当 / vegan=ベジタリアン弁当 / onigiri=おむすび弁当
     "total_yen": totalYen,

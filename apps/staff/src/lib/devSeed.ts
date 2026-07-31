@@ -173,6 +173,25 @@ export async function ensureLocalSeed(): Promise<void> {
     // koguchi-bento order mirror — one of each display state so the bento panel,
     // matching picker and badges are all exercisable in demo mode.
     const bentoAt = (mins: number) => new Date(Date.parse(at) - mins * 60_000).toISOString();
+    type SeedItem = { slug: string; name: string; qty: number; size?: string };
+    // The shape production actually sends (verified against live rows 2026-07-26).
+    const itemsJson = (items: SeedItem[]) =>
+      JSON.stringify(
+        items.map((it) => ({
+          slug: it.slug,
+          name_ja: it.name,
+          size_label: it.size ?? null,
+          qty: it.qty,
+          unit_price_yen: 1700,
+        })),
+      );
+    // The shape docs/plan-bento-integration.md §6 originally specified.
+    const legacyItemsJson = (items: SeedItem[]) =>
+      JSON.stringify(
+        items.map((it) => ({ slug: it.slug, name: it.name, qty: it.qty, unitPriceYen: 1200 })),
+      );
+    const itemsLabel = (items: SeedItem[]) =>
+      items.map((it) => `${it.name}${it.size ? `（${it.size}）` : ''} ×${it.qty}`).join('・');
     const bentoOrders = [
       {
         id: 'bo-paid-1',
@@ -242,8 +261,11 @@ export async function ensureLocalSeed(): Promise<void> {
         delivery_date: today,
         customer_name: o.name,
         reservation_name: 'reservation' in o ? (o.reservation as string | null) : null,
-        items_label: o.items.map((it) => `${it.name} ×${it.qty}`).join('・'),
-        items_json: JSON.stringify(o.items.map((it) => ({ ...it, unitPriceYen: 1200 }))),
+        items_label: itemsLabel(o.items),
+        // bo-paid-1 keeps the ORIGINAL contract shape (name/unitPriceYen) so both
+        // shapes stay exercised; every other row uses the shape production really
+        // sends. Seeding only the documented shape is what let 「不明な商品」 ship.
+        items_json: o.id === 'bo-paid-1' ? legacyItemsJson(o.items) : itemsJson(o.items),
         total_yen: o.total,
         refunded_yen: 0,
         note: o.note,
@@ -265,7 +287,8 @@ export async function ensureLocalSeed(): Promise<void> {
         id: 'bo-future-linked',
         date: addDays(today, 2),
         name: 'Sofia Lombardi',
-        items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 2 }],
+        // Size variant: must still count as 2 meals of yakiniku, not a 4th product.
+        items: [{ slug: 'yakiniku', name: '焼肉弁当', qty: 2, size: '特盛（ご飯+焼肉）' }],
         total: 2400,
         guest: lombardi,
         match: 'manual',
@@ -308,8 +331,8 @@ export async function ensureLocalSeed(): Promise<void> {
         delivery_date: o.date,
         customer_name: o.name,
         reservation_name: 'reservation' in o ? (o.reservation as string | null) : null,
-        items_label: o.items.map((it) => `${it.name} ×${it.qty}`).join('・'),
-        items_json: JSON.stringify(o.items.map((it) => ({ ...it, unitPriceYen: 1200 }))),
+        items_label: itemsLabel(o.items),
+        items_json: itemsJson(o.items),
         total_yen: o.total,
         refunded_yen: 0,
         note: null,
