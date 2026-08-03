@@ -176,6 +176,38 @@ export function GuestDetail() {
             '—'
           )}
         </div>
+        <div className="border-line border-b bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-orange">
+          写真SNS
+        </div>
+        <div className="border-line border-b px-3 py-2 text-[0.88rem] md:col-span-3">
+          {/* R7: kiosk answer, editable by staff (verbal answers, guests who skip
+              the kiosk). Posting policy: only 掲載OK groups may appear on SNS. */}
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                ['ok', '掲載OK'],
+                ['ng', '掲載NG'],
+                [null, '未確認'],
+              ] as const
+            ).map(([value, label]) => {
+              const active = (guest.photo_consent ?? null) === value;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => updateRow('guest', guest.id, { photo_consent: value })}
+                  className={`min-h-[40px] rounded-full border px-3.5 text-[0.8rem] ${
+                    active
+                      ? 'border-orange bg-orange/15 font-bold text-orange'
+                      : 'border-line text-ink-light'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-orange">名簿</div>
         <div className="px-3 py-2.5 text-[0.88rem] md:col-span-3">
           {registered ? <Badge tone="ok">記入済み</Badge> : <Badge tone="warn">未記入</Badge>}

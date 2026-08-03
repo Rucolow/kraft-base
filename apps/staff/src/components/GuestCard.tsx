@@ -45,6 +45,10 @@ export function GuestCard({
             </span>
             {guest.whole_house === 1 ? <Badge tone="wood">貸切</Badge> : null}
             {undecidedCheckin ? <Badge tone="warn">IN未定</Badge> : null}
+            {/* R7: posting policy is "only ok groups appear on SNS", so the only
+                action-relevant signal on the card is the OK. NG/未確認 live on
+                the detail page. */}
+            {guest.photo_consent === 'ok' ? <Badge tone="ok">📷OK</Badge> : null}
           </div>
           <div className="mt-0.5 text-[0.76rem] text-ink-light">
             {meta}
