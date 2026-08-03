@@ -61,23 +61,22 @@ const check = (n, p, d = '') => {
   await page.getByRole('button', { name: 'カレンダー', exact: true }).click();
   await page.waitForTimeout(400);
   const cal = await txt();
-  check('R3a view toggle has ゲスト + シフト', /ゲスト/.test(cal) && /シフト/.test(cal), '');
-  // The シフト view is live now (PR-3); the toggle must be enabled. Shift-view
-  // behavior itself is covered by shift_plan.cjs.
-  const shiftDisabled = await page
-    .getByRole('button', { name: 'シフト', exact: true })
-    .isDisabled()
-    .catch(() => true);
-  check('R3a シフト toggle is enabled', !shiftDisabled);
+  // R6: the ゲスト/シフト view toggle is GONE — one merged calendar shows both.
+  const togglePills = await page.getByRole('button', { name: 'シフト', exact: true }).count();
+  check('R6 view toggle removed', togglePills === 0, `count=${togglePills}`);
   check('R3a shows the current month label', /\d{4}年\d{1,2}月/.test(cal), (cal.match(/\d{4}年\d{1,2}月/) || [''])[0]);
   check('R3a a day cell shows a headcount (名)', /\d+名/.test(cal));
   check('R3a 貸切 day highlighted (label in a cell)', /貸切/.test(cal));
 
-  // Tap the day cell that has guests (all seed guests are today) → list appears.
+  // Tap the day cell that has guests (all seed guests are today) → BOTH the
+  // guest list and the day's shift section appear without any view switch (R6).
   await page.locator('button').filter({ hasText: /\d+名/ }).first().click();
   await page.waitForTimeout(400);
   const withList = await txt();
   check('R3a tapping a day lists its guests', /Jonas Schmidt/.test(withList) || /マルキリ検証さん/.test(withList), withList.slice(0, 140));
+  check('R6 same tap shows the shift section too', /のシフト/.test(withList), (withList.match(/のシフト[^。]{0,40}/) || [''])[0]);
+  // Seed puts モーリー + 日中スタッフ(遅番) on today's rota — visible without switching.
+  check('R6 rota entries visible in day detail', /遅番/.test(withList));
 
   check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 

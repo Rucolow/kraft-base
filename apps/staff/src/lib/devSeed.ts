@@ -108,6 +108,7 @@ export async function ensureLocalSeed(): Promise<void> {
         bed: '1・2番（下段）',
         bento: '焼肉弁当 ×2',
         status: 'arrived',
+        photo: 'ok',
       },
       {
         id: rossi,
@@ -119,6 +120,7 @@ export async function ensureLocalSeed(): Promise<void> {
         bed: '3番',
         bento: 'ベジタリアン弁当 ×1',
         status: 'arrived',
+        photo: 'ng',
       },
       {
         id: schmidt,
@@ -130,6 +132,7 @@ export async function ensureLocalSeed(): Promise<void> {
         bed: '4番',
         bento: 'なし（カップ麺を案内）',
         status: 'late',
+        photo: null,
       },
     ];
     for (const guest of guests) {
@@ -144,6 +147,7 @@ export async function ensureLocalSeed(): Promise<void> {
         bed: guest.bed,
         bento: guest.bento,
         status: guest.status,
+        photo_consent: guest.photo,
         review_sent_at: null,
         whole_house: 0,
         created_by: STAFF.owner.id,

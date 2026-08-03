@@ -16,8 +16,6 @@ import {
   removeShiftPlan,
 } from '../lib/shiftPlanOps';
 
-type CalView = 'guest' | 'shift';
-
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 const FIELD =
   'min-h-[44px] rounded-[10px] border border-line bg-cream px-3 py-2 text-[0.9rem] text-ink outline-none focus:border-orange-light';
@@ -41,7 +39,6 @@ export function GuestCalendar() {
   const { isOwner, currentStaff } = useSession();
   const [month, setMonth] = useState(() => shiftDate().slice(0, 7));
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [calView, setCalView] = useState<CalView>('guest');
 
   const { data: monthGuests } = useGuestsInMonth(month);
   const { data: monthPlans } = useShiftPlansInMonth(month);
@@ -130,28 +127,6 @@ export function GuestCalendar() {
 
   return (
     <>
-      <div className="mb-3 flex gap-2">
-        {(
-          [
-            ['guest', 'ゲスト'],
-            ['shift', 'シフト'],
-          ] as const
-        ).map(([view, label]) => (
-          <button
-            key={view}
-            type="button"
-            onClick={() => setCalView(view)}
-            className={`flex min-h-[36px] flex-1 items-center justify-center rounded-full border px-3 font-bold text-[0.82rem] ${
-              calView === view
-                ? 'border-orange bg-orange/15 text-orange'
-                : 'border-line text-ink-light'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       <div className="mb-2 flex items-center justify-between">
         <button
           type="button"
@@ -200,11 +175,14 @@ export function GuestCalendar() {
             <button
               key={day}
               type="button"
+              // Stable hook for e2e: merged cells concatenate the day number with
+              // the headcount digits ("3"+"4名"), so text matching is ambiguous.
+              data-day={day}
               onClick={() => setSelectedDay(day)}
-              className={`flex min-h-[52px] flex-col items-center rounded-[10px] border px-0.5 pt-1 pb-0.5 ${
+              className={`flex min-h-[58px] flex-col items-center rounded-[10px] border px-0.5 pt-1 pb-0.5 ${
                 isSel
                   ? 'border-orange bg-orange/15'
-                  : calView === 'guest' && whole
+                  : whole
                     ? 'border-wood/40 bg-wood/15'
                     : 'border-line bg-paper'
               }`}
@@ -214,19 +192,19 @@ export function GuestCalendar() {
               >
                 {Number(day.slice(-2))}
               </span>
-              {calView === 'guest' ? (
-                <>
-                  {dayActive.length > 0 ? (
-                    <span className="mt-0.5 font-bold text-orange leading-none">
-                      <span className="text-[0.72rem] md:hidden">{headCount}名</span>
-                      <span className="hidden text-[0.68rem] md:inline">
-                        {dayActive.length}組{headCount}名
-                      </span>
-                    </span>
-                  ) : null}
-                  {whole ? <span className="mt-0.5 text-[0.56rem] text-wood">貸切</span> : null}
-                </>
-              ) : plans.length > 0 ? (
+              {/* R6: guests AND shifts in one cell — no more view toggle (モーリー
+                  依頼「切り替えることなしで確認したい」). Guests on top, staff
+                  initial chips below. */}
+              {dayActive.length > 0 ? (
+                <span className="mt-0.5 font-bold text-orange leading-none">
+                  <span className="text-[0.72rem] md:hidden">{headCount}名</span>
+                  <span className="hidden text-[0.68rem] md:inline">
+                    {dayActive.length}組{headCount}名
+                  </span>
+                </span>
+              ) : null}
+              {whole ? <span className="mt-0.5 text-[0.56rem] text-wood">貸切</span> : null}
+              {plans.length > 0 ? (
                 <span className="mt-0.5 flex flex-wrap justify-center gap-0.5">
                   {plans.slice(0, 3).map((plan) => {
                     const member = plan.staff_id ? staffById.get(plan.staff_id) : undefined;
@@ -251,7 +229,7 @@ export function GuestCalendar() {
       </div>
 
       {/* Owner bulk tools for the rota. */}
-      {calView === 'shift' && isOwner ? (
+      {isOwner ? (
         <div className="mt-3">
           <div className="flex flex-wrap gap-2">
             <button
@@ -322,11 +300,9 @@ export function GuestCalendar() {
       <div className="mt-4">
         {!selectedDay ? (
           <p className="px-1 text-center text-[0.82rem] text-ink-mute">
-            {calView === 'guest'
-              ? '日付をタップすると、その日のゲストが表示されます。'
-              : '日付をタップすると、その日のシフトが表示されます。'}
+            日付をタップすると、その日のゲストとシフトが表示されます。
           </p>
-        ) : calView === 'guest' ? (
+        ) : (
           <>
             <SectionLabel>
               {formatStayDate(selectedDay)} —{' '}
@@ -339,9 +315,6 @@ export function GuestCalendar() {
             ) : (
               <GuestList guests={selectedGuests} onOpen={openGuest} />
             )}
-          </>
-        ) : (
-          <>
             <SectionLabel>{formatStayDate(selectedDay)} のシフト</SectionLabel>
             {selectedPlans.length === 0 ? (
               <EmptyState>この日の割り当てはありません。</EmptyState>

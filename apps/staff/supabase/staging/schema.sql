@@ -843,3 +843,8 @@ begin
     grant select on public.bento_order to powersync_role;
   end if;
 end $$;
+
+-- ===== 0021_guest_photo_consent.sql =====
+alter table public.guest
+  add column if not exists photo_consent text
+  check (photo_consent in ('ok', 'ng'));

@@ -66,6 +66,11 @@ export function ShiftGate() {
     clockOutMarks.some((mark) => mark.created_at === lastEnded.ended_at);
   const lastEndedStaff = staff.find((member) => member.id === lastEnded?.staff_id) ?? null;
 
+  // A failed local write must never freeze this screen silently — that is
+  // exactly what stranded the field iPad at the name picker (broken OPFS DB,
+  // start() threw, zero feedback). Surface it and let the user retry.
+  const [opError, setOpError] = useState<string | null>(null);
+
   async function end() {
     if (!device || !activeSession || ending) {
       return;
@@ -74,8 +79,17 @@ export function ShiftGate() {
       return;
     }
     setEnding(true);
-    await endShift(device.deviceId);
-    setEnding(false);
+    setOpError(null);
+    try {
+      await endShift(device.deviceId);
+    } catch (error) {
+      console.error('endShift failed', error);
+      setOpError(
+        '退勤の記録に失敗しました。もう一度お試しください。直らない場合はアプリを開き直してください。',
+      );
+    } finally {
+      setEnding(false);
+    }
   }
 
   const statusCards = activeSession ? (
@@ -93,6 +107,11 @@ export function ShiftGate() {
       <p className="mt-2 text-[0.72rem] text-ink-mute">
         ※終了するとチェックイン画面も閉じます。遅着対応が残っている間は終了しないでください。
       </p>
+      {opError ? (
+        <p className="mt-2 rounded-[9px] bg-orange/10 px-3 py-2 text-[0.78rem] text-orange-deep">
+          {opError}
+        </p>
+      ) : null}
     </div>
   ) : clockedOutToday ? (
     <div className="mb-4 rounded-[15px] border-2 border-orange bg-orange/10 px-4 py-5 text-center">
@@ -121,7 +140,16 @@ export function ShiftGate() {
       return;
     }
     setStarting(true);
-    await startShift({ staffId: selected.id, deviceId: device.deviceId });
+    setOpError(null);
+    try {
+      await startShift({ staffId: selected.id, deviceId: device.deviceId });
+    } catch (error) {
+      console.error('startShift failed', error);
+      setStarting(false);
+      setOpError(
+        'シフト開始の記録に失敗しました。もう一度お試しください。直らない場合はアプリを開き直してください。',
+      );
+    }
   }
 
   if (!device) {
@@ -246,6 +274,11 @@ export function ShiftGate() {
       <PrimaryButton onClick={start}>
         <Check size={18} /> 確認しました — シフトを開始
       </PrimaryButton>
+      {opError ? (
+        <p className="mt-2 rounded-[9px] bg-orange/10 px-3 py-2 text-center text-[0.78rem] text-orange-deep">
+          {opError}
+        </p>
+      ) : null}
       {currentStaff ? (
         <p className="mt-3 text-center text-[0.72rem] text-ink-mute">
           現在のシフト：{currentStaff.name}

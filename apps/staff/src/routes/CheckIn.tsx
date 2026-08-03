@@ -84,6 +84,12 @@ export function CheckIn() {
   const [redo, setRedo] = useState(false);
   // Guards against a double-tap creating duplicate legal-register rows.
   const [submitting, setSubmitting] = useState(false);
+  // Photo/SNS consent (R7). Optional by design — a marketing question must not
+  // gate the legal register. null = unanswered (staff see 未確認 and can ask).
+  const [photoConsent, setPhotoConsent] = useState<'ok' | 'ng' | null>(null);
+  // Prefill from the guest row once it loads (covers redo AND a staff-set verbal
+  // answer), but never clobber a choice the guest is making right now.
+  const consentTouched = useRef(false);
   // Long-press timer for the kiosk "back to staff" exit (declared with the other
   // hooks, before any early return, to satisfy the Rules of Hooks).
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -102,6 +108,13 @@ export function CheckIn() {
       return next;
     });
   }, [partySize]);
+
+  const guestPhotoConsent = guest?.photo_consent ?? null;
+  useEffect(() => {
+    if (!consentTouched.current && (guestPhotoConsent === 'ok' || guestPhotoConsent === 'ng')) {
+      setPhotoConsent(guestPhotoConsent);
+    }
+  }, [guestPhotoConsent]);
 
   // Kiosk lock. The iPad is in the guest's hands on this route, and the in-app
   // exit is long-press guarded — but a browser/PWA back (the iPad edge-swipe)
@@ -213,7 +226,16 @@ export function CheckIn() {
         created_at: new Date(baseMs + i).toISOString(),
       });
     }
-    await updateRow('guest', id, { status: 'arrived' });
+    // Write photo_consent only when the guest actually touched the chips this
+    // session. An untouched redo must not overwrite a staff-recorded verbal
+    // answer; an actively-cleared chip (withdrawal) legitimately writes null.
+    await updateRow(
+      'guest',
+      id,
+      consentTouched.current
+        ? { status: 'arrived', photo_consent: photoConsent }
+        : { status: 'arrived' },
+    );
     await insertRow('timeline_entry', {
       id: uuid(),
       author_id: null,
@@ -408,6 +430,54 @@ export function CheckIn() {
             </div>
           </div>
         ))}
+
+        {/* Photo/SNS consent (R7). Optional, equal-weight choices, no preselection
+            — a consent must be freely given, and skipping it must not block the
+            legal register. Tapping the selected chip again clears it. */}
+        <div className="mb-5 rounded-[13px] border border-line bg-cream px-4 py-3.5">
+          <div className="font-bold text-[0.92rem]">
+            📷 {abroad ? 'Photos / 写真について' : '写真について / Photos'}
+          </div>
+          <p className="mt-1 text-[0.78rem] text-ink-light">
+            {abroad ? (
+              <>
+                We sometimes share photos of stays on social media. May we include you?
+                <br />
+                滞在の様子を撮影しSNS等で紹介することがあります。
+              </>
+            ) : (
+              <>
+                当宿では滞在の様子を撮影しSNS等で紹介することがあります。
+                <br />
+                We sometimes share photos of stays on social media.
+              </>
+            )}
+          </p>
+          <div className="mt-2.5 flex gap-2">
+            {(
+              [
+                ['ok', abroad ? 'OK to share / 掲載OK' : '掲載OK / OK to share'],
+                ['ng', abroad ? "Please don't / 掲載しないで" : '掲載しないで / Please don’t'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  consentTouched.current = true;
+                  setPhotoConsent((prev) => (prev === value ? null : value));
+                }}
+                className={`min-h-[48px] flex-1 rounded-[11px] border px-2 text-[0.82rem] ${
+                  photoConsent === value
+                    ? 'border-orange bg-orange/15 font-bold text-orange'
+                    : 'border-line text-ink-light'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <PrimaryButton onClick={submit} disabled={!complete || submitting}>
           <Check size={18} /> {abroad ? 'Complete / 記入を完了' : '記入を完了 / Complete'}

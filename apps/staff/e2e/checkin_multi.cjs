@@ -40,12 +40,21 @@ const R=[]; const ck=(n,p,d='')=>{R.push({n,p});console.log(`  ${p?'PASS':'FAIL'
   await ins.nth(2).fill('taro@example.com');
   await ins.nth(3).fill('山田 花子');
   await ins.nth(5).fill('山田 次郎');
+  // R7: the consent section is present and optional — pick 掲載OK before submit.
+  ck('consent section shows', /写真について/.test(await body()));
+  await page.getByRole('button',{name:/掲載OK/}).click(); await page.waitForTimeout(150);
   await page.getByRole('button',{name:/記入を完了/}).click(); await page.waitForTimeout(700);
   ck('multi submit completes', /ありがとうございました/.test(await body()));
 
   // detail shows 記入済み
   await page.goto(`${BASE}/guests/${gid}`,{waitUntil:'networkidle'}); await page.waitForTimeout(400);
   ck('detail shows 記入済み', /記入済み/.test(await body()));
+  ck('detail shows 写真SNS row', /写真SNS/.test(await body()));
+
+  // R7: kiosk OK reaches the guest list as a 📷OK badge on this guest's card.
+  await page.goto(`${BASE}/guests`,{waitUntil:'networkidle'}); await page.waitForTimeout(300);
+  const yamadaCard = await page.locator('text=山田ファミリー').first().locator('..').locator('..').innerText().catch(()=> '');
+  ck('guest card shows 📷OK after kiosk consent', /📷OK/.test(yamadaCard), yamadaCard.replace(/\s+/g,' ').slice(0,80));
 
   // re-enter: should prefill 3 people; companion addresses inherited from rep
   await page.goto(`${BASE}/checkin/${gid}`,{waitUntil:'networkidle'}); await page.waitForTimeout(500);

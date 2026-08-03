@@ -47,6 +47,9 @@ const guest = new Table(
     status: column.text,
     review_sent_at: column.text,
     whole_house: column.integer,
+    // 'ok' | 'ng' | null(未確認). Kiosk (the guest) or staff (verbal) sets it;
+    // posting policy defaults to "only ok groups may appear on SNS".
+    photo_consent: column.text,
     created_by: column.text,
     created_at: column.text,
   },

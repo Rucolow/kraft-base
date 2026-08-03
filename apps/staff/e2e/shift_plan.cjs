@@ -34,12 +34,10 @@ async function setup(browser, staffName) {
   await page.getByRole('button', { name: /シフトを開始/ }).click();
   await wU((u) => u === '/');
   await page.waitForTimeout(500);
-  // Open the calendar → shift view, tap today.
+  // Open the calendar (R6: merged view — shifts show without a view switch).
   await page.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(300);
   await page.getByRole('button', { name: 'カレンダー', exact: true }).click();
-  await page.waitForTimeout(300);
-  await page.getByRole('button', { name: 'シフト', exact: true }).click();
   await page.waitForTimeout(300);
   return { page, wU };
 }
@@ -47,19 +45,17 @@ async function setup(browser, staffName) {
 const txt = async (page) =>
   (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ');
 
-// The seed keys off shiftDate() (JST, 04:00 boundary). Reproduce the day-of-month
-// so we tap the correct calendar cell regardless of the runner's timezone/hour.
-function jstShiftDayNum() {
+// The seed keys off shiftDate() (JST, 04:00 boundary). Reproduce the full date so
+// we tap the exact cell via its data-day hook — text matching broke when R6
+// merged the views (day number and headcount digits concatenate: "3"+"4名").
+function jstShiftDate() {
   let jstMs = Date.now() + 9 * 3600 * 1000;
   if (new Date(jstMs).getUTCHours() < 4) jstMs -= 24 * 3600 * 1000;
-  return new Date(jstMs).getUTCDate();
+  return new Date(jstMs).toISOString().slice(0, 10);
 }
 const tapToday = async (page) => {
-  const n = jstShiftDayNum();
   await page
-    .locator('div.grid button')
-    .filter({ hasText: new RegExp(`^${n}(\\D|$)`) })
-    .first()
+    .locator(`[data-day="${jstShiftDate()}"]`)
     .click()
     .catch(() => {});
   await page.waitForTimeout(400);
