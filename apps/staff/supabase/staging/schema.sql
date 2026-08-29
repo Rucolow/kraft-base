@@ -848,3 +848,7 @@ end $$;
 alter table public.guest
   add column if not exists photo_consent text
   check (photo_consent in ('ok', 'ng'));
+
+-- ===== 0022_staff_hidden.sql =====
+alter table public.staff
+  add column if not exists hidden boolean not null default false;

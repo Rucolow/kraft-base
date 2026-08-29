@@ -3,9 +3,17 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { headcount } from '../components/GuestCard';
 import { Badge, Card, CardHead, EmptyState, Screen } from '../components/ui';
-import { useManualTasks, useMentions, useOpenFollowups, useTodaysGuests } from '../data/queries';
-import { formatClock, jstHour, nowIso } from '../lib/date';
+import {
+  useGuestsOnDate,
+  useManualTasks,
+  useMentions,
+  useOpenFollowups,
+  useTodaysGuests,
+} from '../data/queries';
+import { usedBedChips } from '../lib/beds';
+import { formatClock, jstHour, nowIso, shiftDate } from '../lib/date';
 import { intToBool } from '../lib/db';
+import { addDays } from '../lib/month';
 import { useSession } from '../lib/session';
 import { cockpitPhases, shiftContextLabel } from '../lib/shift';
 import { setTaskDone } from '../lib/shiftOps';
@@ -31,6 +39,9 @@ export function Today() {
 
   const { data: tasks } = useManualTasks(phases);
   const { data: guests } = useTodaysGuests();
+  // R8: beds slept in last night — the cleaning/linen signal モーリー asked for.
+  const { data: lastNightGuests } = useGuestsOnDate(addDays(shiftDate(), -1));
+  const bedsUsed = usedBedChips(lastNightGuests);
   const { data: followups } = useOpenFollowups();
   const { data: mentions } = useMentions(currentStaff?.id ?? null);
 
@@ -74,6 +85,12 @@ export function Today() {
                 </span>
               }
             />
+            {bedsUsed.length > 0 ? (
+              <div className="mb-1 rounded-[9px] bg-wood/10 px-2.5 py-1.5 text-[0.78rem] text-ink">
+                🛏 昨日使用ベッド: <span className="font-bold">{bedsUsed.join('・')}</span>
+                <span className="ml-1 text-[0.68rem] text-ink-mute">（シーツ交換の目安）</span>
+              </div>
+            ) : null}
             {tasks.length === 0 ? (
               <EmptyState>この時間帯の定型はありません。</EmptyState>
             ) : (

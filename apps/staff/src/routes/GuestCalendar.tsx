@@ -8,7 +8,7 @@ import { useGuestsInMonth, useShiftPlansInMonth, useStaff } from '../data/querie
 import { formatStayDate, shiftDate } from '../lib/date';
 import { addMonth, monthDays, monthLabel, monthLeadingBlanks } from '../lib/month';
 import type { GuestRow, ShiftPlanRow, StaffRow } from '../lib/powersync/schema';
-import { useSession } from '../lib/session';
+import { isRosterMember, useSession } from '../lib/session';
 import {
   addShiftPlan,
   addShiftPlanRange,
@@ -56,7 +56,7 @@ export function GuestCalendar() {
   const byDayGuests = bucket<GuestRow>(monthGuests, (g) => g.stay_date ?? '');
   const byDayPlans = bucket<ShiftPlanRow>(monthPlans, (p) => p.date ?? '');
   const staffById = new Map<string, StaffRow>(staff.map((member) => [member.id, member]));
-  const rosterStaff = staff.filter((member) => !member.is_device);
+  const rosterStaff = staff.filter(isRosterMember);
 
   const selectedGuests = selectedDay ? (byDayGuests.get(selectedDay) ?? []) : [];
   const selectedActive = selectedGuests.filter(isActive);

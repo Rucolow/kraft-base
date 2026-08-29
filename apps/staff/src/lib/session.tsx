@@ -23,6 +23,17 @@ interface SessionValue {
 
 const SessionContext = createContext<SessionValue | null>(null);
 
+// Forward-looking staff pickers (shift roster, account link, rota assignment,
+// device binding) exclude synthetic device accounts AND rows hidden by 0022
+// (legacy duplicates kept only for history). Payroll/history views must NOT use
+// this — hidden rows still own past sessions.
+export function isRosterMember(member: {
+  is_device: number | null;
+  hidden: number | null;
+}): boolean {
+  return member.is_device !== 1 && member.hidden !== 1;
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [device, setDeviceState] = useState<DeviceConfig | null>(() => readDeviceConfig());
   // The shared reception iPad stays mounted for days, so the shift-day boundary

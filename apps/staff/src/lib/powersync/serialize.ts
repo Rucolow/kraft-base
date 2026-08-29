@@ -19,7 +19,7 @@ export const BOOLEAN_COLUMNS: Record<string, readonly string[]> = {
   guest_note: ['pinned'],
   task: ['done'],
   followup: ['requires_owner'],
-  staff: ['is_device'],
+  staff: ['is_device', 'hidden'],
 };
 
 // table -> columns that are uuid[]/text[] in Postgres but JSON text locally.

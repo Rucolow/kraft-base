@@ -1,0 +1,74 @@
+# 外部サービスの死活チェック（日次）。
+#
+# 動機: 2026-08 に PowerSync 無料枠のインスタンスが「非アクティブ」で自動停止し、
+# 全端末が数日間オフラインだったのに誰も気づけなかった（検知は現場からの
+# 「同期されない」報告）。ダッシュボードの Issue Alert は仕様どおりの停止を
+# 異常として通知しない可能性があるため、外形監視をここに置く。
+#
+# 失敗時: GitHub Issue を作成（既存のオープン Issue があればコメント追記）。
+# リポジトリのオーナー/ウォッチャーに GitHub から通知メールが届く。
+# 副次効果: この ping 自体が「API リクエスト」として PowerSync の非アクティブ
+# 判定をリセットする可能性がある（未検証のため検知手段として設計）。
+#
+# 監視対象の URL は公開情報（配信バンドルに含まれる）なのでリポジトリ直書きで良い。
+name: uptime
+on:
+  schedule:
+    - cron: '23 22 * * *' # 07:23 JST 毎日（:00 を避ける）
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe PowerSync instance
+        id: powersync
+        continue-on-error: true
+        run: |
+          # 生死のみ判定: TLS+HTTP 応答があれば生存（ステータスコードは不問）。
+          # 停止時は DNS ごと消える（NXDOMAIN）ので curl が接続エラーで落ちる。
+          curl -sS -o /dev/null --max-time 20 \
+            "https://6a281e6d0ef84ed671a042a4.powersync.journeyapps.com/" \
+            || { echo "failed=true" >> "$GITHUB_OUTPUT"; exit 1; }
+
+      - name: Probe Supabase
+        id: supabase
+        continue-on-error: true
+        run: |
+          curl -sS -o /dev/null --max-time 20 \
+            "https://euotgitvjybnvlhfdgkl.supabase.co/auth/v1/health" \
+            || { echo "failed=true" >> "$GITHUB_OUTPUT"; exit 1; }
+
+      - name: Notify via issue
+        if: steps.powersync.outcome == 'failure' || steps.supabase.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PS: ${{ steps.powersync.outcome }}
+          SB: ${{ steps.supabase.outcome }}
+        run: |
+          title="🔴 外部サービス死活チェック失敗"
+          body="日次の死活チェックが失敗しました（$(date -u +%Y-%m-%dT%H:%MZ) UTC）。
+
+          - PowerSync: ${PS}
+          - Supabase: ${SB}
+
+          PowerSync が failure の場合、無料枠の自動停止の可能性が高いです。
+          ダッシュボード https://powersync.journeyapps.com で状態を確認し、
+          deprovisioned なら **Redeploy** を押してください（Sync Rules は保存済みの
+          ものが再処理されるので貼り直し不要）。復旧後は各端末でアプリを開き直す。
+          詳細な手順: docs/plan-bento-integration.md ではなく 2026-08 の障害対応
+          （PR #43 の説明）を参照。"
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "in:title 外部サービス死活チェック失敗" --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi
+
+      - name: Fail the run if any probe failed
+        if: steps.powersync.outcome == 'failure' || steps.supabase.outcome == 'failure'
+        run: exit 1

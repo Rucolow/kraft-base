@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { useState, useSyncExternalStore } from 'react';
+import { useAuth } from '../lib/auth';
 import { formatClock } from '../lib/date';
 import { canConnect } from '../lib/powersync/connector';
 import {
@@ -49,11 +50,14 @@ export function SyncAlertList({ alerts }: { alerts: SyncAlert[] }) {
 export function SyncAlertNotice() {
   const alerts = useSyncExternalStore(subscribeSyncAlerts, getSyncAlerts);
   const [open, setOpen] = useState(false);
+  const { session } = useAuth();
 
   // Local-only mode never uploads, so there is nothing to reject there.
   if (!canConnect() || alerts.length === 0) {
     return null;
   }
+
+  const email = session?.user.email ?? null;
 
   return (
     <div className="mt-4 rounded-[13px] border border-orange-deep/40 bg-orange/[0.07] px-3.5 py-3 text-left">
@@ -73,6 +77,17 @@ export function SyncAlertNotice() {
           <p className="mb-2 text-[0.68rem] text-ink-light">
             サーバーに拒否され、端末から取り消された変更です。繰り返す場合は管理者に共有してください。
           </p>
+          {/* The welcome@ incident: a valid login that maps to no staff member has
+              every write rejected, and nothing on screen said WHICH account was in
+              use — the one fact that would have let the user self-diagnose. */}
+          {email ? (
+            <p className="mb-2 text-[0.7rem] text-ink">
+              現在のログイン: <span className="font-semibold">{email}</span>
+              <span className="block text-[0.62rem] text-ink-mute">
+                このアドレスが正しいスタッフ用のものか確認してください。
+              </span>
+            </p>
+          ) : null}
           <SyncAlertList alerts={alerts} />
           <button
             type="button"

@@ -52,7 +52,15 @@ export async function startPowerSync(): Promise<void> {
     return;
   }
   started = true;
-  await db.init();
+  try {
+    await db.init();
+  } catch (error) {
+    // Reset the latch on failure, or the provider's retry calls become no-ops
+    // that "succeed" instantly against an uninitialised DB (P0-A follow-up: the
+    // retry existed but never actually retried).
+    started = false;
+    throw error;
+  }
   void connectPowerSync();
 }
 
