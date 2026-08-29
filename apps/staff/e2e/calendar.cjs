@@ -70,7 +70,12 @@ const check = (n, p, d = '') => {
 
   // Tap the day cell that has guests (all seed guests are today) → BOTH the
   // guest list and the day's shift section appear without any view switch (R6).
-  await page.locator('button').filter({ hasText: /\d+名/ }).first().click();
+  // Tap TODAY via its data-day hook — "first cell with a headcount" broke the
+  // moment the seed gained a yesterday guest (that cell comes first in the DOM).
+  let jstMs = Date.now() + 9 * 3600 * 1000;
+  if (new Date(jstMs).getUTCHours() < 4) jstMs -= 24 * 3600 * 1000;
+  const todayCell = new Date(jstMs).toISOString().slice(0, 10);
+  await page.locator(`[data-day="${todayCell}"]`).click();
   await page.waitForTimeout(400);
   const withList = await txt();
   check('R3a tapping a day lists its guests', /Jonas Schmidt/.test(withList) || /マルキリ検証さん/.test(withList), withList.slice(0, 140));
