@@ -31,6 +31,12 @@ export function useTodaysGuests() {
   );
 }
 
+// Guests staying on an arbitrary date (R8: the bed picker marks beds slept in
+// the night BEFORE the form's stay date; the cockpit shows yesterday's beds).
+export function useGuestsOnDate(date: string) {
+  return useQuery<GuestRow>('SELECT * FROM guest WHERE stay_date = ?', [date]);
+}
+
 export function useUpcomingGuests() {
   return useQuery<GuestRow>(
     "SELECT * FROM guest WHERE stay_date > ? ORDER BY stay_date, COALESCE(checkin_time, '~~')",

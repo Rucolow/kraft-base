@@ -5,7 +5,7 @@ import { Avatar } from '../components/Avatar';
 import { Badge, GhostButton, Screen, SectionLabel } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { updateRow } from '../lib/db';
-import { useSession } from '../lib/session';
+import { isRosterMember, useSession } from '../lib/session';
 
 export function LinkAccount() {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ export function LinkAccount() {
     navigate('/');
   }
 
-  const people = staff.filter((member) => !member.is_device);
+  const people = staff.filter(isRosterMember);
   const connectionNote = !status.connected
     ? 'サーバーに接続中です…'
     : !status.hasSynced

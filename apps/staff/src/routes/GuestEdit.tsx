@@ -13,9 +13,11 @@ import {
   TextField,
 } from '../components/ui';
 import { LANG_LABEL } from '../content/kinds';
-import { useGuest } from '../data/queries';
+import { useGuest, useGuestsOnDate } from '../data/queries';
+import { BEDS, usedBedChips } from '../lib/beds';
 import { nowIso, shiftDate } from '../lib/date';
 import { boolToInt, insertRow, updateRow, uuid } from '../lib/db';
+import { addDays } from '../lib/month';
 import type { GuestRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
 
@@ -44,7 +46,6 @@ const COUNTRIES = [
   '韓国',
   '台湾',
 ];
-const BEDS = ['1番', '2番', '3番', '4番', '5番', '6番', '和室'];
 // 「ベジタリアン弁当」が正式名称（2026年6月に koguchi 側で意図改名。旧称ヴィーガン弁当）。
 const BENTO_ITEMS = ['焼肉弁当', 'ベジタリアン弁当', 'おむすび弁当'];
 const TIMES = ['15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
@@ -235,6 +236,11 @@ export function GuestEdit() {
   const toggleBed = (bed: string) =>
     setBeds((prev) => (prev.includes(bed) ? prev.filter((b) => b !== bed) : [...prev, bed]));
 
+  // R8: mark beds slept in the night before THIS stay (relative to the form's
+  // date, not literal today — assigning beds for 8/15 cares about 8/14's beds).
+  const { data: prevNightGuests } = useGuestsOnDate(addDays(form.stay_date || shiftDate(), -1));
+  const usedYesterday = new Set(usedBedChips(prevNightGuests));
+
   const langKnown = form.language in LANG_LABEL;
   const showLangInput = langOther || (form.language !== '' && !langKnown);
 
@@ -414,6 +420,7 @@ export function GuestEdit() {
           <div className="flex flex-wrap gap-2">
             {BEDS.map((bed) => {
               const on = beds.includes(bed);
+              const usedPrev = usedYesterday.has(bed);
               return (
                 <button
                   key={bed}
@@ -424,10 +431,18 @@ export function GuestEdit() {
                   }`}
                 >
                   {bed}
+                  {usedPrev ? (
+                    <span className="ml-1 font-normal text-[0.62rem] text-wood-text">昨日使用</span>
+                  ) : null}
                 </button>
               );
             })}
           </div>
+          {usedYesterday.size > 0 ? (
+            <p className="mt-1 text-[0.72rem] text-ink-mute">
+              「昨日使用」= 前泊で使われたベッド（シーツ交換の確認を）
+            </p>
+          ) : null}
         </Labeled>
 
         <Labeled label="弁当（必要な数だけ）">

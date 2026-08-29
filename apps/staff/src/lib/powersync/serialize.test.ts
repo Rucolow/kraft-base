@@ -54,7 +54,7 @@ describe('serializeForServer', () => {
       guest_note: ['pinned'],
       task: ['done'],
       followup: ['requires_owner'],
-      staff: ['is_device'],
+      staff: ['is_device', 'hidden'],
     });
     expect(ARRAY_COLUMNS).toEqual({
       guest_note: ['mentions', 'read_by'],

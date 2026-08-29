@@ -8,7 +8,7 @@ import { BackButton, EmptyState, PrimaryButton } from '../components/ui';
 import { useOpenFollowups, useTimeline } from '../data/queries';
 import { formatClock, shiftDate } from '../lib/date';
 import type { ShiftSessionRow, StaffRow } from '../lib/powersync/schema';
-import { useSession } from '../lib/session';
+import { isRosterMember, useSession } from '../lib/session';
 import { deriveDigest } from '../lib/shift';
 import { endShift, startShift } from '../lib/shiftOps';
 
@@ -40,8 +40,8 @@ export function ShiftGate() {
   // The shift roster lists everyone who works a shift. At this 3-person guest-
   // house 2 of the 3 are owners, so owners MUST be tappable here — filtering to
   // role==='staff' left them with no way to start a shift and stranded them on
-  // this screen. Only the synthetic device account is excluded.
-  const people = staff.filter((member) => !member.is_device);
+  // this screen. Excluded: synthetic device accounts and 0022-hidden legacy rows.
+  const people = staff.filter(isRosterMember);
   const personalStaff =
     device?.mode === 'personal'
       ? (staff.find((member) => member.id === device.boundStaffId) ?? null)

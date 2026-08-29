@@ -57,9 +57,23 @@ export async function ensureLocalSeed(): Promise<void> {
         shift_label: null,
         accent: member.accent,
         auth_user_id: null,
+        hidden: 0,
         created_at: at,
       });
     }
+
+    // A 0022-hidden legacy duplicate: must NOT appear in any forward-looking
+    // picker (shift roster / setup / link / rota assign).
+    await ins('staff', {
+      id: uuid(),
+      name: '（旧）モーリー',
+      role: 'staff',
+      shift_label: null,
+      accent: '#8a8a8a',
+      auth_user_id: null,
+      hidden: 1,
+      created_at: at,
+    });
 
     await ins('daily_reset', { id: uuid(), last_reset_date: today, created_at: at });
 
@@ -168,6 +182,26 @@ export async function ensureLocalSeed(): Promise<void> {
       bed: '1・2番（下段）',
       bento: null,
       status: 'expected',
+      review_sent_at: null,
+      whole_house: 0,
+      created_by: STAFF.owner.id,
+      created_at: at,
+    });
+
+    // Last night's stay (R8): its beds surface as 「昨日使用」 on the cockpit and
+    // in the bed picker (5番・6番 expected in both).
+    await ins('guest', {
+      id: uuid(),
+      stay_date: addDays(today, -1),
+      name: 'Emma Müller',
+      country: 'ドイツ',
+      language: 'de',
+      party_size: 2,
+      checkin_time: '16:00',
+      bed: '5番・6番',
+      bento: null,
+      status: 'arrived',
+      photo_consent: null,
       review_sent_at: null,
       whole_house: 0,
       created_by: STAFF.owner.id,

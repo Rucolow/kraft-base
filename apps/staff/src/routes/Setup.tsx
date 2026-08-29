@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { PrimaryButton, TextField } from '../components/ui';
 import { type DeviceMode, readDeviceConfig, saveDevice } from '../lib/device';
-import { useSession } from '../lib/session';
+import { isRosterMember, useSession } from '../lib/session';
 
 export function Setup() {
   const navigate = useNavigate();
@@ -62,19 +62,17 @@ export function Setup() {
       ) : mode === 'personal' ? (
         <>
           <div className="mb-2 text-[0.78rem] text-ink-light">この端末の本人</div>
-          {staff
-            .filter((member) => !member.is_device)
-            .map((member) => (
-              <button
-                key={member.id}
-                type="button"
-                onClick={() => setBoundStaffId(member.id)}
-                className={`mb-2 flex w-full items-center gap-3 rounded-[14px] border p-3 text-left ${boundStaffId === member.id ? 'border-orange bg-orange/15' : 'border-line'}`}
-              >
-                <Avatar staff={member} size={36} />
-                <span className="font-bold text-[0.92rem]">{member.name}</span>
-              </button>
-            ))}
+          {staff.filter(isRosterMember).map((member) => (
+            <button
+              key={member.id}
+              type="button"
+              onClick={() => setBoundStaffId(member.id)}
+              className={`mb-2 flex w-full items-center gap-3 rounded-[14px] border p-3 text-left ${boundStaffId === member.id ? 'border-orange bg-orange/15' : 'border-line'}`}
+            >
+              <Avatar staff={member} size={36} />
+              <span className="font-bold text-[0.92rem]">{member.name}</span>
+            </button>
+          ))}
         </>
       ) : (
         <TextField

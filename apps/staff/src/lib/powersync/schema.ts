@@ -11,6 +11,9 @@ const staff = new Table({
   accent: column.text,
   auth_user_id: column.text,
   is_device: column.integer,
+  // 0022: legacy duplicate rows hidden from forward-looking pickers (shift
+  // roster, link/claim, rota assign). WorkTime ignores this for history.
+  hidden: column.integer,
   created_at: column.text,
 });
 
