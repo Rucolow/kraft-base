@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BentoDayPanel } from '../components/BentoOrders';
 import { GuestList, headcount, isActive } from '../components/GuestCard';
+import { RotaShare } from '../components/RotaShare';
 import { Badge, EmptyState, SectionLabel } from '../components/ui';
 import { useGuestsInMonth, useShiftPlansInMonth, useStaff } from '../data/queries';
 import { formatStayDate, shiftDate } from '../lib/date';
@@ -252,6 +253,7 @@ export function GuestCalendar() {
               前週をコピー
             </button>
           </div>
+          <RotaShare />
           {rangeOpen ? (
             <div className="mt-2 rounded-kb border border-line p-3">
               <div className="mb-2 text-[0.78rem] text-ink-light">

@@ -852,3 +852,12 @@ alter table public.guest
 -- ===== 0022_staff_hidden.sql =====
 alter table public.staff
   add column if not exists hidden boolean not null default false;
+
+-- ===== 0023_rota_share.sql =====
+create table if not exists public.rota_token (
+  staff_id uuid primary key references public.staff (id) on delete cascade,
+  token uuid not null unique default gen_random_uuid(),
+  created_at timestamptz not null default now()
+);
+alter table public.rota_token enable row level security;
+-- rota_feed / rota_links / rota_reset_token: see migrations/0023_rota_share.sql

@@ -34,6 +34,7 @@ const ALL_SUITES = [
   'shift_plan.cjs',
   'bento.cjs',
   'beds_roster.cjs',
+  'rota.cjs',
 ];
 
 // KB_E2E_ONLY=owner_shift.cjs,login_stamp.cjs runs a subset (CI debugging / quick

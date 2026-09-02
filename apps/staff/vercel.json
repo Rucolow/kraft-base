@@ -3,5 +3,9 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/rota", "destination": "/rota.html" },
+    { "source": "/rota/(.*)", "destination": "/rota.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
