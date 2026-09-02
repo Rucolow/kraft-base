@@ -861,3 +861,13 @@ create table if not exists public.rota_token (
 );
 alter table public.rota_token enable row level security;
 -- rota_feed / rota_links / rota_reset_token: see migrations/0023_rota_share.sql
+
+-- ===== 0024_rota_single_token.sql =====
+drop table if exists public.rota_token;
+create table if not exists public.rota_share (
+  id smallint primary key default 1 check (id = 1),
+  token uuid not null default gen_random_uuid(),
+  created_at timestamptz not null default now()
+);
+alter table public.rota_share enable row level security;
+-- rota_feed(jsonb) / rota_link / rota_reset: see migrations/0024_rota_single_token.sql
