@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatClock, nowIso, shiftDate } from '../lib/date';
-import { addMonth, monthDays, monthLabel } from '../lib/month';
+import { addMonth, monthDays, monthLabel, monthLeadingBlanks } from '../lib/month';
 import {
   type RotaEntry,
   type RotaFeed,
@@ -17,11 +17,14 @@ import {
 // the house rota. No PowerSync, no auth, no guest data — by design.
 // R9-b: one link for the whole house; a roster row lets each viewer switch
 // staff on/off (remembered on that device only).
-// R9-c: owner feedback「頭文字のマス目は見にくい」→ month grid replaced by a
-// day-by-day list with full names and the shift label (午前のみ etc.) inline.
+// R9-c: owner feedback「頭文字のマス目は見にくい」→ day-by-day list with full
+// names and the shift label (午前のみ etc.) inline is the default view.
+// R9-d: the month grid is back as a second view (一覧 / カレンダー toggle,
+// remembered per device) for those who want the shape of the month.
 
 const TOKEN_KEY = 'kb-rota-token';
 const HIDDEN_KEY = 'kb-rota-hidden';
+const VIEW_KEY = 'kb-rota-view';
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -66,6 +69,24 @@ function writeHidden(hidden: ReadonlySet<string>) {
   }
 }
 
+type RotaView = 'list' | 'grid';
+
+function readView(): RotaView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'grid' ? 'grid' : 'list';
+  } catch {
+    return 'list';
+  }
+}
+
+function writeView(view: RotaView) {
+  try {
+    localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    /* best effort */
+  }
+}
+
 async function fetchRota(token: string, ym: string): Promise<RotaFeed> {
   if (!SUPABASE_URL || !ANON_KEY) {
     throw new Error('not configured');
@@ -94,6 +115,8 @@ export function RotaApp() {
   const [state, setState] = useState<LoadState>('loading');
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const todayRef = useRef<HTMLDivElement | null>(null);
+  const [view, setView] = useState<RotaView>(readView);
+  const [selected, setSelected] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(readHidden);
 
   const load = useCallback(async () => {
@@ -121,11 +144,11 @@ export function RotaApp() {
   // viewer does not scroll past three weeks of history to find it.
   const scrolledRef = useRef(false);
   useEffect(() => {
-    if (state === 'ok' && !scrolledRef.current && todayRef.current) {
+    if (state === 'ok' && view === 'list' && !scrolledRef.current && todayRef.current) {
       scrolledRef.current = true;
       todayRef.current.scrollIntoView({ block: 'center' });
     }
-  }, [state]);
+  }, [state, view]);
 
   // Reopening from the home screen (or switching back to the tab) is the
   // moment staff want "the latest" — refetch on visibility/focus.
@@ -200,7 +223,10 @@ export function RotaApp() {
           <button
             type="button"
             aria-label="前の月"
-            onClick={() => setMonth((m) => addMonth(m, -1))}
+            onClick={() => {
+              setMonth((m) => addMonth(m, -1));
+              setSelected(null);
+            }}
             className="grid h-11 w-11 place-items-center rounded-full border border-line text-ink-light"
           >
             ‹
@@ -214,11 +240,38 @@ export function RotaApp() {
           <button
             type="button"
             aria-label="次の月"
-            onClick={() => setMonth((m) => addMonth(m, 1))}
+            onClick={() => {
+              setMonth((m) => addMonth(m, 1));
+              setSelected(null);
+            }}
             className="grid h-11 w-11 place-items-center rounded-full border border-line text-ink-light"
           >
             ›
           </button>
+        </div>
+
+        <div className="mt-2 flex gap-1 rounded-full border border-line p-0.5">
+          {(
+            [
+              ['list', '一覧'],
+              ['grid', 'カレンダー'],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={view === key}
+              onClick={() => {
+                setView(key);
+                writeView(key);
+              }}
+              className={`min-h-[36px] flex-1 rounded-full font-bold text-[0.8rem] ${
+                view === key ? 'bg-orange text-onaccent' : 'text-ink-light'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {feed.staff.length > 0 ? (
@@ -277,73 +330,205 @@ export function RotaApp() {
         </div>
       ) : null}
 
-      <div className="mt-2 divide-y divide-line">
-        {days.map((day) => {
-          const plans = byDay.get(day) ?? [];
-          const isToday = day === today;
-          const weekday = weekdayOf(day);
-          return (
-            <div
-              key={day}
-              data-day={day}
-              ref={isToday ? todayRef : undefined}
-              className={`-mx-2 flex gap-3 px-2 ${plans.length > 0 ? 'py-2' : 'py-1'} ${
-                isToday ? 'border-orange border-l-4 bg-orange/15 pl-1' : ''
-              }`}
-            >
+      {view === 'grid' ? (
+        <GridView
+          month={month}
+          days={days}
+          byDay={byDay}
+          today={today}
+          selected={selected}
+          onSelect={setSelected}
+          hiddenCount={hiddenCount}
+        />
+      ) : (
+        <div className="mt-2 divide-y divide-line">
+          {days.map((day) => {
+            const plans = byDay.get(day) ?? [];
+            const isToday = day === today;
+            const weekday = weekdayOf(day);
+            return (
               <div
-                className={`w-12 shrink-0 pt-0.5 tabular-nums leading-tight ${
-                  weekday === 0
-                    ? 'text-orange-deep'
-                    : weekday === 6
-                      ? 'text-wood'
-                      : 'text-ink-light'
+                key={day}
+                data-day={day}
+                ref={isToday ? todayRef : undefined}
+                className={`-mx-2 flex gap-3 px-2 ${plans.length > 0 ? 'py-2' : 'py-1'} ${
+                  isToday ? 'border-orange border-l-4 bg-orange/15 pl-1' : ''
                 }`}
               >
                 <div
-                  className={`text-[1.05rem] ${isToday ? 'font-bold text-orange' : 'font-bold'}`}
+                  className={`w-12 shrink-0 pt-0.5 tabular-nums leading-tight ${
+                    weekday === 0
+                      ? 'text-orange-deep'
+                      : weekday === 6
+                        ? 'text-wood'
+                        : 'text-ink-light'
+                  }`}
                 >
-                  {Number(day.slice(-2))}
+                  <div
+                    className={`text-[1.05rem] ${isToday ? 'font-bold text-orange' : 'font-bold'}`}
+                  >
+                    {Number(day.slice(-2))}
+                  </div>
+                  <div className="text-[0.66rem]">
+                    {WEEKDAYS[weekday]}
+                    {isToday ? ' 今日' : ''}
+                  </div>
                 </div>
-                <div className="text-[0.66rem]">
-                  {WEEKDAYS[weekday]}
-                  {isToday ? ' 今日' : ''}
+                <div className="min-w-0 flex-1">
+                  {plans.length === 0 ? (
+                    <div className="pt-1 text-[0.72rem] text-ink-mute">—</div>
+                  ) : (
+                    plans.map((plan, index) => (
+                      <div
+                        // biome-ignore lint/suspicious/noArrayIndexKey: display-only rows
+                        key={index}
+                        className="flex min-h-[28px] items-center gap-2"
+                      >
+                        <span
+                          className="h-3 w-3 shrink-0 rounded-full"
+                          style={{ backgroundColor: plan.accent ?? '#8a8a8a' }}
+                        />
+                        <span className="truncate font-bold text-[0.95rem]">{plan.name}</span>
+                        {plan.label ? (
+                          <span className="shrink-0 rounded-full border border-line bg-cream-dark px-2 py-[2px] text-[0.72rem] text-ink-light">
+                            {plan.label}
+                          </span>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-              <div className="min-w-0 flex-1">
-                {plans.length === 0 ? (
-                  <div className="pt-1 text-[0.72rem] text-ink-mute">—</div>
-                ) : (
-                  plans.map((plan, index) => (
-                    <div
-                      // biome-ignore lint/suspicious/noArrayIndexKey: display-only rows
-                      key={index}
-                      className="flex min-h-[28px] items-center gap-2"
-                    >
-                      <span
-                        className="h-3 w-3 shrink-0 rounded-full"
-                        style={{ backgroundColor: plan.accent ?? '#8a8a8a' }}
-                      />
-                      <span className="truncate font-bold text-[0.95rem]">{plan.name}</span>
-                      {plan.label ? (
-                        <span className="shrink-0 rounded-full border border-line bg-cream-dark px-2 py-[2px] text-[0.72rem] text-ink-light">
-                          {plan.label}
-                        </span>
-                      ) : null}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <p className="mt-6 text-center text-[0.66rem] text-ink-mute">
         {state === 'loading' ? '読み込み中…' : updatedAt ? `更新 ${formatClock(updatedAt)}` : ''}
         <span className="ml-2">開くたびに最新のシフトを取得します</span>
       </p>
     </Shell>
+  );
+}
+
+function GridView({
+  month,
+  days,
+  byDay,
+  today,
+  selected,
+  onSelect,
+  hiddenCount,
+}: {
+  month: string;
+  days: string[];
+  byDay: Map<string, RotaEntry[]>;
+  today: string;
+  selected: string | null;
+  onSelect: (day: string) => void;
+  hiddenCount: number;
+}) {
+  const selectedRows = selected ? (byDay.get(selected) ?? []) : [];
+  return (
+    <>
+      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[0.66rem] text-ink-mute">
+        {WEEKDAYS.map((weekday, index) => (
+          <div
+            key={weekday}
+            className={index === 0 ? 'text-orange-deep' : index === 6 ? 'text-wood' : ''}
+          >
+            {weekday}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {Array.from({ length: monthLeadingBlanks(month) }, (_, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: fixed leading blanks, order stable
+          <div key={`blank-${index}`} />
+        ))}
+        {days.map((day) => {
+          const plans = byDay.get(day) ?? [];
+          const isToday = day === today;
+          const isSel = day === selected;
+          return (
+            <button
+              key={day}
+              type="button"
+              data-day={day}
+              onClick={() => onSelect(day)}
+              className={`flex min-h-[58px] flex-col items-center rounded-[10px] border px-0.5 pt-1 pb-0.5 ${
+                isSel ? 'border-orange bg-orange/15' : 'border-line bg-paper'
+              }`}
+            >
+              <span
+                className={`text-[0.7rem] ${isToday ? 'font-bold text-orange' : 'text-ink-light'}`}
+              >
+                {Number(day.slice(-2))}
+              </span>
+              {plans.length > 0 ? (
+                <span className="mt-0.5 flex flex-wrap justify-center gap-0.5">
+                  {plans.slice(0, 3).map((plan, index) => (
+                    <span
+                      // biome-ignore lint/suspicious/noArrayIndexKey: display-only chips
+                      key={index}
+                      className="inline-block rounded px-1 font-bold text-[0.6rem] text-white leading-tight"
+                      style={{ backgroundColor: plan.accent ?? '#8a8a8a' }}
+                    >
+                      {plan.name.slice(0, 1)}
+                    </span>
+                  ))}
+                  {plans.length > 3 ? (
+                    <span className="text-[0.54rem] text-ink-mute">+{plans.length - 3}</span>
+                  ) : null}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4">
+        {selected ? (
+          <>
+            <div className="mb-1 font-bold text-[0.95rem]">
+              {Number(selected.slice(5, 7))}/{Number(selected.slice(8, 10))}（
+              {WEEKDAYS[weekdayOf(selected)]}）のシフト
+            </div>
+            {selectedRows.length === 0 ? (
+              <p className="text-[0.84rem] text-ink-mute">
+                {hiddenCount > 0
+                  ? '表示中のスタッフには、この日の割り当てはありません。'
+                  : 'この日の割り当てはありません。'}
+              </p>
+            ) : (
+              selectedRows.map((row, index) => (
+                <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: display-only rows
+                  key={index}
+                  className="mb-2 flex items-center gap-2.5 rounded-[12px] border border-line bg-paper px-3 py-2.5"
+                >
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: row.accent ?? '#8a8a8a' }}
+                  />
+                  <span className="flex-1 font-bold text-[0.95rem]">{row.name}</span>
+                  {row.label ? (
+                    <span className="rounded-full border border-line bg-cream-dark px-2.5 py-[3px] text-[0.72rem] text-ink-light">
+                      {row.label}
+                    </span>
+                  ) : null}
+                </div>
+              ))
+            )}
+          </>
+        ) : (
+          <p className="text-center text-[0.8rem] text-ink-mute">
+            日付をタップすると、その日のシフトが表示されます。
+          </p>
+        )}
+      </div>
+    </>
   );
 }
 
