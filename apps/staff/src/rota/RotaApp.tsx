@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatClock, nowIso, shiftDate } from '../lib/date';
-import { addMonth, monthDays, monthLabel, monthLeadingBlanks } from '../lib/month';
+import { addMonth, monthDays, monthLabel } from '../lib/month';
 import {
   type RotaEntry,
   type RotaFeed,
@@ -15,8 +15,10 @@ import {
 // Reads the house token from ?t= (remembered locally so the home-screen
 // shortcut keeps working), calls the public rota_feed RPC directly, and renders
 // the house rota. No PowerSync, no auth, no guest data — by design.
-// R9-b: one link for the whole house; a roster row under the calendar lets
-// each viewer switch staff on/off (remembered on that device only).
+// R9-b: one link for the whole house; a roster row lets each viewer switch
+// staff on/off (remembered on that device only).
+// R9-c: owner feedback「頭文字のマス目は見にくい」→ month grid replaced by a
+// day-by-day list with full names and the shift label (午前のみ etc.) inline.
 
 const TOKEN_KEY = 'kb-rota-token';
 const HIDDEN_KEY = 'kb-rota-hidden';
@@ -91,7 +93,7 @@ export function RotaApp() {
   const [feed, setFeed] = useState<RotaFeed>(EMPTY_FEED);
   const [state, setState] = useState<LoadState>('loading');
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const todayRef = useRef<HTMLDivElement | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(readHidden);
 
   const load = useCallback(async () => {
@@ -114,6 +116,16 @@ export function RotaApp() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // First successful load of the current month: bring today into view so the
+  // viewer does not scroll past three weeks of history to find it.
+  const scrolledRef = useRef(false);
+  useEffect(() => {
+    if (state === 'ok' && !scrolledRef.current && todayRef.current) {
+      scrolledRef.current = true;
+      todayRef.current.scrollIntoView({ block: 'center' });
+    }
+  }, [state]);
 
   // Reopening from the home screen (or switching back to the tab) is the
   // moment staff want "the latest" — refetch on visibility/focus.
@@ -177,174 +189,154 @@ export function RotaApp() {
     }
   }
   const today = shiftDate();
-  const selectedRows = selected ? (byDay.get(selected) ?? []) : [];
   const hiddenCount = feed.staff.filter((s) => hidden.has(s.id)).length;
+  const days = monthDays(month);
+  const shiftDays = days.filter((day) => (byDay.get(day) ?? []).length > 0).length;
 
   return (
     <Shell>
-      <div className="mt-4 flex items-center justify-between">
-        <button
-          type="button"
-          aria-label="前の月"
-          onClick={() => {
-            setMonth((m) => addMonth(m, -1));
-            setSelected(null);
-          }}
-          className="grid h-11 w-11 place-items-center rounded-full border border-line text-ink-light"
-        >
-          ‹
-        </button>
-        <div className="font-bold text-[1.1rem] tabular-nums">{monthLabel(month)}</div>
-        <button
-          type="button"
-          aria-label="次の月"
-          onClick={() => {
-            setMonth((m) => addMonth(m, 1));
-            setSelected(null);
-          }}
-          className="grid h-11 w-11 place-items-center rounded-full border border-line text-ink-light"
-        >
-          ›
-        </button>
-      </div>
-
-      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[0.66rem] text-ink-mute">
-        {WEEKDAYS.map((weekday, index) => (
-          <div
-            key={weekday}
-            className={index === 0 ? 'text-orange-deep' : index === 6 ? 'text-wood' : ''}
+      <div className="sticky top-0 z-10 -mx-5 bg-paper px-5 pt-3 pb-2">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            aria-label="前の月"
+            onClick={() => setMonth((m) => addMonth(m, -1))}
+            className="grid h-11 w-11 place-items-center rounded-full border border-line text-ink-light"
           >
-            {weekday}
-          </div>
-        ))}
-      </div>
-      <div className="mt-1 grid grid-cols-7 gap-1">
-        {Array.from({ length: monthLeadingBlanks(month) }, (_, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: fixed leading blanks, order stable
-          <div key={`blank-${index}`} />
-        ))}
-        {monthDays(month).map((day) => {
-          const plans = byDay.get(day) ?? [];
-          const isToday = day === today;
-          const isSel = day === selected;
-          return (
-            <button
-              key={day}
-              type="button"
-              data-day={day}
-              onClick={() => setSelected(day)}
-              className={`flex min-h-[58px] flex-col items-center rounded-[10px] border px-0.5 pt-1 pb-0.5 ${
-                isSel ? 'border-orange bg-orange/15' : 'border-line bg-paper'
-              }`}
-            >
-              <span
-                className={`text-[0.7rem] ${isToday ? 'font-bold text-orange' : 'text-ink-light'}`}
-              >
-                {Number(day.slice(-2))}
-              </span>
-              {plans.length > 0 ? (
-                <span className="mt-0.5 flex flex-wrap justify-center gap-0.5">
-                  {plans.slice(0, 3).map((plan, index) => (
-                    <span
-                      // biome-ignore lint/suspicious/noArrayIndexKey: display-only chips
-                      key={index}
-                      className="inline-block rounded px-1 font-bold text-[0.6rem] text-white leading-tight"
-                      style={{ backgroundColor: plan.accent ?? '#8a8a8a' }}
-                    >
-                      {plan.name.slice(0, 1)}
-                    </span>
-                  ))}
-                  {plans.length > 3 ? (
-                    <span className="text-[0.54rem] text-ink-mute">+{plans.length - 3}</span>
-                  ) : null}
-                </span>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-
-      {feed.staff.length > 0 ? (
-        <div className="mt-3" data-testid="rota-filter">
-          <div className="mb-1 flex items-center justify-between text-[0.7rem] text-ink-mute">
-            <span>タップで表示のオン／オフ（この端末だけに記憶）</span>
-            {hiddenCount > 0 ? (
-              <button type="button" onClick={showAll} className="underline">
-                全員
-              </button>
+            ‹
+          </button>
+          <div className="text-center">
+            <div className="font-bold text-[1.1rem] tabular-nums">{monthLabel(month)}</div>
+            {state === 'ok' ? (
+              <div className="text-[0.66rem] text-ink-mute">シフトのある日 {shiftDays}日</div>
             ) : null}
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {feed.staff.map((s) => {
-              const on = !hidden.has(s.id);
-              return (
+          <button
+            type="button"
+            aria-label="次の月"
+            onClick={() => setMonth((m) => addMonth(m, 1))}
+            className="grid h-11 w-11 place-items-center rounded-full border border-line text-ink-light"
+          >
+            ›
+          </button>
+        </div>
+
+        {feed.staff.length > 0 ? (
+          <div className="mt-2" data-testid="rota-filter">
+            <div className="flex flex-wrap gap-1.5">
+              {feed.staff.map((s) => {
+                const on = !hidden.has(s.id);
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggle(s.id)}
+                    className={`flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 font-bold text-[0.8rem] ${
+                      on
+                        ? 'border-line bg-paper text-ink'
+                        : 'border-dashed border-line text-ink-mute'
+                    }`}
+                  >
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${on ? '' : 'opacity-30'}`}
+                      style={{ backgroundColor: s.accent ?? '#8a8a8a' }}
+                    />
+                    <span className={on ? '' : 'line-through'}>{s.name}</span>
+                  </button>
+                );
+              })}
+              {hiddenCount > 0 ? (
                 <button
-                  key={s.id}
                   type="button"
-                  aria-pressed={on}
-                  onClick={() => toggle(s.id)}
-                  className={`flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 font-bold text-[0.8rem] ${
-                    on ? 'border-line bg-paper text-ink' : 'border-dashed border-line text-ink-mute'
-                  }`}
+                  onClick={showAll}
+                  className="min-h-[36px] rounded-full px-3 text-[0.8rem] text-orange-deep underline"
                 >
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${on ? '' : 'opacity-30'}`}
-                    style={{ backgroundColor: s.accent ?? '#8a8a8a' }}
-                  />
-                  <span className={on ? '' : 'line-through'}>{s.name}</span>
+                  全員を表示
                 </button>
-              );
-            })}
+              ) : null}
+            </div>
+            <div className="mt-1 text-[0.66rem] text-ink-mute">
+              {hiddenCount > 0
+                ? `${feed.staff
+                    .filter((s) => hidden.has(s.id))
+                    .map((s) => s.name)
+                    .join('、')} を非表示中（この端末だけに記憶）`
+                : '名前をタップで表示のオン／オフ（この端末だけに記憶）'}
+            </div>
           </div>
+        ) : null}
+      </div>
+
+      {state === 'error' ? (
+        <div className="mt-3 rounded-[13px] border border-orange-deep/40 bg-orange/[0.07] px-3.5 py-3 text-[0.84rem]">
+          シフト表を読み込めませんでした。電波の良いところで
+          <button type="button" onClick={load} className="ml-1 underline">
+            再読み込み
+          </button>
         </div>
       ) : null}
 
-      <div className="mt-4">
-        {state === 'error' ? (
-          <div className="rounded-[13px] border border-orange-deep/40 bg-orange/[0.07] px-3.5 py-3 text-[0.84rem]">
-            シフト表を読み込めませんでした。電波の良いところで
-            <button type="button" onClick={load} className="ml-1 underline">
-              再読み込み
-            </button>
-          </div>
-        ) : null}
-        {selected ? (
-          <>
-            <div className="mb-1 font-bold text-[0.95rem]">
-              {Number(selected.slice(5, 7))}/{Number(selected.slice(8, 10))} のシフト
-            </div>
-            {selectedRows.length === 0 ? (
-              <p className="text-[0.84rem] text-ink-mute">
-                {hiddenCount > 0
-                  ? '表示中のスタッフには、この日の割り当てはありません。'
-                  : 'この日の割り当てはありません。'}
-              </p>
-            ) : (
-              selectedRows.map((row, index) => (
+      <div className="mt-2 divide-y divide-line">
+        {days.map((day) => {
+          const plans = byDay.get(day) ?? [];
+          const isToday = day === today;
+          const weekday = weekdayOf(day);
+          return (
+            <div
+              key={day}
+              data-day={day}
+              ref={isToday ? todayRef : undefined}
+              className={`-mx-2 flex gap-3 px-2 ${plans.length > 0 ? 'py-2' : 'py-1'} ${
+                isToday ? 'border-orange border-l-4 bg-orange/15 pl-1' : ''
+              }`}
+            >
+              <div
+                className={`w-12 shrink-0 pt-0.5 tabular-nums leading-tight ${
+                  weekday === 0
+                    ? 'text-orange-deep'
+                    : weekday === 6
+                      ? 'text-wood'
+                      : 'text-ink-light'
+                }`}
+              >
                 <div
-                  // biome-ignore lint/suspicious/noArrayIndexKey: display-only rows
-                  key={index}
-                  className="mb-2 flex items-center gap-2.5 rounded-[12px] border border-line bg-paper px-3 py-2.5"
+                  className={`text-[1.05rem] ${isToday ? 'font-bold text-orange' : 'font-bold'}`}
                 >
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: row.accent ?? '#8a8a8a' }}
-                  />
-                  <span className="flex-1 font-bold text-[0.95rem]">{row.name}</span>
-                  {row.label ? (
-                    <span className="rounded-full bg-cream-dark px-2.5 py-[3px] text-[0.72rem] text-ink-light">
-                      {row.label}
-                    </span>
-                  ) : null}
+                  {Number(day.slice(-2))}
                 </div>
-              ))
-            )}
-          </>
-        ) : (
-          <p className="text-center text-[0.8rem] text-ink-mute">
-            日付をタップすると、その日のシフトが表示されます。
-          </p>
-        )}
+                <div className="text-[0.66rem]">
+                  {WEEKDAYS[weekday]}
+                  {isToday ? ' 今日' : ''}
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                {plans.length === 0 ? (
+                  <div className="pt-1 text-[0.72rem] text-ink-mute">—</div>
+                ) : (
+                  plans.map((plan, index) => (
+                    <div
+                      // biome-ignore lint/suspicious/noArrayIndexKey: display-only rows
+                      key={index}
+                      className="flex min-h-[28px] items-center gap-2"
+                    >
+                      <span
+                        className="h-3 w-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: plan.accent ?? '#8a8a8a' }}
+                      />
+                      <span className="truncate font-bold text-[0.95rem]">{plan.name}</span>
+                      {plan.label ? (
+                        <span className="shrink-0 rounded-full border border-line bg-cream-dark px-2 py-[2px] text-[0.72rem] text-ink-light">
+                          {plan.label}
+                        </span>
+                      ) : null}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <p className="mt-6 text-center text-[0.66rem] text-ink-mute">
@@ -353,6 +345,10 @@ export function RotaApp() {
       </p>
     </Shell>
   );
+}
+
+function weekdayOf(day: string): number {
+  return new Date(`${day}T00:00:00`).getDay();
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

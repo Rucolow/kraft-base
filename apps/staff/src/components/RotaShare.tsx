@@ -79,7 +79,7 @@ export function RotaShare() {
           <p className="mb-2 text-[0.76rem] text-ink-light">
             宿で1本のリンクです。LINE のグループなどで送り、スマホの「ホーム画面に追加」を
             してもらうと、以後はアイコンから最新のシフト表が見られます（ログイン不要）。
-            ページ下のスタッフ一覧をタップすると、自分の分だけを表示できます。
+            月の下のスタッフ名をタップすると、自分の分だけを表示できます。
             リンクが外部に漏れたら「再発行」で旧リンクを無効化できます（全員に再配布）。
           </p>
           {error ? <p className="mb-2 text-[0.78rem] text-orange-deep">{error}</p> : null}
