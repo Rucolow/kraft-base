@@ -14,6 +14,14 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
+  build: {
+    rollupOptions: {
+      // rota.html = the login-free shift page (R9). A separate entry, not an app
+      // route, so "Add to Home Screen" opens IT (the app manifest's start_url '/'
+      // would otherwise hijack the shortcut into the login gate).
+      input: { main: 'index.html', rota: 'rota.html' },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -29,6 +37,9 @@ export default defineConfig({
         // requests). The mc-/async variants are ~6.3MB of dead precache weight
         // re-downloaded on every dependency bump over guesthouse wifi.
         globIgnores: ['**/mc-wa-sqlite*', '**/wa-sqlite-async-*'],
+        // The app's SW must not answer /rota navigations with the SPA shell on
+        // phones that also have the staff app installed.
+        navigateFallbackDenylist: [/^\/rota/],
         runtimeCaching: [
           {
             // Cache Google Fonts so the brand fonts survive offline and never

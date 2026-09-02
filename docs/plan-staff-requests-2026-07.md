@@ -411,3 +411,30 @@ PowerSync 無料枠の自動停止（全端末オフライン数日、検知は�
 検証: 単体72件緑（beds 4件・serialize ピン更新）。e2e 新設 beds_roster.cjs 8/8
 （コックピット行・チップマーク・hidden行の非表示）＋ shift_end/checkin系 回帰緑。
 デプロイ順: **オーナーが 0022 実行 → マージ**（sync-rules 変更なし）。
+
+## R9. スタッフ向けシフト共有ページ（規模S-M・計画確定 2026-08・実装済み）
+
+### 依頼と決定
+オーナー依頼「シフトを Google カレンダーにも共有し、自宅で確認できるように」。
+検討の結果、**オーナー提案の「シフトだけのページを URL で公開し、ホーム画面に追加」方式**を採用
+（Google を挟まないため即時反映・依存先ゼロ）。iCal 購読案は Google の更新遅延
+（最大24h・制御不可）が「急な変更」の要件に合わず不採用。将来必要なら同じ RPC で追加可。
+決定: 宿全体のシフト表を表示／リンクはオーナーがアプリでコピーして LINE 配布。
+
+### 設計
+- **migration 0023**: `rota_token`（staff とは別表・publication に入れない＝端末に降りない）、
+  `rota_feed(token, from, to)`（SECURITY DEFINER・anon 可・返すのは日付/名前/色/ラベルのみ・
+  hidden 除外）、`rota_links()` / `rota_reset_token()`（is_owner ゲート）。
+  サービスキー不要。トークン再発行で旧リンクは即無効。
+- **rota.html**（Vite の別エントリ）+ `src/rota/RotaApp.tsx`: ログイン不要、`?t=` を
+  localStorage に記憶、開くたび・復帰時に再取得。manifest を持たせない（持たせると
+  iOS がホーム画面ショートカットの起動 URL を start_url に置き換えトークンが失われる）。
+  `apple-mobile-web-app-capable` で standalone 表示。
+- **落とし穴の対処**: SW `navigateFallbackDenylist: [/^\/rota/]`（アプリ入り端末で SPA
+  シェルに横取りされない）／vercel.json に `/rota` → `rota.html` の rewrite／tailwind
+  content に rota.html。
+- **オーナーUI**: カレンダーのオーナーツールに「スタッフにシフト表を共有」→ 各人の
+  リンクをコピー／再発行。
+- **検証**: e2e `rota.cjs`（別エントリとして配信・無トークン時の無効表示・バックエンド
+  不在時の正直なエラー＋グリッド描画）。本番疎通はオーナーが自分のリンクで確認。
+- **デプロイ順**: オーナーが 0023 実行 → マージ。sync-rules 変更なし。
