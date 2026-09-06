@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bedNumbers, usedBedChips } from './beds';
+import { bedNumbers, joinBeds, parseBeds, toggleBed, usedBedChips } from './beds';
 
 describe('bed parsing (R8)', () => {
   it('reads chip-built and legacy free-text bed strings', () => {
@@ -28,5 +28,20 @@ describe('bed parsing (R8)', () => {
 
   it('is empty when nobody stayed', () => {
     expect(usedBedChips([])).toEqual([]);
+  });
+});
+
+describe('parseBeds / joinBeds / toggleBed (detail-screen chips)', () => {
+  it('round-trips chip strings and null', () => {
+    expect(parseBeds('1番・2番')).toEqual(['1番', '2番']);
+    expect(parseBeds(null)).toEqual([]);
+    expect(joinBeds([])).toBeNull();
+    expect(joinBeds(['3番'])).toBe('3番');
+  });
+  it('toggles in house order and keeps legacy tokens', () => {
+    expect(toggleBed(['2番'], '1番')).toEqual(['1番', '2番']);
+    expect(toggleBed(['1番', '2番'], '1番')).toEqual(['2番']);
+    expect(toggleBed(['1・2番（下段）'], '和室')).toEqual(['和室', '1・2番（下段）']);
+    expect(joinBeds(toggleBed(parseBeds('和室・1・2番（下段）'), '和室'))).toBe('1・2番（下段）');
   });
 });
