@@ -69,6 +69,54 @@ const check = (n, p, d = '') => {
 
   check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 
+  // Bed chips on the detail screen are editable by NON-owner staff (guests pick
+  // beds on arrival, the person on shift records them).
+  const sp = await (
+    await browser.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 2 })
+  ).newPage();
+  const errs2 = [];
+  sp.on('pageerror', (e) => errs2.push('STAFF pageerror:' + e.message));
+  const wU2 = async (f, ms = 10000) => {
+    const s = Date.now();
+    while (Date.now() - s < ms) {
+      if (f(new URL(sp.url()).pathname)) return true;
+      await sp.waitForTimeout(150);
+    }
+    return false;
+  };
+  await sp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await sp.waitForTimeout(900);
+  await sp.getByText('個人端末').click();
+  await sp.waitForTimeout(150);
+  await sp.getByText('日中スタッフ').first().click();
+  await sp.waitForTimeout(150);
+  await sp.getByText('この設定で始める').click();
+  await wU2((u) => u.includes('/shift'));
+  await sp.getByRole('button', { name: /シフトを開始/ }).click();
+  await wU2((u) => u === '/');
+  // New context = fresh OPFS = re-seeded ids, so reach Rossi through the list.
+  await sp.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
+  await sp.waitForTimeout(400);
+  await sp.locator('text=Marco Rossi').first().click();
+  await wU2((u) => /^\/guests\/[^/]+$/.test(u));
+  await sp.waitForTimeout(500);
+  const chips = sp.locator('[data-testid="bed-chips"] button');
+  const chipCount = await chips.count();
+  check('staff: bed chips shown on detail', chipCount >= 7, `count=${chipCount}`);
+  const chip4 = sp.locator('[data-testid="bed-chips"] button', { hasText: /^4番/ });
+  const before = await chip4.getAttribute('aria-pressed');
+  await chip4.click();
+  await sp.waitForTimeout(400);
+  const after = await chip4.getAttribute('aria-pressed');
+  check('staff: tapping a bed chip toggles it', before !== after, `${before} -> ${after}`);
+  const editCount = await sp.getByRole('button', { name: /ゲストの登録・編集/ }).count();
+  check('staff: still no owner edit screen needed', editCount === 0);
+  // Restore so other suites see the seed state.
+  await chip4.click();
+  await sp.waitForTimeout(300);
+  check('staff: toggle back restores', (await chip4.getAttribute('aria-pressed')) === before);
+  check('STAFF no page errors', errs2.length === 0, errs2.slice(0, 2).join(' | '));
+
   const passed = R.filter((r) => r.p).length;
   console.log(`\nRESULT: ${passed}/${R.length} passed`);
   await browser.close();

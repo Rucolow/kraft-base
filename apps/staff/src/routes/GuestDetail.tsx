@@ -6,11 +6,13 @@ import { Avatar } from '../components/Avatar';
 import { guestOrderChip } from '../components/BentoOrders';
 import { BackButton, Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { LANG_LABEL } from '../content/kinds';
-import { useBentoOrdersForGuest, useGuest, useGuestNotes } from '../data/queries';
+import { useBentoOrdersForGuest, useGuest, useGuestNotes, useGuestsOnDate } from '../data/queries';
+import { BEDS, joinBeds, parseBeds, toggleBed, usedBedChips } from '../lib/beds';
 import { isCancelledOrder, isVisibleOrder, paymentLabel } from '../lib/bento';
 import { formatStayDate, nowIso } from '../lib/date';
 import { boolToInt, insertRow, parseList, serializeList, updateRow, uuid } from '../lib/db';
 import { GUEST_STATUSES, guestStatusLabel } from '../lib/guestStatus';
+import { addDays } from '../lib/month';
 import { useSession } from '../lib/session';
 
 export function GuestDetail() {
@@ -28,6 +30,10 @@ export function GuestDetail() {
     "SELECT DISTINCT lang FROM content WHERE kind = 'phrase' AND lang IS NOT NULL ORDER BY lang",
   );
   const guest = guests[0] ?? null;
+  // Hooks stay above the not-found return; the sentinel date matches no row.
+  const { data: prevNightGuests } = useGuestsOnDate(
+    guest?.stay_date ? addDays(guest.stay_date, -1) : '0000-00-00',
+  );
 
   const [memo, setMemo] = useState('');
   const [comment, setComment] = useState('');
@@ -88,8 +94,15 @@ export function GuestDetail() {
     ['言語', LANG_LABEL[guest.language ?? ''] ?? guest.language ?? '—'],
     ['人数', `${guest.party_size ?? 1}名`],
     ['チェックイン', guest.checkin_time ?? '—'],
-    ['ベッド', guest.bed ?? '—'],
   ];
+  // Beds are chosen by the guests on arrival (first come, first pick), so the
+  // person on shift — not only the owner — must be able to record which beds
+  // were actually used. Chips save immediately; guest_update is org-member
+  // since 0014. Legacy free-text tokens stay as extra chips so a tap never
+  // drops them.
+  const bedTokens = parseBeds(guest.bed);
+  const bedChips = [...BEDS, ...bedTokens.filter((token) => !BEDS.includes(token))];
+  const usedYesterday = new Set(usedBedChips(prevNightGuests));
   // Linked koguchi orders are the source of truth for meals; the manual bento
   // field shrinks to a memo role (migration plan §5-5). When orders exist, show
   // them first and grey the manual text.
@@ -142,6 +155,47 @@ export function GuestDetail() {
             <div className="border-line border-b px-3 py-2.5 text-[0.88rem]">{value}</div>
           </div>
         ))}
+        <div className="border-line border-b bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-orange">
+          ベッド
+        </div>
+        <div
+          className="border-line border-b px-3 py-2 text-[0.88rem] md:col-span-3"
+          data-testid="bed-chips"
+        >
+          <div className="mb-1.5 font-bold text-[0.88rem]" data-testid="bed-summary">
+            {guest.bed ?? '—'}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {bedChips.map((bed) => {
+              const on = bedTokens.includes(bed);
+              const usedPrev = usedYesterday.has(bed);
+              return (
+                <button
+                  key={bed}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    updateRow('guest', guest.id, { bed: joinBeds(toggleBed(bedTokens, bed)) })
+                  }
+                  className={`min-h-[40px] rounded-full border px-3.5 text-[0.8rem] ${
+                    on
+                      ? 'border-orange bg-orange/15 font-bold text-orange'
+                      : 'border-line text-ink-light'
+                  }`}
+                >
+                  {bed}
+                  {usedPrev ? (
+                    <span className="ml-1 text-[0.62rem] text-wood-text">昨日使用</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1 text-[0.7rem] text-ink-mute">
+            タップで使ったベッドを記録（すぐ保存）。
+            {usedYesterday.size > 0 ? '「昨日使用」= 前泊で使われたベッド。' : ''}
+          </p>
+        </div>
         <div className="border-line border-b bg-cream px-3 py-2.5 font-semibold text-[0.78rem] text-orange">
           弁当
         </div>

@@ -1,7 +1,33 @@
 import type { GuestRow } from './powersync/schema';
 
-// The house's bed chips (single source — GuestEdit renders these).
+// The house's bed chips (single source — GuestEdit and GuestDetail render these).
 export const BEDS = ['1番', '2番', '3番', '4番', '5番', '6番', '和室'];
+
+// guest.bed is stored as chip tokens joined by '・' ("1番・2番"). Legacy rows may
+// carry tokens that are not preset chips ("1・2番（下段）"); they round-trip as
+// their own token so a chip toggle never silently drops them.
+export function parseBeds(value: string | null | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+  return value
+    .split('・')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+export function joinBeds(beds: string[]): string | null {
+  return beds.length > 0 ? beds.join('・') : null;
+}
+
+// Toggle one chip, keeping house order for preset chips and appending any
+// non-preset (legacy) tokens after them.
+export function toggleBed(current: string[], bed: string): string[] {
+  const next = current.includes(bed) ? current.filter((b) => b !== bed) : [...current, bed];
+  const preset = BEDS.filter((chip) => next.includes(chip));
+  const extra = next.filter((token) => !BEDS.includes(token));
+  return [...preset, ...extra];
+}
 
 // Bed strings are free-ish text: chip-built rows store "1番・2番", legacy rows
 // carry things like "1・2番（下段）". Digits are the one reliable signal for the

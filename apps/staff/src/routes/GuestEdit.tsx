@@ -14,7 +14,7 @@ import {
 } from '../components/ui';
 import { LANG_LABEL } from '../content/kinds';
 import { useGuest, useGuestsOnDate } from '../data/queries';
-import { BEDS, usedBedChips } from '../lib/beds';
+import { BEDS, joinBeds, parseBeds, toggleBed, usedBedChips } from '../lib/beds';
 import { nowIso, shiftDate } from '../lib/date';
 import { boolToInt, insertRow, updateRow, uuid } from '../lib/db';
 import { addDays } from '../lib/month';
@@ -79,16 +79,6 @@ function bentoToString(counts: Record<string, number>): string {
     .filter(([, n]) => n > 0)
     .map(([item, n]) => `${item} ×${n}`)
     .join('・');
-}
-
-function parseBeds(value: string | null): string[] {
-  if (!value) {
-    return [];
-  }
-  return value
-    .split('・')
-    .map((part) => part.trim())
-    .filter(Boolean);
 }
 
 function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
@@ -233,8 +223,7 @@ export function GuestEdit() {
     });
   };
 
-  const toggleBed = (bed: string) =>
-    setBeds((prev) => (prev.includes(bed) ? prev.filter((b) => b !== bed) : [...prev, bed]));
+  const onToggleBed = (bed: string) => setBeds((prev) => toggleBed(prev, bed));
 
   // R8: mark beds slept in the night before THIS stay (relative to the form's
   // date, not literal today — assigning beds for 8/15 cares about 8/14's beds).
@@ -263,7 +252,7 @@ export function GuestEdit() {
           : (existing?.checkin_time ?? null),
       // Preserve whatever bed tokens are present (including non-preset/legacy
       // values like "1・2番（下段）"); the old preset-only filter silently wiped them.
-      bed: beds.length > 0 ? beds.join('・') : null,
+      bed: joinBeds(beds),
       // Keep a non-preset bento note unless the counters were actually edited.
       bento: bentoTouched ? bentoToString(bento) || null : (existing?.bento ?? null),
       whole_house: boolToInt(wholeHouse),
@@ -425,7 +414,7 @@ export function GuestEdit() {
                 <button
                   key={bed}
                   type="button"
-                  onClick={() => toggleBed(bed)}
+                  onClick={() => onToggleBed(bed)}
                   className={`min-h-[44px] rounded-[11px] border px-4 font-bold text-[0.9rem] ${
                     on ? 'border-orange bg-orange/15 text-orange' : 'border-line text-ink-light'
                   }`}
