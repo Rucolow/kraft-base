@@ -162,6 +162,9 @@ export function GuestDetail() {
           className="border-line border-b px-3 py-2 text-[0.88rem] md:col-span-3"
           data-testid="bed-chips"
         >
+          <div className="mb-1.5 font-bold text-[0.88rem]" data-testid="bed-summary">
+            {guest.bed ?? '—'}
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {bedChips.map((bed) => {
               const on = bedTokens.includes(bed);
