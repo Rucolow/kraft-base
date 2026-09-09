@@ -57,7 +57,8 @@ PowerSync は書き込みを即ローカル反映→非同期アップロード�
 | staff 自己claim | 未claim行なら誰でも (0011)。0015で「owner行は初回のみ」に封鎖したが**この宿はオーナーが2人**（ルッコロー＋モーリー）→2人目がclaim不能になり誤爆。**0017で0011に戻した**（許容リスク：owner行は既存ownerしか作れず、招待メールがなければこの画面にすら到達しない） | LinkAccountのUIガードも撤去（同PR） |
 | content INSERT/UPDATE | org member。**DELETEポリシーなし** | 削除UIを作るならRLS追加が先 |
 | shift_plan SELECT | org member (0018) | シフトビューは全員閲覧可 |
-| shift_plan INSERT/UPDATE/DELETE | **owner** (0018) | 追加/削除/期間一括/前週コピーのUIは isOwner のみ表示（GuestCalendar） |
+| shift_plan INSERT/UPDATE/DELETE | **owner** (0018) | 追加/削除/期間一括/前週コピーのUIは isOwner のみ表示（R11で GuestCalendar から `/shifts` の「シフト作成」タブへ移設。GuestCalendar は閲覧専用） |
+| shift_unavailable SELECT/INSERT/DELETE | **org member** (0025・UPDATEは付与なし) | 「休み希望」タブは自分の行だけ書く（`toggleUnavailable` に渡すのは常に currentStaff.id）。誰の行かは currentStaff で決まり RLS では固定できない（共有iPadの auth は device アカウント＝shift_session と同じ信頼モデル）。閲覧はオーナーが全員分（シフト作成の除外判定・ゲストカレンダーの `×n`） |
 | bento_order SELECT | org member (0019) | 弁当パネルは全員閲覧可 |
 | bento_order UPDATE | org member・**列grantは guest_id/match のみ** (0019)。他列は koguchi の bento_writer ロール専用＋stale-writeガードトリガー | 照合UI（BentoOrders）のみ。INSERT/DELETE はクライアントから不可 |
 

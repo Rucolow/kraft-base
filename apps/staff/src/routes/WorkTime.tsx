@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { EmptyState, Screen, SectionLabel } from '../components/ui';
+import { EmptyState, SectionLabel } from '../components/ui';
 import { useShiftSessions, useStaff } from '../data/queries';
 import { formatClock, shiftDate } from '../lib/date';
 import { addMonth, monthLabel } from '../lib/month';
@@ -30,7 +30,9 @@ function dayLabel(day: string): string {
   });
 }
 
-export function WorkTime() {
+// R11: the body of the old /worktime screen, embedded as the 勤務 tab of /shifts.
+// Kept a component of its own so the payroll view stays one thing to reason about.
+export function WorkTimePanel() {
   const { isOwner } = useSession();
   const { data: sessions } = useShiftSessions();
   const { data: staff } = useStaff();
@@ -91,7 +93,7 @@ export function WorkTime() {
     'grid h-10 w-10 place-items-center rounded-full border border-line bg-paper text-ink-light';
 
   return (
-    <Screen>
+    <>
       <div className="mb-4 flex items-center justify-between">
         <button
           type="button"
@@ -163,6 +165,13 @@ export function WorkTime() {
         ※
         受付iPadで名前をタップしてから、退勤ボタン・次の人の交代・翌朝4時のいずれかまでを1回の勤務として記録しています。あくまで目安です。
       </p>
-    </Screen>
+    </>
   );
+}
+
+// /worktime is now a tab of /shifts. Keep the path working (home-screen icons,
+// old links) by redirecting; a non-owner still lands on home, as before.
+export function WorkTime() {
+  const { isOwner } = useSession();
+  return <Navigate to={isOwner ? '/shifts?tab=work' : '/'} replace />;
 }

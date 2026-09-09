@@ -180,6 +180,19 @@ const shift_plan = new Table(
   { indexes: { date: ['date'] } },
 );
 
+// R11: a staff member's "can't work this day" request (休み希望). Written by the
+// person themselves (identity = currentStaff); no unique constraint server-side,
+// so duplicates for the same (date, staff) are collapsed client-side.
+const shift_unavailable = new Table(
+  {
+    date: column.text,
+    staff_id: column.text,
+    created_by: column.text,
+    created_at: column.text,
+  },
+  { indexes: { date: ['date'] } },
+);
+
 // Mirror of koguchi-bento orders (written server-side by the bento_writer role;
 // the app only reads and links guest_id/match).
 const bento_order = new Table(
@@ -223,6 +236,7 @@ export const AppSchema = new Schema({
   checkin_record,
   product,
   shift_plan,
+  shift_unavailable,
   bento_order,
 });
 
@@ -242,4 +256,5 @@ export type DailyResetRow = Database['daily_reset'];
 export type CheckinRecordRow = Database['checkin_record'];
 export type ProductRow = Database['product'];
 export type ShiftPlanRow = Database['shift_plan'];
+export type ShiftUnavailableRow = Database['shift_unavailable'];
 export type BentoOrderRow = Database['bento_order'];

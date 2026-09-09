@@ -1,6 +1,8 @@
-// R3b: shift view (rota). Owner sees staff chips on the calendar, edits a day's
+// R3b: the rota. Owner sees staff chips on the calendar, edits a day's
 // assignments (add/delete), and has the range + copy-week tools. A staff account
-// sees the shift view read-only (no edit UI). Seed has モーリー + 日中スタッフ today.
+// sees the rota read-only (no edit UI). Seed has モーリー + 日中スタッフ today.
+// R11: every rota edit moved off the guest calendar to /shifts (シフト作成 tab);
+// staff land on the 休み希望 tab, which shows the day's rota but no edit UI.
 const { chromium, resolveChrome } = require('./_pw.cjs');
 const CHROME = resolveChrome();
 const BASE = 'http://localhost:4173';
@@ -10,7 +12,7 @@ const check = (n, p, d = '') => {
   console.log(`  ${p ? 'PASS' : 'FAIL'} — ${n}${d ? ` (${d})` : ''}`);
 };
 
-async function setup(browser, staffName) {
+async function setup(browser, staffName, path) {
   const page = await (
     await browser.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 2 })
   ).newPage();
@@ -34,11 +36,9 @@ async function setup(browser, staffName) {
   await page.getByRole('button', { name: /シフトを開始/ }).click();
   await wU((u) => u === '/');
   await page.waitForTimeout(500);
-  // Open the calendar (R6: merged view — shifts show without a view switch).
-  await page.goto(`${BASE}/guests`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(300);
-  await page.getByRole('button', { name: 'カレンダー', exact: true }).click();
-  await page.waitForTimeout(300);
+  // R11: the rota lives on /shifts now (owner: シフト作成 tab).
+  await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
   return { page, wU };
 }
 
@@ -70,7 +70,7 @@ const tapToday = async (page) => {
   const errs = [];
 
   // ===== OWNER (ルッコロー) =====
-  const { page } = await setup(browser, 'ルッコロー');
+  const { page } = await setup(browser, 'ルッコロー', '/shifts?tab=plan');
   page.on('pageerror', (e) => errs.push('OWNER pageerror:' + e.message));
 
   const grid = await txt(page);
@@ -118,7 +118,7 @@ const tapToday = async (page) => {
 
   // ===== STAFF (日中スタッフ) — read only =====
   const errs2 = [];
-  const { page: sp } = await setup(browser, '日中スタッフ');
+  const { page: sp } = await setup(browser, '日中スタッフ', '/shifts');
   sp.on('pageerror', (e) => errs2.push('STAFF pageerror:' + e.message));
   await tapToday(sp);
   const staffView = await txt(sp);

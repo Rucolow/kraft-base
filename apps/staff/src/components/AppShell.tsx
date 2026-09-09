@@ -2,7 +2,7 @@ import {
   Bell,
   BookOpen,
   Boxes,
-  Clock,
+  CalendarDays,
   Home,
   ListChecks,
   Moon,
@@ -33,8 +33,9 @@ const TABS: Tab[] = [
   { to: '/records', label: '台帳', icon: Boxes, end: false },
 ];
 
-// Owners get an extra tab for the payroll-oriented work-time view.
-const OWNER_TAB: Tab = { to: '/worktime', label: '勤務', icon: Clock, end: false };
+// R11: owners get an extra tab for the shift screen (休み希望・シフト作成・勤務).
+// Staff reach /shifts from the home cockpit card and the guest calendar link.
+const OWNER_TAB: Tab = { to: '/shifts', label: 'シフト', icon: CalendarDays, end: false };
 
 function TopBar() {
   const { currentStaff } = useSession();
@@ -144,9 +145,9 @@ function BottomNav({ tabs }: { tabs: Tab[] }) {
 
 export function AppShell() {
   const { isOwner } = useSession();
-  // The owner-only 勤務 (monthly payroll) view is rarely used. Keep it in the
-  // roomy side nav (tablet/desktop) but drop it from the phone bottom nav so the
-  // bar stays uncramped at 6 tabs; phone owners reach it from the home cockpit.
+  // The owner's シフト tab lives in the roomy side nav (tablet/desktop) but is
+  // dropped from the phone bottom nav so the bar stays uncramped at 6 tabs;
+  // everyone reaches /shifts from the home cockpit card.
   const sideTabs = isOwner ? [...TABS, OWNER_TAB] : TABS;
   return (
     <div className="kb-grain flex h-dvh bg-paper">

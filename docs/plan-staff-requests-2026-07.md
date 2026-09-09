@@ -499,3 +499,76 @@ PowerSync 無料枠の自動停止（全端末オフライン数日、検知は�
 - 編集画面のオーナー専用ゲートは据え置き（名前・日付・人数などはオーナー管轄のまま）。
 - e2e `beds_roster.cjs` に 日中スタッフ（非オーナー）でチップを切り替えて戻す検証を追加。
 
+## R11. 「シフト」メニュー — 出勤できない日の申請とシフト作成を1か所に（規模M・計画確定 2026-09-09）
+
+### 経緯
+モーリー「共有シフト表でスタッフが入れない日を記入できる？ それを見ながらシフトを組みたい」。
+当初案（共有リンクから匿名 RPC で記入）は敵対レビューで匿名書き込みの守り（日付窓・回数上限・
+他人の×の消去）が膨らみ、オーナーが「目的はシフトが簡単に組めること。各自が宿で自分の
+アカウントで入っている時に申請し、オーナーは全員の申請が載ったカレンダーでシフトを組む。
+新メニューにした方が運用がスムーズでは」と再定義 → 採用。
+
+### 決定（オーナー「推奨で」2026-09-09）
+1. 新メニュー「シフト」（`/shifts`）を作り、割り当てツール（GuestCalendar のオーナー用
+   単日追加・期間まとめ・前週コピー・共有リンク）と勤怠画面（`/worktime`）をそこへ集約。
+   ゲスト側カレンダーは予約＋シフトの閲覧専用に戻す（R6 の同時表示は維持）。
+2. v1 は「終日入れない」のみ。午前／午後の区別は次段階。
+3. 在宅からの申請は当面なし（宿で自分の名前でシフトに入っている時に申請）。共有シフト表
+   ページは閲覧専用のまま変更しない。匿名 RPC は作らない。
+
+### 設計
+- **migration 0025** `shift_unavailable`: `id uuid PK`, `date text NN`（シフト日 04:00 区切り）,
+  `staff_id uuid NN references staff(id)`（RESTRICT）, `created_by uuid references staff(id)`,
+  `created_at timestamptz NN default now()`。索引 date。**unique 制約は付けない**（shift_plan と
+  同じく PowerSync の PK upsert と衝突させない。重複排除はクライアント側）。
+  RLS: select / insert / delete は org member（本人特定は currentStaff に依る。共有 iPad の
+  auth は device アカウントなので RLS で staff_id = 自分 を強制できない。shift_session と同じ
+  信頼モデル）。update は付与しない。`revoke all from anon`。publication `powersync` へ追加
+  ＋ `grant select to powersync_role`（0018 の do ブロックを流用）。
+- **同期**: `sync-rules.yaml` に `SELECT * FROM shift_unavailable`、`schema.ts` に全列宣言＋
+  `AppSchema` 登録＋ `ShiftUnavailableRow`。bool/array 列なし（serialize 変更なし）。
+- **ops** `lib/shiftUnavailableOps.ts`: `toggleUnavailable({date, staffId, createdBy})`
+  （既存行があれば削除、無ければ挿入。同日同人の重複は全削除）。
+  純関数 `lib/shiftAvail.ts`: `unavailableByDay(rows)`, `isUnavailable(map, date, staffId)`,
+  `splitRangeByAvailability(dates, staffId, map) → {assign, skipped}`（unit test）。
+- **画面 `/shifts`**（`routes/Shifts.tsx`、AppShell 内）: 上部に切替「休み希望｜シフト作成（オーナー）｜
+  勤務（オーナー）」。
+  - **休み希望**（全員）: 月カレンダー。自分（currentStaff）の入れない日をタップで付け外し
+    （即保存・`aria-pressed`）。マスには自分の×を大きく、他人の×は小さく人数 `×n`。
+    日付タップで下に「入れない: 名前…」と「この日のシフト: 名前…」。過去日はタップ不可。
+  - **シフト作成**（オーナー）: 同じ月カレンダーに shift_plan チップ＋ `×n`。日付タップで
+    「入れない: 名前」＋割り当て一覧（削除可）＋単日追加フォーム（select の該当者に
+    「（入れない）」、選ぶと確認 confirm）＋期間まとめ（入れない日を除外し「n日を除外」表示）
+    ＋前週コピー（入れない日を除外）＋ RotaShare。GuestCalendar から移設。
+  - **勤務**（オーナー）: 既存 `WorkTime` の中身を表示（`/worktime` は `/shifts?tab=work` へ
+    redirect し既存リンクを壊さない）。
+- **入口**: AppShell の OWNER_TAB を「シフト」`/shifts` に置換（勤怠はその中）。下タブは 6 個の
+  まま。Today のコックピットに「シフト」カード（全員）。GuestCalendar のシフト節に
+  「シフト画面へ」リンク。
+- **GuestCalendar**: オーナー用の追加・期間・コピー・RotaShare・削除ボタンを撤去し閲覧専用に。
+  R6（予約＋シフト同時表示）は維持。
+- **devSeed**: `shift_unavailable` を数行（モーリー: 今日+3, 日中スタッフ: 今日+5）。
+- **e2e**: 新 `shift_avail.cjs`（スタッフ: 休み希望を付け外し・他人の×が人数表示／オーナー:
+  シフト作成で「（入れない）」と除外表示・前週コピーの除外）。`shift_plan.cjs` と
+  `calendar.cjs` は移設に合わせて修正（割り当て操作は `/shifts` で）。`sweep.cjs` に
+  `/shifts` を追加。`run-all.cjs` に登録。
+- **二重管理点**: `staging/schema.sql` に 0025 追記、`engineering-principles.md` §4 の RLS↔UI 表に
+  行追加。
+- **デプロイ順（厳守）**: ① オーナーが 0025 実行 → ② PowerSync に sync-rules 再アップロード
+  （逆順だと全テーブルの同期が止まる。営業時間外）→ ③ マージ → ④ L3: 1 台で同期アラート
+  無し・ゲスト/シフトが見えることを確認。
+
+### 実装メモ（計画からの差分・2026-09-09）
+- **一括ツールの「入れない日」判定は DB 直読み**（`shiftUnavailableOps.unavailableBetween`）。
+  画面の watch クエリは表示中の月に閉じているため、月をまたぐ期間指定や「月末の週の
+  前週コピー」で申請を取りこぼす。表示（マス・日別詳細）は従来どおり月クエリ。
+- `copyPrevWeek` は書き込み前に除外日を confirm で見せる必要があるため、**先読み用の
+  `planCopyPrevWeek(anchor, unavailable)` を分離**（書き込みは同じ規則を再適用）。
+  `addShiftPlanRange` は `skipDates?: Set<string>` を受け `{added, skipped}` を返すよう拡張
+  （既存呼び出しは戻り値を使っていないため非破壊）。`copyPrevWeek` の戻り値（件数）は据え置き。
+- 月カレンダー（月ナビ・曜日ヘッダ・`data-day` セル・スタッフ頭文字チップ・`×`）は
+  `components/MonthGrid.tsx` に抽出し、GuestCalendar と `/shifts` で共用。
+- Today の「シフト」カードは**全ブレークポイントで表示**（計画は旧・勤務カードの
+  `md:hidden` を踏襲していたが、スタッフには `/shifts` のナビ導線が無いため）。
+- GuestCalendar の `×n` / 「入れない: 名前」は**オーナーのみ**表示（他人の休み希望は
+  シフトを組む側の情報。スタッフは `/shifts` で自分の分を見る）。

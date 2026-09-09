@@ -36,6 +36,7 @@ import { Products } from './routes/Products';
 import { RecordsHub } from './routes/RecordsHub';
 import { Setup } from './routes/Setup';
 import { ShiftGate } from './routes/ShiftGate';
+import { Shifts } from './routes/Shifts';
 import { Tasks } from './routes/Tasks';
 import { Today } from './routes/Today';
 import { WorkTime } from './routes/WorkTime';
@@ -153,6 +154,8 @@ function AppRoutes() {
           <Route path="records" element={<RecordsHub />} />
           <Route path="records/lost" element={<LostItems />} />
           <Route path="records/equipment" element={<Equipment />} />
+          <Route path="shifts" element={<Shifts />} />
+          {/* R11: /worktime is now the 勤務 tab of /shifts — redirect, don't 404. */}
           <Route path="worktime" element={<WorkTime />} />
           <Route path="manual/c/:slug" element={<ContentReader />} />
           <Route path="comms" element={<Comms />} />
