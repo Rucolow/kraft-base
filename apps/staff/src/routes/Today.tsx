@@ -1,4 +1,4 @@
-import { Bell, Check, Clock, ListChecks, ScrollText, Users } from 'lucide-react';
+import { Bell, CalendarDays, Check, ListChecks, ScrollText, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { headcount } from '../components/GuestCard';
@@ -27,7 +27,7 @@ const PHASE_LABEL: Record<string, string> = {
 
 export function Today() {
   const navigate = useNavigate();
-  const { currentStaff, isOwner } = useSession();
+  const { currentStaff } = useSession();
   const hour = jstHour();
   const phases = cockpitPhases(hour);
   const [clock, setClock] = useState(() => formatClock(nowIso()));
@@ -170,18 +170,12 @@ export function Today() {
             </div>
           </Card>
 
-          {/* Worktime lives in the side nav on tablet/desktop; surface it here for
-              phone owners, where it is intentionally dropped from the bottom nav. */}
-          {isOwner ? (
-            <div className="md:hidden">
-              <Card onClick={() => navigate('/worktime')}>
-                <CardHead icon={<Clock size={17} />} tone="wood" title="勤務（給与）" />
-                <div className="text-[0.86rem] text-ink-light">
-                  スタッフの勤務時間を月別に確認します。
-                </div>
-              </Card>
-            </div>
-          ) : null}
+          {/* R11: /shifts has no bottom-nav tab (the bar stays at 6) and no side-nav
+              entry for staff, so this card is the entry point for everyone. */}
+          <Card onClick={() => navigate('/shifts')}>
+            <CardHead icon={<CalendarDays size={17} />} tone="wood" title="シフト" />
+            <div className="text-[0.86rem] text-ink-light">休み希望・シフト表</div>
+          </Card>
         </div>
       </div>
     </Screen>

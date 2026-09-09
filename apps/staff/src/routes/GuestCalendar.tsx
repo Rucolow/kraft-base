@@ -1,25 +1,21 @@
-import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BentoDayPanel } from '../components/BentoOrders';
 import { GuestList, headcount, isActive } from '../components/GuestCard';
-import { RotaShare } from '../components/RotaShare';
+import { MonthGrid, ShiftChips, UnavailMarks } from '../components/MonthGrid';
 import { Badge, EmptyState, SectionLabel } from '../components/ui';
-import { useGuestsInMonth, useShiftPlansInMonth, useStaff } from '../data/queries';
+import {
+  useGuestsInMonth,
+  useShiftPlansInMonth,
+  useStaff,
+  useUnavailableInMonth,
+} from '../data/queries';
 import { formatStayDate, shiftDate } from '../lib/date';
-import { addMonth, monthDays, monthLabel, monthLeadingBlanks } from '../lib/month';
+import { addMonth } from '../lib/month';
 import type { GuestRow, ShiftPlanRow, StaffRow } from '../lib/powersync/schema';
 import { isRosterMember, useSession } from '../lib/session';
-import {
-  addShiftPlan,
-  addShiftPlanRange,
-  copyPrevWeek,
-  removeShiftPlan,
-} from '../lib/shiftPlanOps';
-
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
-const FIELD =
-  'min-h-[44px] rounded-[10px] border border-line bg-cream px-3 py-2 text-[0.9rem] text-ink outline-none focus:border-orange-light';
+import { isUnavailable, unavailableByDay } from '../lib/shiftAvail';
 
 function bucket<T>(rows: T[], keyOf: (row: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();
@@ -35,34 +31,36 @@ function bucket<T>(rows: T[], keyOf: (row: T) => string): Map<string, T[]> {
   return map;
 }
 
+// R6: guests AND shifts in one calendar (モーリー: 「切り替えることなしで確認したい」).
+// R11: read-only — every rota edit now lives on /shifts, so this screen can be
+// opened during a busy check-in without a stray tap reassigning someone.
 export function GuestCalendar() {
   const navigate = useNavigate();
-  const { isOwner, currentStaff } = useSession();
+  const { isOwner } = useSession();
   const [month, setMonth] = useState(() => shiftDate().slice(0, 7));
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const { data: monthGuests } = useGuestsInMonth(month);
   const { data: monthPlans } = useShiftPlansInMonth(month);
+  const { data: monthUnavail } = useUnavailableInMonth(month);
   const { data: staff } = useStaff();
-
-  // Shift-editing form state (owner only).
-  const [addStaff, setAddStaff] = useState('');
-  const [addLabel, setAddLabel] = useState('');
-  const [rangeOpen, setRangeOpen] = useState(false);
-  const [rangeStart, setRangeStart] = useState('');
-  const [rangeEnd, setRangeEnd] = useState('');
-  const [rangeStaff, setRangeStaff] = useState('');
-  const [busy, setBusy] = useState(false);
 
   const byDayGuests = bucket<GuestRow>(monthGuests, (g) => g.stay_date ?? '');
   const byDayPlans = bucket<ShiftPlanRow>(monthPlans, (p) => p.date ?? '');
   const staffById = new Map<string, StaffRow>(staff.map((member) => [member.id, member]));
-  const rosterStaff = staff.filter(isRosterMember);
+  // 「入れない日」 is a planning signal, so it is shown to the owner only — staff
+  // read their own on /shifts.
+  const unavailable = unavailableByDay(isOwner ? monthUnavail : []);
 
   const selectedGuests = selectedDay ? (byDayGuests.get(selectedDay) ?? []) : [];
   const selectedActive = selectedGuests.filter(isActive);
   const selectedHeads = headcount(selectedGuests);
   const selectedPlans = selectedDay ? (byDayPlans.get(selectedDay) ?? []) : [];
+  const selectedUnavail = selectedDay
+    ? staff
+        .filter(isRosterMember)
+        .filter((member) => isUnavailable(unavailable, selectedDay, member.id))
+    : [];
 
   const openGuest = (id: string) => navigate(`/guests/${id}`);
   const goMonth = (delta: number) => {
@@ -70,234 +68,40 @@ export function GuestCalendar() {
     setSelectedDay(null);
   };
 
-  // try/finally so a rejected write never leaves `busy` stuck true (which would
-  // wedge every edit button until the component remounts).
-  async function doAdd() {
-    if (!selectedDay || !addStaff || busy) {
-      return;
-    }
-    setBusy(true);
-    try {
-      await addShiftPlan({
-        date: selectedDay,
-        staffId: addStaff,
-        label: addLabel || null,
-        createdBy: currentStaff?.id ?? null,
-      });
-      setAddStaff('');
-      setAddLabel('');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function doRange() {
-    if (!rangeStart || !rangeEnd || !rangeStaff || busy) {
-      return;
-    }
-    setBusy(true);
-    try {
-      const [start, end] = rangeStart <= rangeEnd ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
-      // The range tool has no label field, so assign unlabeled (don't leak the
-      // add-form's label); the owner can label individual days afterward.
-      await addShiftPlanRange({
-        start,
-        end,
-        staffId: rangeStaff,
-        label: null,
-        createdBy: currentStaff?.id ?? null,
-      });
-      setRangeOpen(false);
-      setRangeStaff('');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function doCopyWeek() {
-    if (!selectedDay || busy) {
-      return;
-    }
-    setBusy(true);
-    try {
-      await copyPrevWeek(selectedDay, currentStaff?.id ?? null);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <>
-      <div className="mb-2 flex items-center justify-between">
-        <button
-          type="button"
-          aria-label="前の月"
-          onClick={() => goMonth(-1)}
-          className="grid h-10 w-10 place-items-center rounded-full border border-line text-ink-light"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <div className="font-bold text-[1.05rem] tabular-nums">{monthLabel(month)}</div>
-        <button
-          type="button"
-          aria-label="次の月"
-          onClick={() => goMonth(1)}
-          className="grid h-10 w-10 place-items-center rounded-full border border-line text-ink-light"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1 text-center text-[0.66rem] text-ink-mute">
-        {WEEKDAYS.map((weekday, index) => (
-          <div
-            key={weekday}
-            className={index === 0 ? 'text-orange-deep' : index === 6 ? 'text-wood' : ''}
-          >
-            {weekday}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-1 grid grid-cols-7 gap-1">
-        {Array.from({ length: monthLeadingBlanks(month) }, (_, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: fixed leading blanks, order stable
-          <div key={`blank-${index}`} />
-        ))}
-        {monthDays(month).map((day) => {
+      <MonthGrid
+        month={month}
+        onMonth={goMonth}
+        selected={selectedDay}
+        onSelect={setSelectedDay}
+        dayTone={(day) =>
+          (byDayGuests.get(day) ?? []).filter(isActive).some((g) => g.whole_house === 1)
+            ? 'border-wood/40 bg-wood/15'
+            : null
+        }
+        renderDay={(day) => {
           const dayGuests = byDayGuests.get(day) ?? [];
           const dayActive = dayGuests.filter(isActive);
-          const headCount = headcount(dayGuests);
+          const heads = headcount(dayGuests);
           const whole = dayActive.some((g) => g.whole_house === 1);
-          const plans = byDayPlans.get(day) ?? [];
-          const isToday = day === shiftDate();
-          const isSel = day === selectedDay;
           return (
-            <button
-              key={day}
-              type="button"
-              // Stable hook for e2e: merged cells concatenate the day number with
-              // the headcount digits ("3"+"4名"), so text matching is ambiguous.
-              data-day={day}
-              onClick={() => setSelectedDay(day)}
-              className={`flex min-h-[58px] flex-col items-center rounded-[10px] border px-0.5 pt-1 pb-0.5 ${
-                isSel
-                  ? 'border-orange bg-orange/15'
-                  : whole
-                    ? 'border-wood/40 bg-wood/15'
-                    : 'border-line bg-paper'
-              }`}
-            >
-              <span
-                className={`text-[0.68rem] ${isToday ? 'font-bold text-orange' : 'text-ink-light'}`}
-              >
-                {Number(day.slice(-2))}
-              </span>
-              {/* R6: guests AND shifts in one cell — no more view toggle (モーリー
-                  依頼「切り替えることなしで確認したい」). Guests on top, staff
-                  initial chips below. */}
+            <>
               {dayActive.length > 0 ? (
                 <span className="mt-0.5 font-bold text-orange leading-none">
-                  <span className="text-[0.72rem] md:hidden">{headCount}名</span>
+                  <span className="text-[0.72rem] md:hidden">{heads}名</span>
                   <span className="hidden text-[0.68rem] md:inline">
-                    {dayActive.length}組{headCount}名
+                    {dayActive.length}組{heads}名
                   </span>
                 </span>
               ) : null}
               {whole ? <span className="mt-0.5 text-[0.56rem] text-wood">貸切</span> : null}
-              {plans.length > 0 ? (
-                <span className="mt-0.5 flex flex-wrap justify-center gap-0.5">
-                  {plans.slice(0, 3).map((plan) => {
-                    const member = plan.staff_id ? staffById.get(plan.staff_id) : undefined;
-                    return (
-                      <span
-                        key={plan.id}
-                        className="inline-block rounded px-1 font-bold text-[0.58rem] text-white leading-tight"
-                        style={{ backgroundColor: member?.accent ?? '#8a8a8a' }}
-                      >
-                        {(member?.name ?? '?').slice(0, 1)}
-                      </span>
-                    );
-                  })}
-                  {plans.length > 3 ? (
-                    <span className="text-[0.54rem] text-ink-mute">+{plans.length - 3}</span>
-                  ) : null}
-                </span>
-              ) : null}
-            </button>
+              <ShiftChips plans={byDayPlans.get(day) ?? []} staffById={staffById} />
+              <UnavailMarks mine={false} others={(unavailable.get(day) ?? []).length} />
+            </>
           );
-        })}
-      </div>
-
-      {/* Owner bulk tools for the rota. */}
-      {isOwner ? (
-        <div className="mt-3">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setRangeOpen((open) => !open);
-                if (!rangeStart) setRangeStart(selectedDay ?? shiftDate());
-                if (!rangeEnd) setRangeEnd(selectedDay ?? shiftDate());
-              }}
-              className="min-h-[40px] rounded-full border border-line px-4 font-bold text-[0.8rem] text-ink-light"
-            >
-              期間でまとめて入力
-            </button>
-            <button
-              type="button"
-              onClick={doCopyWeek}
-              disabled={!selectedDay || busy}
-              className="min-h-[40px] rounded-full border border-line px-4 font-bold text-[0.8rem] text-ink-light disabled:opacity-40"
-            >
-              前週をコピー
-            </button>
-          </div>
-          <RotaShare />
-          {rangeOpen ? (
-            <div className="mt-2 rounded-kb border border-line p-3">
-              <div className="mb-2 text-[0.78rem] text-ink-light">
-                期間とスタッフを選んで、まとめて割り当て
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="date"
-                  className={FIELD}
-                  value={rangeStart}
-                  onChange={(event) => setRangeStart(event.target.value)}
-                />
-                <span className="text-ink-mute">〜</span>
-                <input
-                  type="date"
-                  className={FIELD}
-                  value={rangeEnd}
-                  onChange={(event) => setRangeEnd(event.target.value)}
-                />
-                <select
-                  className={FIELD}
-                  value={rangeStaff}
-                  onChange={(event) => setRangeStaff(event.target.value)}
-                >
-                  <option value="">スタッフを選択</option>
-                  {rosterStaff.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={doRange}
-                  disabled={!rangeStart || !rangeEnd || !rangeStaff || busy}
-                  className="min-h-[44px] rounded-full bg-orange px-5 font-bold text-[0.85rem] text-onaccent disabled:opacity-40"
-                >
-                  割り当て
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+        }}
+      />
 
       <div className="mt-4">
         {!selectedDay ? (
@@ -318,6 +122,14 @@ export function GuestCalendar() {
               <GuestList guests={selectedGuests} onOpen={openGuest} />
             )}
             <SectionLabel>{formatStayDate(selectedDay)} のシフト</SectionLabel>
+            {isOwner && selectedUnavail.length > 0 ? (
+              <div className="mb-2 px-1 text-[0.82rem] text-ink-light">
+                入れない:{' '}
+                <span className="font-bold text-orange">
+                  {selectedUnavail.map((member) => member.name).join(', ')}
+                </span>
+              </div>
+            ) : null}
             {selectedPlans.length === 0 ? (
               <EmptyState>この日の割り当てはありません。</EmptyState>
             ) : (
@@ -337,64 +149,20 @@ export function GuestCalendar() {
                         {member?.name ?? '不明なスタッフ'}
                       </span>
                       {plan.label ? <Badge tone="neutral">{plan.label}</Badge> : null}
-                      {isOwner ? (
-                        <button
-                          type="button"
-                          aria-label="削除"
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `${member?.name ?? 'このスタッフ'} のシフトを削除しますか？`,
-                              )
-                            ) {
-                              removeShiftPlan(plan.id);
-                            }
-                          }}
-                          className="grid h-9 w-9 place-items-center text-ink-mute"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      ) : null}
                     </div>
                   );
                 })}
               </div>
             )}
-            {isOwner ? (
-              <div className="rounded-kb border border-line p-3">
-                <div className="mb-2 text-[0.78rem] text-ink-light">この日に追加</div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    className={FIELD}
-                    value={addStaff}
-                    onChange={(event) => setAddStaff(event.target.value)}
-                  >
-                    <option value="">スタッフを選択</option>
-                    {rosterStaff.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    className={`flex-1 ${FIELD}`}
-                    placeholder="早番・遅番など（任意）"
-                    value={addLabel}
-                    onChange={(event) => setAddLabel(event.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={doAdd}
-                    disabled={!addStaff || busy}
-                    className="min-h-[44px] rounded-full bg-orange px-5 font-bold text-[0.85rem] text-onaccent disabled:opacity-40"
-                  >
-                    追加
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </>
         )}
+        <button
+          type="button"
+          onClick={() => navigate('/shifts')}
+          className="mt-1 flex min-h-[44px] items-center gap-1.5 rounded-full border border-line px-4 font-bold text-[0.82rem] text-ink-light"
+        >
+          <CalendarDays size={15} /> シフト画面へ
+        </button>
       </div>
     </>
   );

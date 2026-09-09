@@ -128,8 +128,10 @@ const BASE = 'http://localhost:4173';
   await page.locator('input,textarea').first().fill('設備：シャワーの水圧低下').catch(()=>{});
   await page.getByRole('button',{name:/追加|登録|記録|報告|保存/}).first().click().catch(()=>{}); await page.waitForTimeout(300); await record('records-equipment-added');
 
-  // comms + worktime
+  // comms + shifts (R11) + worktime (now redirects into the 勤務 tab)
   await visit('comms','/comms');
+  await visit('shifts','/shifts','休み希望');
+  await visit('shifts-plan','/shifts?tab=plan','期間でまとめて入力');
   await visit('worktime','/worktime','給与');
 
   // edge: bad ids

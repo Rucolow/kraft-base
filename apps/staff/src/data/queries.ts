@@ -11,6 +11,7 @@ import type {
   LostItemRow,
   ShiftPlanRow,
   ShiftSessionRow,
+  ShiftUnavailableRow,
   StaffRow,
   TaskRow,
   TimelineEntryRow,
@@ -59,6 +60,15 @@ export function useGuestsInMonth(ym: string) {
 export function useShiftPlansInMonth(ym: string) {
   return useQuery<ShiftPlanRow>(
     'SELECT * FROM shift_plan WHERE date >= ? AND date <= ? ORDER BY date, created_at',
+    [`${ym}-01`, `${ym}-31`],
+  );
+}
+
+// R11: 「入れない日」 rows for a calendar month, same shape/window as the rota
+// query above so the shift screen can watch both with one month state.
+export function useUnavailableInMonth(ym: string) {
+  return useQuery<ShiftUnavailableRow>(
+    'SELECT * FROM shift_unavailable WHERE date >= ? AND date <= ? ORDER BY date',
     [`${ym}-01`, `${ym}-31`],
   );
 }

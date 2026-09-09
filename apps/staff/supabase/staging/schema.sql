@@ -871,3 +871,43 @@ create table if not exists public.rota_share (
 );
 alter table public.rota_share enable row level security;
 -- rota_feed(jsonb) / rota_link / rota_reset: see migrations/0024_rota_single_token.sql
+
+-- ===== 0025_shift_unavailable.sql =====
+create table if not exists public.shift_unavailable (
+  id uuid primary key default gen_random_uuid(),
+  date text not null,
+  staff_id uuid not null references public.staff (id),
+  created_by uuid references public.staff (id),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists shift_unavailable_date_idx on public.shift_unavailable (date);
+
+alter table public.shift_unavailable enable row level security;
+
+revoke all on table public.shift_unavailable from anon;
+grant select, insert, delete on table public.shift_unavailable to authenticated;
+
+drop policy if exists shift_unavailable_select on public.shift_unavailable;
+create policy shift_unavailable_select on public.shift_unavailable
+  for select to authenticated using (public.is_org_member());
+drop policy if exists shift_unavailable_insert on public.shift_unavailable;
+create policy shift_unavailable_insert on public.shift_unavailable
+  for insert to authenticated with check (public.is_org_member());
+drop policy if exists shift_unavailable_delete on public.shift_unavailable;
+create policy shift_unavailable_delete on public.shift_unavailable
+  for delete to authenticated using (public.is_org_member());
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'powersync' and tablename = 'shift_unavailable'
+  ) then
+    alter publication powersync add table public.shift_unavailable;
+  end if;
+  if exists (select 1 from pg_roles where rolname = 'powersync_role') then
+    grant select on public.shift_unavailable to powersync_role;
+  end if;
+end
+$$;

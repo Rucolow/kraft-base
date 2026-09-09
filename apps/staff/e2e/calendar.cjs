@@ -83,6 +83,13 @@ const check = (n, p, d = '') => {
   // Seed puts モーリー + 日中スタッフ(遅番) on today's rota — visible without switching.
   check('R6 rota entries visible in day detail', /遅番/.test(withList));
 
+  // R11: the calendar is read-only — the rota tools moved to /shifts, which this
+  // screen links to instead.
+  check('R11 guest calendar has no rota edit UI', !/この日に追加/.test(withList) && !/期間でまとめて入力/.test(withList));
+  const calDel = await page.getByRole('button', { name: '削除' }).count();
+  check('R11 guest calendar has no delete buttons', calDel === 0, `count=${calDel}`);
+  check('R11 guest calendar links to the shift screen', /シフト画面へ/.test(withList));
+
   check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 
   const passed = R.filter((r) => r.p).length;

@@ -557,3 +557,18 @@ PowerSync 無料枠の自動停止（全端末オフライン数日、検知は�
 - **デプロイ順（厳守）**: ① オーナーが 0025 実行 → ② PowerSync に sync-rules 再アップロード
   （逆順だと全テーブルの同期が止まる。営業時間外）→ ③ マージ → ④ L3: 1 台で同期アラート
   無し・ゲスト/シフトが見えることを確認。
+
+### 実装メモ（計画からの差分・2026-09-09）
+- **一括ツールの「入れない日」判定は DB 直読み**（`shiftUnavailableOps.unavailableBetween`）。
+  画面の watch クエリは表示中の月に閉じているため、月をまたぐ期間指定や「月末の週の
+  前週コピー」で申請を取りこぼす。表示（マス・日別詳細）は従来どおり月クエリ。
+- `copyPrevWeek` は書き込み前に除外日を confirm で見せる必要があるため、**先読み用の
+  `planCopyPrevWeek(anchor, unavailable)` を分離**（書き込みは同じ規則を再適用）。
+  `addShiftPlanRange` は `skipDates?: Set<string>` を受け `{added, skipped}` を返すよう拡張
+  （既存呼び出しは戻り値を使っていないため非破壊）。`copyPrevWeek` の戻り値（件数）は据え置き。
+- 月カレンダー（月ナビ・曜日ヘッダ・`data-day` セル・スタッフ頭文字チップ・`×`）は
+  `components/MonthGrid.tsx` に抽出し、GuestCalendar と `/shifts` で共用。
+- Today の「シフト」カードは**全ブレークポイントで表示**（計画は旧・勤務カードの
+  `md:hidden` を踏襲していたが、スタッフには `/shifts` のナビ導線が無いため）。
+- GuestCalendar の `×n` / 「入れない: 名前」は**オーナーのみ**表示（他人の休み希望は
+  シフトを組む側の情報。スタッフは `/shifts` で自分の分を見る）。

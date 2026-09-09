@@ -32,6 +32,7 @@ const ALL_SUITES = [
   'checkin_undecided.cjs',
   'calendar.cjs',
   'shift_plan.cjs',
+  'shift_avail.cjs',
   'bento.cjs',
   'beds_roster.cjs',
   'rota.cjs',

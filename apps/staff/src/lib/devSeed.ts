@@ -403,6 +403,22 @@ export async function ensureLocalSeed(): Promise<void> {
       });
     }
 
+    // R11: 「入れない日」 requests, so the demo shows both the owner's view
+    // (×n on other people's days) and a staff member's own × marks.
+    for (const req of [
+      { date: addDays(today, 3), staff: STAFF.morley.id },
+      { date: addDays(today, 5), staff: STAFF.day.id },
+      { date: addDays(today, 6), staff: STAFF.day.id },
+    ]) {
+      await ins('shift_unavailable', {
+        id: uuid(),
+        date: req.date,
+        staff_id: req.staff,
+        created_by: req.staff,
+        created_at: at,
+      });
+    }
+
     await ins('guest_note', {
       id: uuid(),
       guest_id: schmidt,
