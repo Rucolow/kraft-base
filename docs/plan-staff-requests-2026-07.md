@@ -573,66 +573,87 @@ PowerSync 無料枠の自動停止（全端末オフライン数日、検知は�
 - GuestCalendar の `×n` / 「入れない: 名前」は**オーナーのみ**表示（他人の休み希望は
   シフトを組む側の情報。スタッフは `/shifts` で自分の分を見る）。
 
-## R12. 定型タスクを「先当番／後当番」に再編し、オーナーがアプリで編集できるように（規模M・計画中）
+## R12. 定型タスクを「先当番／後当番」に再編し、オーナーがアプリで編集できるように（規模M・敵対レビュー済み・オーナー確認待ち）
 
 ### 依頼（モーリー 2026-09）
 「先当番と後当番でタスクが分かれて見えるといい。『清掃』ももっと細かく（ゴミ袋・掃除機など）」
 ＋ 具体的な 2 本のリスト（先当番 12 項目・後当番 7 項目）。
 
 ### 現状
-- `task` は `group`（daily / per_checkout / oneoff）× `phase`（midday_prep / cleaning /
-  evening_close / morning_prep）。本日画面は時刻から phase を選んで表示、タスク画面は group 別。
-- 定型（`source='manual'`）16 件は seed で入れたもの。**タイトル等の編集は 0006 の列 GRANT
-  （done, done_at のみ）により SQL でしかできない** → モーリーが細かく直したい要望と噛み合わない。
-- 並び順は `created_at` 依存で、意図した順序を持てない。
+- `task` は `group`（daily / per_checkout / oneoff）× `phase`（4 区分）。本日画面は時刻で phase を
+  選んで表示（00–10:59 翌朝セット／11–15:59 受付準備／16–18:59 清掃／19–23:59 クローズ前＋翌朝セット）。
+- 定型 16 件は seed。**タイトル編集は 0006 の列 GRANT（done, done_at）により SQL のみ**。
+- 並び順は `created_at` 依存（seed は全行同時刻＝順序不定）。
+- **レビューで発覚した既存バグ**: 同期コネクタが新規行を upsert（ON CONFLICT DO UPDATE）で送る
+  ため、列 GRANT を絞った `task` では単発タスクの追加が本番で 42501 になっていた（0025 の
+  `shift_unavailable` も同様）。→ **先行ホットフィックス**: PUT を INSERT に変更（SQL 不要）。
 
-### 設計
-- **migration 0026（task）**: `slot text check in ('first','second')`（先当番／後当番、null=単発）、
-  `sort integer not null default 0` を追加。列 GRANT を `update (done, done_at, title, slot, sort)`
-  に拡張（org member。content が 0007 で全員編集可になったのと同じ信頼モデル。UI では編集
-  ボタンをオーナーのみに出す）。`phase` は残すが新規では使わない（後方互換）。
-  既存 `source='manual'` 行を削除し、モーリーのリストを slot/sort 付きで投入（done 状態は
-  日次リセットで消えるため失われて問題なし）。`group` は全て `daily`（per_checkout の区別は
-  リセット挙動が同じで実質未使用 → 廃止扱い、CHECK は残す）。
-- **本日画面**: 時刻で slot を選ぶ（05:00–15:59 → 先当番、16:00–04:59 → 後当番）。
-  見出しは「先当番のタスク」「後当番のタスク」。単発は今まで通り末尾。
-- **タスク画面**: 「先当番｜後当番｜単発」の 3 節、sort 順。オーナーには「編集」トグル →
-  各行の名前をインライン編集、↑↓で並べ替え、削除、末尾に「この当番に追加」。
-  スタッフは今まで通りチェックと単発追加のみ。
-- **schema.ts** に `slot`, `sort` を宣言（sync-rules は `SELECT *` なので変更不要）。
-  `useManualTasks(phases)` → `useSlotTasks(slot)`。`shift.ts` の `cockpitPhases` を
-  `cockpitSlot(hour)` に置換（unit test 更新）。devSeed / seed_content.sql / content/seed.ts を
-  新リストに更新（`scripts/gen-content-seed.ts` で再生成）。
-- **e2e**: `sim_verify.cjs` `#2`（削除ボタン数）等、タスク数に依存する検証を新リストに追従。
-  新 `tasks_slot.cjs`（先当番／後当番の見出し・オーナーの編集と並べ替え・スタッフは編集不可）。
-- **デプロイ**: オーナーが 0026 実行 → マージ。sync-rules 変更なし。
+### 設計（レビュー反映）
+- **migration 0026（task）**: `slot text check in ('first','second')`、`sort integer not null default 0`
+  を追加。列 GRANT を `update (done, done_at, title, slot, sort)` に拡張（org member。content が
+  0007 で全員編集可になったのと同じ信頼モデル。UI の編集ボタンはオーナーのみ）。
+  `task_source_phase_idx` を `(slot, sort)` に張り替え。`phase` は残すが読み手ゼロ（後方互換のみ）。
+  既存 `source='manual'` 行を **1 トランザクションで DELETE → INSERT**（モーリーのリスト、
+  `sort` は 10 刻み、`created_at` は 1ms ずつずらす）。**適用は 04:00 直後**（日次リセット直後で
+  done が全 0 のとき）。`timeline_entry.ref_type='task'` を書く箇所は現状無し（注記のみ）。
+  INSERT ブロックは `scripts/gen-content-seed.ts` に `--migration` モードを足して
+  `content/seed.ts` の配列から生成（seed と migration の二重管理を作らない）。
+- **当番の境界は 04:00 / 16:00**（05:00 ではなく。日次リセットの 04:00 に揃え、04:00–04:59 に
+  「まっさらな後当番」が出る穴を塞ぐ）。先当番 = 04:00–15:59、後当番 = 16:00–03:59。
+  03:00 は前シフト日の後当番が出る（正しい）。`cockpitSlot(hour)` を unit test（04:00/15:59/16:00/03:59）。
+- **行の種別を明文化**: 当番に追加 = `source='manual', group='daily', slot=<当番>, sort=max+1`／
+  単発追加 = `source='adhoc', group='oneoff', slot=NULL`。本日・タスク画面の単発枝は
+  `slot IS NULL AND group='oneoff'` に絞る（二重表示防止）。`per_checkout` は UI から外すが
+  リセットの `IN ('daily','per_checkout')` と CHECK は残す。
+- **並べ替え**: ↑↓は当該 slot の全行を 0..n-1 で振り直す（1 トランザクション・冪等）。
+  ORDER BY は `sort, created_at, id`。
+- **本日画面**: 見出し「先当番のタスク」「後当番のタスク」。単発は末尾。
+- **タスク画面**: 「先当番｜後当番｜単発」、sort 順。オーナーに「編集」トグル → インライン改名・
+  ↑↓・削除・「この当番に追加」。単発セクションは最後に固定（e2e の暗黙契約）。
+  `owner_id` バッジ（@名前）は維持。
+- **死にコード整理**: `useManualTasks` → `useSlotTasks(slot)`、`useProcedureForPhase`（呼び出し元
+  ゼロ）を削除。`content.phase` は手順文書用として現状維持。
+- **e2e**: `sim_verify.cjs #2` に「編集トグルを開く」手順を追加（削除ボタンがトグル内に入るため）。
+  `sweep.cjs` のタイトル直書き（ドミトリーを清掃／火の始末）を新リストへ。新 `tasks_slot.cjs`
+  （見出し・オーナー編集/並べ替え・スタッフ編集不可）。`run-all.cjs` に登録。`shift.test.ts` 差し替え。
+- **二重管理点**: `staging/schema.sql` 追記、`engineering-principles.md` §4 の task 行更新、
+  §10 に「タスクリスト変更 → content/seed.ts ＋ 生成 migration」を追加。
+- **デプロイ**: ホットフィックス（PUT→INSERT）マージ → オーナーが 0026 実行（04:00 直後）→ マージ。
+  sync-rules 変更なし。
 
-### 決めてもらうこと
-1. 当番の時間の境目は 16:00 でよいか（16:00 以降に本日画面が後当番に切り替わる）。
-2. 「チェックアウトごと」の区分は廃止してよいか（リネンは先当番の毎日タスクへ）。
-3. スタッフにもタスク名の編集を許すか（推奨: UI はオーナーのみ）。
+### オーナーに決めてもらうこと
+1. 当番の境界 04:00 / 16:00 でよいか（16:00 以降、本日画面が後当番に切り替わる）。
+2. 「チェックアウトごと」の区分は廃止（リネンは先当番の毎日タスクへ）でよいか。
+3. タスク名の編集: 権限は全員に開くが、編集ボタンはオーナーだけに出す、でよいか。
 
-## R13. 現金出納（購入内容と金額の記録）（規模S-M・計画中）
+## R13. 現金出納（購入内容と金額の記録）（規模S-M・敵対レビュー済み・オーナー確認待ち）
 
 ### 依頼（モーリー 2026-09）
 「現金の購入内容と金額を記録する場所を作ってほしい」。
 
-### 設計
-- **migration 0026（同じファイルに同梱）** `cash_expense`: `id uuid PK`, `date text NN`（シフト日）,
-  `item text NN`, `amount_yen integer NN check (amount_yen > 0)`, `paid_from text NN
-  check in ('house','personal')`（宿の現金／立替）, `staff_id uuid FK staff`, `note text`,
-  `photo_path text`（レシート）, `created_at`。索引 date。RLS: select/insert = org member、
-  delete = owner、update なし。publication＋powersync_role。`revoke from anon`。
-- **同期**: `sync-rules.yaml` に `SELECT * FROM cash_expense`、`schema.ts` 宣言。bool/array 無し。
-- **画面** `/records/cash`（台帳ハブに「現金出納」カード、当月合計を副題に）:
-  上に入力（日付=今日・品目・金額・宿の現金／立替 チップ・メモ・レシート写真）。下に月切替
-  付き一覧（日付・品目・金額・誰が・立替バッジ）と月合計、立替の未精算合計（オーナー向け
-  目安）。削除はオーナーのみ（confirm）。
-- **e2e** `cash.cjs`（追加→一覧→合計、スタッフに削除無し）。`sweep.cjs` に `/records/cash`。
-- **デプロイ順**: オーナーが 0026 実行 → PowerSync sync-rules 再アップロード → マージ → L3。
+### 設計（レビュー反映）
+- **migration 0026（同梱）** `cash_expense`: `id uuid PK`, `date text NN`（**暦日**。シフト日ではない。
+  レシートの日付と帳簿を一致させるため。10/1 01:00 の購入を 9/30 に計上しない）, `item text NN`,
+  `amount_yen integer NN check (amount_yen <> 0)`（**負数 = 返品・返金**。入金も同じ軸で v1 に収まる）,
+  `paid_from text NN check in ('house','personal')`（宿の現金／立替）, `created_by uuid FK staff`,
+  `note text`, `created_at`。索引 date。**レシート写真は v1 では持たない**（既存の写真バケットは
+  公開 URL。レシートには店名・カード下 4 桁が写るため、署名付き URL 対応まで見送り）。
+  RLS: select / insert / **update** = org member（10 秒後の打ち間違いを直せる経路）、delete = owner。
+  GRANT はテーブル単位（0018 と同型）。publication＋powersync_role。
+- **同期**: `sync-rules.yaml` に追加、`schema.ts` 宣言（`amount_yen: column.integer` 必須。text だと合計が壊れる）。
+- **画面** `/records/cash`（台帳ハブに「現金出納」カード、副題に当月合計）:
+  入力（日付=今日の暦日・編集可／品目／金額／宿の現金・立替チップ／メモ）。月切替付き一覧
+  （日付・品目・金額・誰が・立替バッジ・返品は赤字）と **当月合計**、**当月の立替合計**
+  （精算フラグは持たない。月次精算の運用前提。「未精算合計」という語は使わない）。
+  自分の行はタップで訂正（全員）、削除はオーナー（confirm）。
+- **純関数** `lib/cash.ts`（月合計・立替合計・暦日）+ unit test。
+- **e2e** `cash.cjs`（追加→一覧→合計、返品の負数、スタッフに削除無し）。`sweep.cjs` に `/records/cash`。
+  `RecordsHub` の当月は毎レンダで計算（`useMemo([])` で固定しない）。
+- **デプロイ順**: オーナーが 0026 実行 → PowerSync sync-rules 再アップロード（全端末フル再同期。
+  チェックイン帯を避ける）→ マージ → **L3 合否項目: iPad で 1 件追加 → オーナー端末に 30 秒以内に
+  出ること**（sync-rules 忘れは 4xx もアラートも出ず、他端末に永久に出ないだけ）。
 
-### 決めてもらうこと
-4. 「宿の現金／立替」の区別は要るか（推奨: あり。立替の精算漏れ防止）。
-5. レシート写真は要るか（推奨: あり。既存の写真保存の仕組みを流用、任意）。
-6. 「入金」（釣り銭補充など）も記録するか（推奨: v1 は支出のみ）。
-
+### オーナーに決めてもらうこと
+4. 「宿の現金／立替」の区別を持つ（推奨: あり）。精算フラグは持たず「当月の立替合計」だけ出す。
+5. レシート写真は v1 で持たない（推奨）。
+6. 返品・返金は負の金額で記録（推奨）。
