@@ -6,7 +6,7 @@ import {
 } from '@powersync/web';
 import { supabase } from '../supabase/client';
 import { recordSyncAlert } from '../syncAlerts';
-import { serializeForServer } from './serialize';
+import { type UploadOp, uploadOp } from './upload';
 
 const powersyncUrl = import.meta.env.VITE_POWERSYNC_URL;
 
@@ -37,17 +37,16 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
     }
 
     for (const op of transaction.crud) {
-      const table = supabase.from(op.table);
-      // Convert local SQLite representation (int booleans, JSON-text arrays) to the
-      // Postgres column types, otherwise PostgREST rejects array/boolean writes and
-      // they get silently discarded below.
-      const data = serializeForServer(op.table, op.opData ?? {});
-      const result =
-        op.op === UpdateType.PUT
-          ? await table.upsert({ ...data, id: op.id })
-          : op.op === UpdateType.PATCH
-            ? await table.update(data).eq('id', op.id)
-            : await table.delete().eq('id', op.id);
+      // Map the PowerSync enum to the plain union upload.ts speaks, so its unit
+      // test needs no PowerSync import.
+      const type: UploadOp['op'] =
+        op.op === UpdateType.PUT ? 'PUT' : op.op === UpdateType.PATCH ? 'PATCH' : 'DELETE';
+      const result = await uploadOp(supabase, {
+        op: type,
+        table: op.table,
+        id: op.id,
+        opData: op.opData ?? undefined,
+      });
 
       if (result.error) {
         // Postgres permission (class 42, incl. RLS 42501), integrity (23) and

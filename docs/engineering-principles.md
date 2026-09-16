@@ -62,6 +62,11 @@ PowerSync は書き込みを即ローカル反映→非同期アップロード�
 | bento_order SELECT | org member (0019) | 弁当パネルは全員閲覧可 |
 | bento_order UPDATE | org member・**列grantは guest_id/match のみ** (0019)。他列は koguchi の bento_writer ロール専用＋stale-writeガードトリガー | 照合UI（BentoOrders）のみ。INSERT/DELETE はクライアントから不可 |
 
+- **PowerSync PUT は INSERT で送る（upsert 禁止）**。upsert は `ON CONFLICT DO UPDATE` になり、
+  PostgreSQL は衝突の有無に関係なく SET 列の UPDATE 権限を要求するため、列 GRANT を絞った表
+  （task の done/done_at、shift_unavailable の update 無し）で新規行が全て 42501 で捨てられる
+  （`lib/powersync/upload.ts`＋`upload.test.ts` で固定）。
+
 ## 5. キオスク（/checkin）の聖域規則
 ゲストがiPadを持っている画面。**いかなる自動遷移もここでは起こしてはならない**:
 - auto-lock は /checkin でアームしない（実装済み・App.tsx）
