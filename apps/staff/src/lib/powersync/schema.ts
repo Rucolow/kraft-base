@@ -94,16 +94,24 @@ const followup = new Table({
   resolved_at: column.text,
 });
 
-const task = new Table({
-  title: column.text,
-  group: column.text,
-  phase: column.text,
-  source: column.text,
-  owner_id: column.text,
-  done: column.integer,
-  done_at: column.text,
-  created_at: column.text,
-});
+// R12 (0026): routine rows carry `slot` ('first' = 先当番 / 'second' = 後当番)
+// and an explicit `sort`; one-off rows have slot = null. `phase` stays for
+// backward compatibility only — nothing reads it any more.
+const task = new Table(
+  {
+    title: column.text,
+    group: column.text,
+    phase: column.text,
+    slot: column.text,
+    sort: column.integer,
+    source: column.text,
+    owner_id: column.text,
+    done: column.integer,
+    done_at: column.text,
+    created_at: column.text,
+  },
+  { indexes: { slot: ['slot', 'sort'] } },
+);
 
 const content = new Table(
   {
@@ -220,6 +228,22 @@ const bento_order = new Table(
   { indexes: { date: ['delivery_date'], guest: ['guest_id'] } },
 );
 
+// R13 (0026): 現金出納. `date` is the CALENDAR date ('YYYY-MM-DD'), not the
+// 04:00-boundary shift-day, so the ledger lines up with the receipts.
+// amount_yen MUST be an integer column — as text the monthly sums break.
+const cash_expense = new Table(
+  {
+    date: column.text,
+    item: column.text,
+    amount_yen: column.integer,
+    paid_from: column.text,
+    created_by: column.text,
+    note: column.text,
+    created_at: column.text,
+  },
+  { indexes: { date: ['date'] } },
+);
+
 export const AppSchema = new Schema({
   staff,
   device,
@@ -238,6 +262,7 @@ export const AppSchema = new Schema({
   shift_plan,
   shift_unavailable,
   bento_order,
+  cash_expense,
 });
 
 export type Database = (typeof AppSchema)['types'];
@@ -258,3 +283,4 @@ export type ProductRow = Database['product'];
 export type ShiftPlanRow = Database['shift_plan'];
 export type ShiftUnavailableRow = Database['shift_unavailable'];
 export type BentoOrderRow = Database['bento_order'];
+export type CashExpenseRow = Database['cash_expense'];

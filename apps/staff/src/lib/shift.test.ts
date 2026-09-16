@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FollowupRow, TimelineEntryRow } from './powersync/schema';
-import {
-  canStartShift,
-  cockpitPhases,
-  currentPhase,
-  dailyNeedsReset,
-  deriveDigest,
-  sessionIsStale,
-} from './shift';
+import { canStartShift, cockpitSlot, dailyNeedsReset, deriveDigest, sessionIsStale } from './shift';
 
 const entry = (id: string, created_at: string): TimelineEntryRow => ({
   id,
@@ -103,16 +96,16 @@ describe('daily reset', () => {
   });
 });
 
-describe('cockpit phase by hour', () => {
-  it('maps the JST hour to a phase', () => {
-    expect(currentPhase(9)).toBe('morning_prep');
-    expect(currentPhase(13)).toBe('midday_prep');
-    expect(currentPhase(17)).toBe('cleaning');
-    expect(currentPhase(20)).toBe('evening_close');
+describe('cockpit duty slot by hour', () => {
+  // The boundaries are the contract: 04:00 (= the shift-day reset) and 16:00.
+  it('runs 先当番 from 04:00 to 15:59', () => {
+    expect(cockpitSlot(4)).toBe('first');
+    expect(cockpitSlot(15)).toBe('first');
   });
 
-  it('surfaces the next morning set before close', () => {
-    expect(cockpitPhases(13)).toEqual(['midday_prep']);
-    expect(cockpitPhases(20)).toEqual(['evening_close', 'morning_prep']);
+  it('runs 後当番 from 16:00 through 03:59', () => {
+    expect(cockpitSlot(16)).toBe('second');
+    expect(cockpitSlot(3)).toBe('second');
+    expect(cockpitSlot(0)).toBe('second');
   });
 });

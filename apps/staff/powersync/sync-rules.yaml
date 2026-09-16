@@ -24,3 +24,4 @@ bucket_definitions:
       - SELECT * FROM shift_plan
       - SELECT * FROM shift_unavailable
       - SELECT * FROM bento_order
+      - SELECT * FROM cash_expense

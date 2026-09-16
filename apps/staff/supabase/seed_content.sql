@@ -4,23 +4,26 @@
 do $$
 begin
   if not exists (select 1 from public.task where source = 'manual') then
-    insert into public.task (id, title, "group", phase, source, done, created_at) values
-    (gen_random_uuid(), 'ウェルカムドリンク（梅ジュース・みかん）を用意', 'daily', 'midday_prep', 'manual', false, now()),
-    (gen_random_uuid(), '共用部を清掃', 'daily', 'midday_prep', 'manual', false, now()),
-    (gen_random_uuid(), 'ベッドメイク（本日の宿泊数分）', 'daily', 'midday_prep', 'manual', false, now()),
-    (gen_random_uuid(), 'アメニティを補充', 'daily', 'midday_prep', 'manual', false, now()),
-    (gen_random_uuid(), 'コーヒー豆の容器を補充', 'daily', 'midday_prep', 'manual', false, now()),
-    (gen_random_uuid(), '和室ちゃぶ台のみかんを補充', 'daily', 'midday_prep', 'manual', false, now()),
-    (gen_random_uuid(), 'ドミトリーを清掃', 'daily', 'cleaning', 'manual', false, now()),
-    (gen_random_uuid(), 'シャワー・トイレを清掃', 'daily', 'cleaning', 'manual', false, now()),
-    (gen_random_uuid(), '使用済みリネンを洗濯 → 乾燥', 'per_checkout', 'cleaning', 'manual', false, now()),
-    (gen_random_uuid(), '火の始末（BBQ・焚き火）', 'daily', 'evening_close', 'manual', false, now()),
-    (gen_random_uuid(), 'スタッフルームを施錠', 'daily', 'evening_close', 'manual', false, now()),
-    (gen_random_uuid(), '玄関の戸締りを確認（遅着がいる日は施錠しない）', 'daily', 'evening_close', 'manual', false, now()),
-    (gen_random_uuid(), '引き継ぎを投稿', 'daily', 'evening_close', 'manual', false, now()),
-    (gen_random_uuid(), '翌朝バナナをセット（宿泊数 +2）', 'daily', 'morning_prep', 'manual', false, now()),
-    (gen_random_uuid(), '翌朝のコーヒーを準備', 'daily', 'morning_prep', 'manual', false, now()),
-    (gen_random_uuid(), 'ゴミ出し（最後に帰る人）', 'daily', 'morning_prep', 'manual', false, now());
+    insert into public.task (id, title, "group", phase, slot, sort, source, done, created_at) values
+    (gen_random_uuid(), 'のれんと提灯を準備', 'daily', null, 'first', 10, 'manual', false, now() + interval '1 milliseconds'),
+    (gen_random_uuid(), 'ライト類の充電確認', 'daily', null, 'first', 20, 'manual', false, now() + interval '2 milliseconds'),
+    (gen_random_uuid(), 'リネン類の洗濯と乾燥', 'daily', null, 'first', 30, 'manual', false, now() + interval '3 milliseconds'),
+    (gen_random_uuid(), 'ベッドメイキング', 'daily', null, 'first', 40, 'manual', false, now() + interval '4 milliseconds'),
+    (gen_random_uuid(), 'ベッドルームの清掃', 'daily', null, 'first', 50, 'manual', false, now() + interval '5 milliseconds'),
+    (gen_random_uuid(), 'キッチンの清掃', 'daily', null, 'first', 60, 'manual', false, now() + interval '6 milliseconds'),
+    (gen_random_uuid(), 'トイレとシャワーの清掃', 'daily', null, 'first', 70, 'manual', false, now() + interval '7 milliseconds'),
+    (gen_random_uuid(), '共用部の清掃', 'daily', null, 'first', 80, 'manual', false, now() + interval '8 milliseconds'),
+    (gen_random_uuid(), 'アメニティ補充', 'daily', null, 'first', 90, 'manual', false, now() + interval '9 milliseconds'),
+    (gen_random_uuid(), '食品、ドリンク類の補充', 'daily', null, 'first', 100, 'manual', false, now() + interval '10 milliseconds'),
+    (gen_random_uuid(), 'コーヒー退却', 'daily', null, 'first', 110, 'manual', false, now() + interval '11 milliseconds'),
+    (gen_random_uuid(), '引き継ぎを記入', 'daily', null, 'first', 120, 'manual', false, now() + interval '12 milliseconds'),
+    (gen_random_uuid(), '弁当の配達', 'daily', null, 'second', 10, 'manual', false, now() + interval '13 milliseconds'),
+    (gen_random_uuid(), 'コーヒーの補充', 'daily', null, 'second', 20, 'manual', false, now() + interval '14 milliseconds'),
+    (gen_random_uuid(), 'バナナの準備', 'daily', null, 'second', 30, 'manual', false, now() + interval '15 milliseconds'),
+    (gen_random_uuid(), '火の元の確認', 'daily', null, 'second', 40, 'manual', false, now() + interval '16 milliseconds'),
+    (gen_random_uuid(), 'ゴミ出し', 'daily', null, 'second', 50, 'manual', false, now() + interval '17 milliseconds'),
+    (gen_random_uuid(), '遅着がある場合はチェックイン記入用紙とウェルカムドリンクを受付に設置', 'daily', null, 'second', 60, 'manual', false, now() + interval '18 milliseconds'),
+    (gen_random_uuid(), '引き継ぎを投稿', 'daily', null, 'second', 70, 'manual', false, now() + interval '19 milliseconds');
   end if;
 end $$;
 

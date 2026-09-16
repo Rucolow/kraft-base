@@ -18,6 +18,7 @@ import { PowerSyncProvider } from './lib/powersync/provider';
 import { SessionProvider, useSession } from './lib/session';
 import { closeStaleSessions, runDailyReset } from './lib/shiftOps';
 import { ThemeProvider } from './lib/theme';
+import { Cash } from './routes/Cash';
 import { CheckIn } from './routes/CheckIn';
 import { Comms } from './routes/Comms';
 import { ContentReader } from './routes/ContentReader';
@@ -154,6 +155,7 @@ function AppRoutes() {
           <Route path="records" element={<RecordsHub />} />
           <Route path="records/lost" element={<LostItems />} />
           <Route path="records/equipment" element={<Equipment />} />
+          <Route path="records/cash" element={<Cash />} />
           <Route path="shifts" element={<Shifts />} />
           {/* R11: /worktime is now the 勤務 tab of /shifts — redirect, don't 404. */}
           <Route path="worktime" element={<WorkTime />} />

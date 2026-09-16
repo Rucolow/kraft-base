@@ -1,6 +1,6 @@
 import { SEED_PRODUCTS } from '../content/products';
 import { seedContent, seedTasks } from '../content/seed';
-import { nowIso, shiftDate } from './date';
+import { jstDate, nowIso, shiftDate } from './date';
 import { type SqlValue, boolToInt, insertRow, serializeList, uuid } from './db';
 import { addDays } from './month';
 import { db } from './powersync';
@@ -81,8 +81,10 @@ export async function ensureLocalSeed(): Promise<void> {
       await ins('task', {
         id: uuid(),
         title: task.title,
-        group: task.group,
-        phase: task.phase,
+        group: 'daily',
+        phase: null,
+        slot: task.slot,
+        sort: task.sort,
         source: 'manual',
         owner_id: null,
         done: 0,
@@ -415,6 +417,25 @@ export async function ensureLocalSeed(): Promise<void> {
         date: req.date,
         staff_id: req.staff,
         created_by: req.staff,
+        created_at: at,
+      });
+    }
+
+    // R13: a few 現金出納 rows so the ledger has a shape to read — one 立替 and
+    // one negative (返品) row, the two cases the totals have to get right.
+    for (const cash of [
+      { item: '洗剤・ゴミ袋', amount: 1980, paid: 'house', who: STAFF.day.id, note: null },
+      { item: 'コーヒー豆', amount: 2400, paid: 'personal', who: STAFF.morley.id, note: '立替' },
+      { item: '洗剤（返品）', amount: -680, paid: 'house', who: STAFF.day.id, note: '返品' },
+    ]) {
+      await ins('cash_expense', {
+        id: uuid(),
+        date: jstDate(),
+        item: cash.item,
+        amount_yen: cash.amount,
+        paid_from: cash.paid,
+        created_by: cash.who,
+        note: cash.note,
         created_at: at,
       });
     }

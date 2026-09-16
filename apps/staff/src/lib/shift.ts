@@ -1,6 +1,6 @@
 import type { FollowupRow, ShiftSessionRow, TimelineEntryRow } from './powersync/schema';
 
-export type Phase = 'midday_prep' | 'cleaning' | 'evening_close' | 'morning_prep';
+export type Slot = 'first' | 'second';
 
 export interface HandoverDigest {
   entries: TimelineEntryRow[];
@@ -8,25 +8,14 @@ export interface HandoverDigest {
   since: string | null;
 }
 
-// Cockpit context derived from the JST hour (spec §7.2).
-export function currentPhase(hour: number): Phase {
-  if (hour < 11) {
-    return 'morning_prep';
-  }
-  if (hour < 16) {
-    return 'midday_prep';
-  }
-  if (hour < 19) {
-    return 'cleaning';
-  }
-  return 'evening_close';
-}
-
-// Phases surfaced on the cockpit now. Before close, the next morning's set is
-// also surfaced (spec §7.2: 20時前にも翌朝セット).
-export function cockpitPhases(hour: number): Phase[] {
-  const phase = currentPhase(hour);
-  return phase === 'evening_close' ? ['evening_close', 'morning_prep'] : [phase];
+// R12: which duty (当番) the cockpit shows, from the JST hour.
+// 先当番 = 04:00–15:59, 後当番 = 16:00–03:59. The lower edge is 04:00, not 05:00,
+// so it lines up with the shift-day boundary (date.ts shiftDate): the daily reset
+// runs at 04:00, and anything else would leave 04:00–04:59 showing a freshly
+// zeroed 後当番 list that nobody is on duty for. 03:00 correctly still shows the
+// previous shift-day's 後当番.
+export function cockpitSlot(hour: number): Slot {
+  return hour >= 4 && hour < 16 ? 'first' : 'second';
 }
 
 export function shiftContextLabel(hour: number): string {
