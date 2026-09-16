@@ -677,37 +677,59 @@ PowerSync 無料枠の自動停止（全端末オフライン数日、検知は�
 - **`cash.cjs` の金額検証は差分方式**。devSeed が当月に3行入れるので、絶対値ではなく
   追加・削除による増減で見る。
 
-## R14. 定型タスクのサブタスク（1 段の親子）（規模S-M・計画中）
+## R14. 定型タスクのサブタスク（1 段の親子）（規模S-M・敵対レビュー済み・計画確定 2026-09-16）
 
 ### 依頼と決定
 オーナー「細分化したものはサブタスクのようにできる？」→ 提案（1 段の親子、本日画面は親だけ
-見せてタップで開く、子を全部チェックで親が自動完了）に対し「親だけ見せてタップで開きましょう」。
+見せてタップで開く、子を全部チェックで親が完了）に対し「親だけ見せてタップで開きましょう」。
 
-### 設計
-- **migration 0027**: `task.parent_id uuid references public.task (id) on delete cascade`（親を消すと
-  子も消える。子は親の一部であり履歴を持たないため）。索引 `(parent_id)`。列 GRANT を
-  `update (done, done_at, title, slot, sort, parent_id)` に拡張。sync-rules 変更なし（SELECT *）。
-  制約: 子の `slot` は親と同じ値を持たせる（クエリを単純に保つ）。孫は作らない（UI で親に
-  子がある行には「サブタスクを追加」を出さず、子行には出さない）。
-- **schema.ts**: `parent_id: column.text`。
-- **純関数** `lib/taskTree.ts` + test: `buildTree(rows) → {parents:[{task, children[]}], orphans}`
-  （親が見つからない子は親扱いで表示して消さない）、`parentProgress(children) → {done,total}`、
-  `isParentDone(children)`。
-- **完了の扱い**: 子を持つ親は直接チェック不可。子の done が全て 1 になった時点で親の done=1・
-  done_at=now をクライアントが書く（`setTaskDone` の後に親を再評価する `syncParentDone`）。
-  子を 1 つでも外せば親も 0 に戻す。日次リセットは既存の `UPDATE task SET done=0 WHERE group IN
-  (...)` が親子とも対象なので変更不要。
-- **本日画面**: 親の行に「2/3」の進み具合バッジ。親行タップで子が開閉（`aria-expanded`、開閉状態は
-  端末のメモリだけで localStorage 不要）。子は 1 段インデント＋チェックボックス。子を持たない
-  親は今まで通りチェック可。
-- **タスク画面**: 通常表示は本日画面と同じ折りたたみ。「編集」中は親の下に子を常時展開し、
-  子にも改名・上へ下へ（親内で振り直し）・削除、親の末尾に「サブタスクを追加」。
-  `reorderSlot` は親のみを対象にし、子の順序は `reorderChildren(parentId, ids)`。
-  当番の一覧クエリは親子を全部返し（`slot=?`）、`buildTree` で組む。
-- **単発タスク**には子を付けない。
-- **e2e**: `tasks_slot.cjs` に「オーナーがサブタスクを 2 つ追加 → 本日画面で親に 0/2 → 子を開いて
-  2 つチェック → 親が済みになる → 1 つ外すと親が戻る」を追加。
-- **二重管理点**: `staging/schema.sql` 追記、`engineering-principles.md` §4 の task 行更新。
-  seed は子を持たない（現場でモーリーが分ける）。
-- **デプロイ**: オーナーが 0027 実行 → マージ。sync-rules 変更なし。
-
+### 設計（レビュー反映）
+- **migration 0027**: `task.parent_id uuid references public.task (id) on delete cascade`
+  ＋ `check (parent_id is null or parent_id <> id)`。索引 `(parent_id)`。**列 GRANT は据え置き**
+  （再ペアレンティングはスコープ外。`parent_id` を UPDATE 可能にしない）。`add column if not exists`
+  で再実行可。04:00 制約なし（データ書き換え無し）。sync-rules 変更なし・フル再同期も不要
+  （`SELECT *`、schema.ts に宣言すれば既存行に NULL で現れる）。`serialize.ts` は触らない。
+  CASCADE は**サーバ側バックストップ**。クライアントは自分で子を消す（下記）。
+- **子行の行形（固定）**: `source='manual'`, `group='daily'`, `slot=親と同じ`, `phase=null`,
+  `owner_id=null`, `parent_id=親.id`, `sort=兄弟の nextSort`, `done=0`。`addSubtask` は親行を読んで
+  `slot`/`group` をコピー。最初の子を足すときは同一トランザクションで親の `done=0, done_at=null`
+  を書く（保存済みの 1 が後で復活しないように）。孫は作らない（UI）。単発には子を付けない。
+- **親の完了は保存しない（読み取り時に導出）**: `effectiveDone(node) = children.length > 0
+  ? children.every(done) : task.done`。子を持つ親は直接チェック不可。`syncParentDone` のような
+  書き戻しは作らない（二端末レース・オフライン順序で矛盾が固定されるため）。
+  `isParentDone` は `children.length > 0 &&` を必須（空配列の `every` は true）。
+- **本日カードの `done / total` は葉だけ数える**（`countLeaves(tree)`）。
+- **純関数** `lib/taskTree.ts` + test: `buildTree(rows)`（クエリ順に依存しない。親は取得順、子は親ごとに
+  `(sort, created_at, id)`。親が見つからない子・孫は orphan として親扱いで表示＝同期の隙間用の
+  表示セーフティ）、`effectiveDone`, `parentProgress`, `countLeaves`。必須ケース: 空配列 false／
+  子 sort が親より小さい入力／orphan／子ゼロの親／孫／countLeaves の二重計上なし。
+- **削除**: `removeTaskTree(id)` = 1 トランザクションで `DELETE WHERE parent_id=?` → `DELETE WHERE id=?`。
+  （ローカル SQLite に CASCADE は無く、デモ／e2e はサーバ無しなので必須。）端末 A が子追加・端末 B が
+  親削除の同時発生は子 INSERT が 23503 → discard＋同期アラート。データは壊れない。許容と明記。
+- **並べ替えのスコープ分離**: `reorderSlot` は `WHERE id=? AND slot=? AND parent_id IS NULL`、
+  `reorderChildren(parentId, ids)` は `WHERE id=? AND parent_id=?`、`addRoutineTask` の max 取得に
+  `AND parent_id IS NULL`。`moveTask` は兄弟だけを受け取る（画面はツリーから兄弟を渡す）。
+  `taskOrder.ts` は変更なし。
+- **クエリ**: `useSlotTasks` に `OR parent_id IN (SELECT id FROM task WHERE source='manual' AND slot=?)`
+  枝を追加（slot 不一致の子も親の下に必ず出る自己修復）。`useTasks` の order は据え置き、
+  タスク画面のフラット filter を `buildTree` に置き換える。
+- **本日画面**: 子を持つ親 = 行全体が `<button aria-expanded aria-controls>`、左のチェック位置に
+  進捗バッジ「2/3」（`aria-label="サブタスク 2/3 完了"`）、右端に chevron。子を持たない親は現状通り
+  チェック行。子行は 1 段インデントのチェック行（min-h 44px）。畳んだ子は**レンダしない**
+  （unmount。CSS 非表示にしない）。開閉 state は Today/Tasks 本体の `useState`。最後の子を
+  チェックしても自動で畳まない。
+- **タスク画面**: 通常表示は本日と同じ折りたたみ。「編集」中は子を常時展開（`aria-expanded` を
+  出さない）、子にも改名・上へ下へ（兄弟内）・削除、親の末尾に「サブタスクを追加」
+  （`aria-label="サブタスクを追加"`。`/この当番に追加/` にマッチしない名前）。削除ボタンは
+  トグル行の button の中に入れない。
+- **seed**: `content/seed.ts` / 生成器は子を知らないため seed は子を持たない（現場でモーリーが分ける）。
+  devSeed も子なし（e2e が名指しする親を子持ちにしない）。
+- **e2e の暗黙契約**: 単発セクションは最後・新しい単発は単発内の最後（`sim_verify` の `.last()`）、
+  畳んだ子は DOM に無い、`sweep` がタップする「ベッドメイキング」「ゴミ出し」は子なしのまま。
+  R14 の新ステップは `tasks_slot.cjs` の**末尾**に追加し、親行スコープの locator で書く:
+  オーナーが「トイレとシャワーの清掃」にサブタスクを 2 つ追加 → 編集を閉じる → 本日画面で
+  親に 0/2 → 開いて 2 つチェック → 親に打ち消し線・カウンタが葉基準 → 1 つ外すと戻る →
+  タスク画面で親を削除 → 子も消える。
+- **二重管理点**: `staging/schema.sql` に 0027 追記＋ヘッダの「0001〜0019」を実態に修正、
+  `engineering-principles.md` §4 の task DELETE 行（子ごと削除）・UPDATE 行（親 done は導出）。
+- **デプロイ**: オーナーが 0027 実行（時間帯不問）→ マージ。
