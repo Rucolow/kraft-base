@@ -676,3 +676,78 @@ PowerSync 無料枠の自動停止（全端末オフライン数日、検知は�
   計画に書いた「#2 に編集トグルを開く手順を追加」は不要だった。
 - **`cash.cjs` の金額検証は差分方式**。devSeed が当月に3行入れるので、絶対値ではなく
   追加・削除による増減で見る。
+
+## R14. 定型タスクのサブタスク（1 段の親子）（規模S-M・敵対レビュー済み・計画確定 2026-09-16）
+
+### 依頼と決定
+オーナー「細分化したものはサブタスクのようにできる？」→ 提案（1 段の親子、本日画面は親だけ
+見せてタップで開く、子を全部チェックで親が完了）に対し「親だけ見せてタップで開きましょう」。
+
+### 設計（レビュー反映）
+- **migration 0027**: `task.parent_id uuid references public.task (id) on delete cascade`
+  ＋ `check (parent_id is null or parent_id <> id)`。索引 `(parent_id)`。**列 GRANT は据え置き**
+  （再ペアレンティングはスコープ外。`parent_id` を UPDATE 可能にしない）。`add column if not exists`
+  で再実行可。04:00 制約なし（データ書き換え無し）。sync-rules 変更なし・フル再同期も不要
+  （`SELECT *`、schema.ts に宣言すれば既存行に NULL で現れる）。`serialize.ts` は触らない。
+  CASCADE は**サーバ側バックストップ**。クライアントは自分で子を消す（下記）。
+- **子行の行形（固定）**: `source='manual'`, `group='daily'`, `slot=親と同じ`, `phase=null`,
+  `owner_id=null`, `parent_id=親.id`, `sort=兄弟の nextSort`, `done=0`。`addSubtask` は親行を読んで
+  `slot`/`group` をコピー。最初の子を足すときは同一トランザクションで親の `done=0, done_at=null`
+  を書く（保存済みの 1 が後で復活しないように）。孫は作らない（UI）。単発には子を付けない。
+- **親の完了は保存しない（読み取り時に導出）**: `effectiveDone(node) = children.length > 0
+  ? children.every(done) : task.done`。子を持つ親は直接チェック不可。`syncParentDone` のような
+  書き戻しは作らない（二端末レース・オフライン順序で矛盾が固定されるため）。
+  `isParentDone` は `children.length > 0 &&` を必須（空配列の `every` は true）。
+- **本日カードの `done / total` は葉だけ数える**（`countLeaves(tree)`）。
+- **純関数** `lib/taskTree.ts` + test: `buildTree(rows)`（クエリ順に依存しない。親は取得順、子は親ごとに
+  `(sort, created_at, id)`。親が見つからない子・孫は orphan として親扱いで表示＝同期の隙間用の
+  表示セーフティ）、`effectiveDone`, `parentProgress`, `countLeaves`。必須ケース: 空配列 false／
+  子 sort が親より小さい入力／orphan／子ゼロの親／孫／countLeaves の二重計上なし。
+- **削除**: `removeTaskTree(id)` = 1 トランザクションで `DELETE WHERE parent_id=?` → `DELETE WHERE id=?`。
+  （ローカル SQLite に CASCADE は無く、デモ／e2e はサーバ無しなので必須。）端末 A が子追加・端末 B が
+  親削除の同時発生は子 INSERT が 23503 → discard＋同期アラート。データは壊れない。許容と明記。
+- **並べ替えのスコープ分離**: `reorderSlot` は `WHERE id=? AND slot=? AND parent_id IS NULL`、
+  `reorderChildren(parentId, ids)` は `WHERE id=? AND parent_id=?`、`addRoutineTask` の max 取得に
+  `AND parent_id IS NULL`。`moveTask` は兄弟だけを受け取る（画面はツリーから兄弟を渡す）。
+  `taskOrder.ts` は変更なし。
+- **クエリ**: `useSlotTasks` に `OR parent_id IN (SELECT id FROM task WHERE source='manual' AND slot=?)`
+  枝を追加（slot 不一致の子も親の下に必ず出る自己修復）。`useTasks` の order は据え置き、
+  タスク画面のフラット filter を `buildTree` に置き換える。
+- **本日画面**: 子を持つ親 = 行全体が `<button aria-expanded aria-controls>`、左のチェック位置に
+  進捗バッジ「2/3」（`aria-label="サブタスク 2/3 完了"`）、右端に chevron。子を持たない親は現状通り
+  チェック行。子行は 1 段インデントのチェック行（min-h 44px）。畳んだ子は**レンダしない**
+  （unmount。CSS 非表示にしない）。開閉 state は Today/Tasks 本体の `useState`。最後の子を
+  チェックしても自動で畳まない。
+- **タスク画面**: 通常表示は本日と同じ折りたたみ。「編集」中は子を常時展開（`aria-expanded` を
+  出さない）、子にも改名・上へ下へ（兄弟内）・削除、親の末尾に「サブタスクを追加」
+  （`aria-label="サブタスクを追加"`。`/この当番に追加/` にマッチしない名前）。削除ボタンは
+  トグル行の button の中に入れない。
+- **seed**: `content/seed.ts` / 生成器は子を知らないため seed は子を持たない（現場でモーリーが分ける）。
+  devSeed も子なし（e2e が名指しする親を子持ちにしない）。
+- **e2e の暗黙契約**: 単発セクションは最後・新しい単発は単発内の最後（`sim_verify` の `.last()`）、
+  畳んだ子は DOM に無い、`sweep` がタップする「ベッドメイキング」「ゴミ出し」は子なしのまま。
+  R14 の新ステップは `tasks_slot.cjs` の**末尾**に追加し、親行スコープの locator で書く:
+  オーナーが「トイレとシャワーの清掃」にサブタスクを 2 つ追加 → 編集を閉じる → 本日画面で
+  親に 0/2 → 開いて 2 つチェック → 親に打ち消し線・カウンタが葉基準 → 1 つ外すと戻る →
+  タスク画面で親を削除 → 子も消える。
+- **二重管理点**: `staging/schema.sql` に 0027 追記＋ヘッダの「0001〜0019」を実態に修正、
+  `engineering-principles.md` §4 の task DELETE 行（子ごと削除）・UPDATE 行（親 done は導出）。
+- **デプロイ**: オーナーが 0027 実行（時間帯不問）→ マージ。
+
+### 実装メモ（R14・計画からの逸脱のみ）
+- **e2e の親は「今の当番」から選ぶ**: 本日画面に出るのは `cockpitSlot` が返す当番だけなので、
+  計画が名指しする「トイレとシャワーの清掃」（先当番）は 16:00〜03:59 に走らせると本日画面に
+  現れない。`tasks_slot.cjs` は JST の時刻から当番を決め、先当番なら「トイレとシャワーの清掃」、
+  後当番なら同じ形の「弁当の配達」で同一の契約（0/2 バッジ → 開く → 2 つチェック → 打ち消し線 →
+  1 つ外すと戻る → 親削除で子も消える）を検証する（他スイートと同じく JST ロジックを Node 側で再現）。
+- **サブタスク入力の aria-label は「サブタスクの名前」**: 「サブタスク名」だと Playwright の
+  `getByLabel('タスク名')`（部分一致）が拾ってしまい、R12 の改名・並べ替えの既存アサーションが
+  壊れる（e2e/README の落とし穴 4）。ボタンは計画どおり `aria-label="サブタスクを追加"`。
+- **置き場所の確認は通常表示で行う**: 編集中はタイトルが input なので本文テキストに出ない
+  （落とし穴 5）。子が親の当番に入ったことは、編集を閉じて親行を開いた通常表示で確認している。
+- **`removeTask` は削除し `removeTaskTree` に一本化**: 単発を含む全ての削除経路が子も掃く実装に
+  なり、子を持たない行では従来と同じ 1 行 DELETE。呼び分けの取り違えが起きない。
+- **親行グループに `data-task="<タイトル>"`**: e2e が親スコープの locator を書くための目印
+  （`shift_plan` の `data-day` と同型）。
+- **通常表示で開いた子にもオーナーの削除ボタンが出る**: 既存の「オーナーには各行に削除」を
+  そのまま踏襲した（計画は編集中の子の削除だけを明記）。トグルの `<button>` の外側に置いてある。

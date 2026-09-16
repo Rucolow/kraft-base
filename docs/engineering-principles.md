@@ -49,8 +49,8 @@ PowerSync は書き込みを即ローカル反映→非同期アップロード�
 | guest INSERT/DELETE | owner | 追加/削除UIは isOwner |
 | guest UPDATE | **org member**（0014でstatus変更のため開放） | 編集フォームは isOwner（UIのみの絞り） |
 | task INSERT | org member (0013) | 全員追加可 |
-| task UPDATE | org member・**列grantは done/done_at/title/slot/sort** (0006→0026で拡張) | チェックは全員。タイトル改名・↑↓（並べ替え）・当番への追加は **タスク画面の「編集」トグル内**で、トグル自体を isOwner でのみ表示（content 0007 と同じ信頼モデル: 権限は org member に開くが UI を絞る）。削除ボタンはトグル外に据え置き |
-| task DELETE | owner | 削除ボタンは isOwner |
+| task UPDATE | org member・**列grantは done/done_at/title/slot/sort** (0006→0026で拡張。0027 の `parent_id` は**列grantに足さない**＝再ペアレンティング不可) | チェックは全員。タイトル改名・↑↓（並べ替え）・当番への追加は **タスク画面の「編集」トグル内**で、トグル自体を isOwner でのみ表示（content 0007 と同じ信頼モデル: 権限は org member に開くが UI を絞る）。削除ボタンはトグル外に据え置き。**R14: 子を持つ親の done は保存せず子から導出**（`taskTree.effectiveDone`）＝親行は直接チェックできず、親への書き戻しも行わない（二端末レースで矛盾を固定しないため） |
+| task DELETE | owner | 削除ボタンは isOwner。**R14: 親を消すときはクライアントが子も消す**（`removeTaskTree` = 1トランザクションで子→親）。0027 の FK `on delete cascade` はサーバ側バックストップで、ローカルSQLite（デモ/e2eはサーバ無し）には効かない |
 | checkin_record INSERT | org member | 誰でも記入可（再入力含む） |
 | checkin_record UPDATE/DELETE | owner | 修正UIは未実装（再入力=新規INSERTで代替） |
 | device INSERT/UPDATE | **owner（受付iPadが書けない問題→0016で org へ、未適用）** | Setupは無ゲート |

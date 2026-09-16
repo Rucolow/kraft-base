@@ -148,6 +148,151 @@ function section(body, name) {
   );
   check('OWNER no page errors', errs2.length === 0, errs2.slice(0, 2).join(' | '));
 
+  // ===== R14: サブタスク（1 段の親子） =====
+  // 本日カードに出るのは「今の当番」だけなので（cockpitSlot: 先当番 04:00–15:59 /
+  // 後当番 16:00–03:59）、親はその当番の実在タスクから選ぶ。計画が名指しする
+  // 「トイレとシャワーの清掃」は先当番の行なので、後当番の時間帯に走ったときは
+  // 同じ形の後当番の行（弁当の配達）で同じ契約を検証する。
+  const jstHour = Number(
+    new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo', hour: '2-digit', hour12: false }),
+  );
+  const PARENT = jstHour >= 4 && jstHour < 16 ? 'トイレとシャワーの清掃' : '弁当の配達';
+  const [CHILD_A, CHILD_B] =
+    PARENT === 'トイレとシャワーの清掃' ? ['便器を洗う', '鏡を拭く'] : ['弁当を数える', '受付に置く'];
+  // 本日カードのカウンタ「done / total」。R14 で total は葉の数になる。
+  const counter = (body) => {
+    const m = /当番のタスク (\d+) \/ (\d+)/.exec(body);
+    return m ? { done: Number(m[1]), total: Number(m[2]) } : null;
+  };
+
+  await op.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await op.waitForTimeout(800);
+  const before = counter(await txt(op));
+  check('R14 the cockpit card shows a done/total counter', before !== null, JSON.stringify(before));
+
+  // オーナーが親にサブタスクを 2 つ足す（編集モード・親行スコープの locator）。
+  await op.goto(`${BASE}/tasks`, { waitUntil: 'networkidle' });
+  await op.waitForTimeout(600);
+  await op.getByRole('button', { name: '編集' }).click();
+  await op.waitForTimeout(400);
+  const group = op.locator(`[data-task="${PARENT}"]`);
+  for (const title of [CHILD_A, CHILD_B]) {
+    await group.getByLabel('サブタスクの名前').fill(title);
+    await group.getByRole('button', { name: 'サブタスクを追加' }).click();
+    await op.waitForTimeout(700);
+  }
+  // 編集中の行はタイトルが input なので本文テキストには出ない（e2e/README の落とし穴 5）。
+  // 置き場所の確認は編集を閉じた通常表示＝折りたたみ行を開いて行う。
+  const duty = PARENT === 'トイレとシャワーの清掃' ? '先当番' : '後当番';
+  await op.getByRole('button', { name: '編集' }).click();
+  await op.waitForTimeout(500);
+  const collapsedTasks = await txt(op);
+  check(
+    'R14 タスク画面: closing 編集 folds the children away',
+    !new RegExp(CHILD_A).test(collapsedTasks) && !new RegExp(CHILD_B).test(collapsedTasks),
+  );
+
+  await op
+    .locator(`[data-task="${PARENT}"]`)
+    .getByRole('button', { name: new RegExp(PARENT) })
+    .click();
+  await op.waitForTimeout(400);
+  const editView = await txt(op);
+  check(
+    'R14 both subtasks land in the parent’s duty, not in 単発',
+    new RegExp(CHILD_A).test(section(editView, duty)) &&
+      new RegExp(CHILD_B).test(section(editView, duty)) &&
+      !new RegExp(CHILD_A).test(section(editView, '単発')),
+    section(editView, duty).slice(-80),
+  );
+
+  // 本日画面: 親は「0/2」バッジの開閉行になり、畳んだ子は DOM に無い。
+  await op.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await op.waitForTimeout(800);
+  const parentRow = op.getByRole('button', { name: new RegExp(PARENT) });
+  check('R14 本日画面: the parent is one row', (await parentRow.count()) === 1);
+  check(
+    'R14 本日画面: the parent starts collapsed',
+    (await parentRow.getAttribute('aria-expanded')) === 'false',
+  );
+  const badge = await parentRow.innerText();
+  check('R14 本日画面: the parent carries a 0/2 progress badge', /0\/2/.test(badge), badge.trim());
+  const foldedToday = await txt(op);
+  check(
+    'R14 本日画面: a folded child is not in the DOM',
+    !new RegExp(CHILD_A).test(foldedToday) && !new RegExp(CHILD_B).test(foldedToday),
+  );
+  const afterAdd = counter(foldedToday);
+  check(
+    'R14 the counter counts leaves (parent replaced by its 2 children = +1)',
+    before !== null && afterAdd !== null && afterAdd.total === before.total + 1,
+    `${before && before.total} -> ${afterAdd && afterAdd.total}`,
+  );
+
+  await parentRow.click();
+  await op.waitForTimeout(400);
+  check(
+    'R14 本日画面: tapping the parent opens it',
+    (await parentRow.getAttribute('aria-expanded')) === 'true' &&
+      (await op.getByRole('button', { name: CHILD_A }).count()) === 1,
+  );
+
+  await op.getByRole('button', { name: CHILD_A }).click();
+  await op.waitForTimeout(500);
+  await op.getByRole('button', { name: CHILD_B }).click();
+  await op.waitForTimeout(700);
+  const bothDone = await txt(op);
+  const struck = await op.locator('.line-through', { hasText: PARENT }).count();
+  check('R14 ticking every child strikes the parent through', struck >= 1, `struck=${struck}`);
+  const doneCounter = counter(bothDone);
+  check(
+    'R14 the counter moves by leaves (2 children done)',
+    doneCounter !== null && afterAdd !== null &&
+      doneCounter.done === afterAdd.done + 2 &&
+      doneCounter.total === afterAdd.total,
+    JSON.stringify(doneCounter),
+  );
+  check(
+    'R14 the group stays open after the last child is ticked',
+    (await parentRow.getAttribute('aria-expanded')) === 'true',
+  );
+
+  await op.getByRole('button', { name: CHILD_B }).click();
+  await op.waitForTimeout(700);
+  const oneOff = await txt(op);
+  check(
+    'R14 unticking one child un-does the parent',
+    (await op.locator('.line-through', { hasText: PARENT }).count()) === 0 &&
+      /1\/2/.test(await parentRow.innerText()),
+    (await parentRow.innerText()).trim(),
+  );
+  const backCounter = counter(oneOff);
+  check(
+    'R14 the counter follows the leaves back down',
+    backCounter !== null && doneCounter !== null && backCounter.done === doneCounter.done - 1,
+    JSON.stringify(backCounter),
+  );
+
+  // 親を消すと子も消える（removeTaskTree。ローカル SQLite に CASCADE は無い）。
+  await op.goto(`${BASE}/tasks`, { waitUntil: 'networkidle' });
+  await op.waitForTimeout(600);
+  await op.getByRole('button', { name: '編集' }).click();
+  await op.waitForTimeout(400);
+  await op
+    .locator(`[data-task="${PARENT}"]`)
+    .getByRole('button', { name: 'タスクを削除' })
+    .first()
+    .click();
+  await op.waitForTimeout(900);
+  const afterDelete = await txt(op);
+  check(
+    'R14 deleting the parent deletes its subtasks too',
+    !new RegExp(PARENT).test(afterDelete) &&
+      !new RegExp(CHILD_A).test(afterDelete) &&
+      !new RegExp(CHILD_B).test(afterDelete),
+  );
+  check('R14 no page errors', errs2.length === 0, errs2.slice(0, 2).join(' | '));
+
   const passed = R.filter((r) => r.p).length;
   console.log(`\nRESULT: ${passed}/${R.length} passed`);
   await browser.close();
