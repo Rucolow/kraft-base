@@ -676,3 +676,38 @@ PowerSync 無料枠の自動停止（全端末オフライン数日、検知は�
   計画に書いた「#2 に編集トグルを開く手順を追加」は不要だった。
 - **`cash.cjs` の金額検証は差分方式**。devSeed が当月に3行入れるので、絶対値ではなく
   追加・削除による増減で見る。
+
+## R14. 定型タスクのサブタスク（1 段の親子）（規模S-M・計画中）
+
+### 依頼と決定
+オーナー「細分化したものはサブタスクのようにできる？」→ 提案（1 段の親子、本日画面は親だけ
+見せてタップで開く、子を全部チェックで親が自動完了）に対し「親だけ見せてタップで開きましょう」。
+
+### 設計
+- **migration 0027**: `task.parent_id uuid references public.task (id) on delete cascade`（親を消すと
+  子も消える。子は親の一部であり履歴を持たないため）。索引 `(parent_id)`。列 GRANT を
+  `update (done, done_at, title, slot, sort, parent_id)` に拡張。sync-rules 変更なし（SELECT *）。
+  制約: 子の `slot` は親と同じ値を持たせる（クエリを単純に保つ）。孫は作らない（UI で親に
+  子がある行には「サブタスクを追加」を出さず、子行には出さない）。
+- **schema.ts**: `parent_id: column.text`。
+- **純関数** `lib/taskTree.ts` + test: `buildTree(rows) → {parents:[{task, children[]}], orphans}`
+  （親が見つからない子は親扱いで表示して消さない）、`parentProgress(children) → {done,total}`、
+  `isParentDone(children)`。
+- **完了の扱い**: 子を持つ親は直接チェック不可。子の done が全て 1 になった時点で親の done=1・
+  done_at=now をクライアントが書く（`setTaskDone` の後に親を再評価する `syncParentDone`）。
+  子を 1 つでも外せば親も 0 に戻す。日次リセットは既存の `UPDATE task SET done=0 WHERE group IN
+  (...)` が親子とも対象なので変更不要。
+- **本日画面**: 親の行に「2/3」の進み具合バッジ。親行タップで子が開閉（`aria-expanded`、開閉状態は
+  端末のメモリだけで localStorage 不要）。子は 1 段インデント＋チェックボックス。子を持たない
+  親は今まで通りチェック可。
+- **タスク画面**: 通常表示は本日画面と同じ折りたたみ。「編集」中は親の下に子を常時展開し、
+  子にも改名・上へ下へ（親内で振り直し）・削除、親の末尾に「サブタスクを追加」。
+  `reorderSlot` は親のみを対象にし、子の順序は `reorderChildren(parentId, ids)`。
+  当番の一覧クエリは親子を全部返し（`slot=?`）、`buildTree` で組む。
+- **単発タスク**には子を付けない。
+- **e2e**: `tasks_slot.cjs` に「オーナーがサブタスクを 2 つ追加 → 本日画面で親に 0/2 → 子を開いて
+  2 つチェック → 親が済みになる → 1 つ外すと親が戻る」を追加。
+- **二重管理点**: `staging/schema.sql` 追記、`engineering-principles.md` §4 の task 行更新。
+  seed は子を持たない（現場でモーリーが分ける）。
+- **デプロイ**: オーナーが 0027 実行 → マージ。sync-rules 変更なし。
+
