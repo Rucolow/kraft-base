@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Card, EmptyState, Screen, SectionLabel } from '../components/ui';
 import { useTasks } from '../data/queries';
@@ -6,7 +6,16 @@ import { intToBool } from '../lib/db';
 import type { TaskRow } from '../lib/powersync/schema';
 import { useSession } from '../lib/session';
 import { setTaskDone } from '../lib/shiftOps';
-import { addRoutineTask, addTask, moveTask, removeTask, renameTask } from '../lib/taskOps';
+import {
+  type SiblingScope,
+  addRoutineTask,
+  addSubtask,
+  addTask,
+  moveTask,
+  removeTaskTree,
+  renameTask,
+} from '../lib/taskOps';
+import { type TaskNode, buildTree, effectiveDone, parentProgress } from '../lib/taskTree';
 
 // R12: the two duties, in the order they run. 単発 (one-offs) is rendered AFTER
 // both of them and that order is load-bearing for the e2e suites, which delete
@@ -17,6 +26,10 @@ const SLOTS = [
 ] as const;
 
 type SlotKey = (typeof SLOTS)[number]['key'];
+
+// What ↑/↓ act on: the list of siblings as displayed, and the scope those ids
+// belong to (a duty, or one parent's subtasks — R14 keeps the two apart).
+type RowControls = { scope: SiblingScope; rows: TaskRow[] };
 
 // Rename field for one routine row. Local state (seeded from the row and keyed on
 // its id) so typing isn't fought by the watched query re-rendering mid-edit; the
@@ -50,15 +63,24 @@ export function Tasks() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [slotDraft, setSlotDraft] = useState<Record<string, string>>({});
+  // R14: one draft per parent (the サブタスクを追加 field) and which parents are
+  // open. While 編集 is on, every parent is expanded regardless of this map.
+  const [subDraft, setSubDraft] = useState<Record<string, string>>({});
+  const [openParents, setOpenParents] = useState<Record<string, boolean>>({});
 
   // Deletion is owner-only — matches the task_delete RLS policy (is_owner). A
   // confirm guards against removing a recurring task by mistake. It stays outside
   // the 編集 toggle so the delete affordance is exactly where it has always been.
-  async function confirmRemove(task: TaskRow) {
-    if (!window.confirm(`「${task.title}」を削除しますか？`)) {
+  // R14: deleting a parent takes its subtasks with it (removeTaskTree).
+  async function confirmRemove(task: TaskRow, childCount = 0) {
+    const label =
+      childCount > 0
+        ? `「${task.title}」とサブタスク${childCount}件を削除しますか？`
+        : `「${task.title}」を削除しますか？`;
+    if (!window.confirm(label)) {
       return;
     }
-    await removeTask(task.id);
+    await removeTaskTree(task.id);
   }
 
   async function addOneoff() {
@@ -78,22 +100,46 @@ export function Tasks() {
     setSlotDraft((prev) => ({ ...prev, [slot]: '' }));
   }
 
-  function row(task: TaskRow, controls: { slot: SlotKey; rows: TaskRow[] } | null) {
+  async function addChild(parentId: string) {
+    const value = subDraft[parentId] ?? '';
+    if (!value.trim()) {
+      return;
+    }
+    await addSubtask(parentId, value);
+    setSubDraft((prev) => ({ ...prev, [parentId]: '' }));
+  }
+
+  function deleteButton(task: TaskRow, childCount = 0) {
+    if (!isOwner) {
+      return null;
+    }
+    return (
+      <button
+        type="button"
+        aria-label="タスクを削除"
+        onClick={() => confirmRemove(task, childCount)}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-ink-mute"
+      >
+        <Trash2 size={15} />
+      </button>
+    );
+  }
+
+  // One tickable row. Borders live on the wrapper (a parent and its subtasks are
+  // one block), so this renders the row's contents only.
+  function row(task: TaskRow, controls: RowControls | null, indent = false) {
     const checked = intToBool(task.done);
     const owner = staff.find((member) => member.id === task.owner_id) ?? null;
     const inlineEdit = editing && controls !== null;
     return (
-      <div
-        key={task.id}
-        className="flex min-h-[44px] w-full items-center gap-2 border-line border-b border-dashed py-2.5 last:border-none"
-      >
+      <div className={`flex min-h-[44px] w-full items-center gap-2 py-2.5 ${indent ? 'pl-7' : ''}`}>
         {inlineEdit && controls ? (
           <>
             <RenameField task={task} />
             <button
               type="button"
               aria-label="上へ"
-              onClick={() => moveTask(controls.slot, controls.rows, task.id, 'up')}
+              onClick={() => moveTask(controls.scope, controls.rows, task.id, 'up')}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-line text-ink-light"
             >
               <ArrowUp size={15} />
@@ -101,7 +147,7 @@ export function Tasks() {
             <button
               type="button"
               aria-label="下へ"
-              onClick={() => moveTask(controls.slot, controls.rows, task.id, 'down')}
+              onClick={() => moveTask(controls.scope, controls.rows, task.id, 'down')}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-line text-ink-light"
             >
               <ArrowDown size={15} />
@@ -128,22 +174,97 @@ export function Tasks() {
             {owner ? <Badge tone="wood">@{owner.name}</Badge> : null}
           </>
         )}
-        {isOwner ? (
-          <button
-            type="button"
-            aria-label="タスクを削除"
-            onClick={() => confirmRemove(task)}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-ink-mute"
+        {deleteButton(task, 0)}
+      </div>
+    );
+  }
+
+  // R14 (normal view): a row that has subtasks is a heading you open, not a box you
+  // tick — its done state is derived from the children. The delete button stays a
+  // SIBLING of the toggle: a button inside a button is not a valid control.
+  function parentRow(node: TaskNode, open: boolean, listId: string) {
+    const progress = parentProgress(node);
+    const struck = effectiveDone(node);
+    return (
+      <div className="flex min-h-[44px] w-full items-center gap-2 py-2.5">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={listId}
+          onClick={() => setOpenParents((prev) => ({ ...prev, [node.task.id]: !open }))}
+          className="flex flex-1 items-center gap-3 text-left"
+        >
+          <span
+            aria-label={`サブタスク ${progress.done}/${progress.total} 完了`}
+            className={`grid h-[21px] shrink-0 place-items-center rounded-md border-[1.6px] px-1 text-[0.62rem] tabular-nums ${struck ? 'border-orange bg-orange text-onaccent' : 'border-orange-light text-ink-light'}`}
           >
-            <Trash2 size={15} />
-          </button>
+            {progress.done}/{progress.total}
+          </span>
+          <span className={`flex-1 text-[0.9rem] ${struck ? 'text-ink-mute line-through' : ''}`}>
+            {node.task.title}
+          </span>
+          <span className="shrink-0 text-ink-mute">
+            {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </span>
+        </button>
+        {deleteButton(node.task, node.children.length)}
+      </div>
+    );
+  }
+
+  // A parent and its subtasks as one block. `siblings` is the duty's top level, so
+  // ↑/↓ on the parent move it among the duty's rows and ↑/↓ on a child move it
+  // among that parent's children only.
+  function taskGroup(node: TaskNode, slot: SlotKey, siblings: TaskRow[]) {
+    const task = node.task;
+    const hasChildren = node.children.length > 0;
+    // 編集 keeps every subtask visible: they are what is being edited.
+    const open = editing || openParents[task.id] === true;
+    const listId = `subtasks-${task.id}`;
+    return (
+      <div
+        key={task.id}
+        data-task={task.title ?? ''}
+        className="border-line border-b border-dashed last:border-none"
+      >
+        {hasChildren && !editing
+          ? parentRow(node, open, listId)
+          : row(task, { scope: { slot }, rows: siblings })}
+        {hasChildren && open ? (
+          <div id={listId}>
+            {node.children.map((child) => (
+              <div key={child.id} className="border-line border-t border-dashed">
+                {row(child, { scope: { parentId: task.id }, rows: node.children }, true)}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {editing ? (
+          <div className="flex items-center gap-2 pt-1 pb-2 pl-7">
+            <input
+              aria-label="サブタスクの名前"
+              className="min-h-[36px] flex-1 rounded-[9px] border border-line bg-cream px-2 py-1.5 text-[0.85rem] outline-none focus:border-orange-light"
+              value={subDraft[task.id] ?? ''}
+              onChange={(event) =>
+                setSubDraft((prev) => ({ ...prev, [task.id]: event.target.value }))
+              }
+            />
+            <button
+              type="button"
+              aria-label="サブタスクを追加"
+              onClick={() => addChild(task.id)}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-orange text-onaccent"
+            >
+              <Plus size={15} />
+            </button>
+          </div>
         ) : null}
       </div>
     );
   }
 
   // Anything without a duty (one-offs, and any legacy row that predates 0026)
-  // lands in 単発, so no task can become invisible.
+  // lands in 単発, so no task can become invisible. One-offs never have subtasks.
   const oneoffs = tasks.filter((task) => task.slot !== 'first' && task.slot !== 'second');
 
   return (
@@ -163,15 +284,16 @@ export function Tasks() {
 
       <div className="md:grid md:grid-cols-2 md:items-start md:gap-x-4 xl:grid-cols-3">
         {SLOTS.map((slot) => {
-          const items = tasks.filter((task) => task.slot === slot.key);
+          const tree = buildTree(tasks.filter((task) => task.slot === slot.key));
+          const siblings = tree.map((node) => node.task);
           return (
             <div key={slot.key}>
               <SectionLabel>{slot.label}</SectionLabel>
               <Card>
-                {items.length === 0 ? (
+                {tree.length === 0 ? (
                   <EmptyState>タスクはありません。</EmptyState>
                 ) : (
-                  items.map((task) => row(task, { slot: slot.key, rows: items }))
+                  tree.map((node) => taskGroup(node, slot.key, siblings))
                 )}
                 {editing ? (
                   <div className="mt-2 flex items-center gap-2">
@@ -203,7 +325,11 @@ export function Tasks() {
             {oneoffs.length === 0 ? (
               <EmptyState>タスクはありません。</EmptyState>
             ) : (
-              oneoffs.map((task) => row(task, null))
+              oneoffs.map((task) => (
+                <div key={task.id} className="border-line border-b border-dashed last:border-none">
+                  {row(task, null)}
+                </div>
+              ))
             )}
           </Card>
         </div>

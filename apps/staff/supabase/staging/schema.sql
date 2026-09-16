@@ -1,5 +1,5 @@
 -- KRAFT BASE 使い捨て検証環境(L5)用スキーマ。新規Supabaseプロジェクトに1回貼って実行する。
--- 本番マイグレーション 0001〜0019 を順に結合したもの（手動再生成）。
+-- 本番マイグレーション 0001〜0027 を順に結合したもの（手動再生成）。
 -- 方針: 常設ステージングは作らない（docs/plan-verification-system.md）。大規模変更の
 -- 事前リハーサルでのみ使い捨て環境を立てる用。migrations を増やしたら末尾に追記すること。
 
@@ -1042,3 +1042,19 @@ begin
   end if;
 end
 $$;
+
+-- ===== 0027_task_parent.sql（R14: タスクのサブタスク）=====
+--
+-- 1 段だけの親子。子行は `parent_id` に親の id を持ち、slot/group は親のコピー。
+-- 適用タイミングは不問（既存行を書き換えない）。sync-rules 変更・フル再同期も不要。
+-- 列 GRANT は据え置き（`parent_id` を UPDATE 可能にしない＝再ペアレンティングはしない）。
+-- CASCADE はサーバ側バックストップで、クライアントは自分で子→親の順に消す。
+
+alter table public.task
+  add column if not exists parent_id uuid references public.task (id) on delete cascade;
+
+alter table public.task drop constraint if exists task_parent_not_self;
+alter table public.task add constraint task_parent_not_self
+  check (parent_id is null or parent_id <> id);
+
+create index if not exists task_parent_idx on public.task (parent_id);

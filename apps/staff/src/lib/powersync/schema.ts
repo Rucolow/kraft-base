@@ -106,11 +106,13 @@ const task = new Table(
     sort: column.integer,
     source: column.text,
     owner_id: column.text,
+    // R14 / 0027: 1 段だけの親子。NULL = 親（またはルートの単発）。
+    parent_id: column.text,
     done: column.integer,
     done_at: column.text,
     created_at: column.text,
   },
-  { indexes: { slot: ['slot', 'sort'] } },
+  { indexes: { slot: ['slot', 'sort'], parent: ['parent_id'] } },
 );
 
 const content = new Table(

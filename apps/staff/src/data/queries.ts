@@ -145,13 +145,18 @@ export function useTasks() {
 // show on the タスク tab. Done one-offs stay listed for the rest of the shift-day
 // (like routine ones) so ticking a task doesn't make it vanish. The slot IS NULL
 // guard keeps a routine row from appearing twice.
+// R14: the parent_id branch pulls a subtask in through its PARENT's duty, not its
+// own slot column. A child whose slot drifted (parent moved to the other duty, a
+// half-synced row) still shows under its parent instead of vanishing from both
+// duties — the tree is what the person reads; the child's own slot is only a copy.
 export function useSlotTasks(slot: string) {
   return useQuery<TaskRow>(
     `SELECT * FROM task
        WHERE (source = 'manual' AND slot = ?)
+          OR parent_id IN (SELECT id FROM task WHERE source = 'manual' AND slot = ?)
           OR (slot IS NULL AND "group" = 'oneoff' AND (done = 0 OR done_at >= ?))
      ORDER BY CASE WHEN "group" = 'oneoff' THEN 1 ELSE 0 END, sort, created_at, id`,
-    [slot, shiftBoundaryIso()],
+    [slot, slot, shiftBoundaryIso()],
   );
 }
 

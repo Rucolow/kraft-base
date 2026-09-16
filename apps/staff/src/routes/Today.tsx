@@ -1,4 +1,13 @@
-import { Bell, CalendarDays, Check, ListChecks, ScrollText, Users } from 'lucide-react';
+import {
+  Bell,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ListChecks,
+  ScrollText,
+  Users,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { headcount } from '../components/GuestCard';
@@ -17,6 +26,7 @@ import { addDays } from '../lib/month';
 import { useSession } from '../lib/session';
 import { cockpitSlot, shiftContextLabel } from '../lib/shift';
 import { setTaskDone } from '../lib/shiftOps';
+import { buildTree, countLeaves, effectiveDone, parentProgress } from '../lib/taskTree';
 
 // R12: 先当番 04:00–15:59 / 後当番 16:00–03:59.
 const SLOT_LABEL: Record<string, string> = {
@@ -39,6 +49,10 @@ export function Today() {
   }, []);
 
   const { data: tasks } = useSlotTasks(slot);
+  // R14: which parents are open. Kept here (not in the row) so the list re-renders
+  // from the watched query without ever collapsing itself — ticking the last child
+  // leaves the group open, which is what the person expects while working down it.
+  const [openParents, setOpenParents] = useState<Record<string, boolean>>({});
   const { data: guests } = useTodaysGuests();
   // R8: beds slept in last night — the cleaning/linen signal モーリー asked for.
   const { data: lastNightGuests } = useGuestsOnDate(addDays(shiftDate(), -1));
@@ -54,7 +68,10 @@ export function Today() {
   // People, not bookings: a party of N on one reservation counts as N.
   const activeHeads = headcount(guests);
   const arrivedHeads = headcount(active.filter((guest) => guest.status === 'arrived'));
-  const done = tasks.filter((task) => intToBool(task.done)).length;
+  // Subtasks: parents with children are rows to open, not rows to tick, and the
+  // counter measures the work itself (the leaves), not the headings.
+  const tree = buildTree(tasks);
+  const leaves = countLeaves(tree);
 
   return (
     <Screen>
@@ -82,7 +99,7 @@ export function Today() {
               title={SLOT_LABEL[slot] ?? 'タスク'}
               trailing={
                 <span className="text-[0.72rem] text-ink-mute">
-                  {done} / {tasks.length}
+                  {leaves.done} / {leaves.total}
                 </span>
               }
             />
@@ -92,10 +109,77 @@ export function Today() {
                 <span className="ml-1 text-[0.68rem] text-ink-mute">（シーツ交換の目安）</span>
               </div>
             ) : null}
-            {tasks.length === 0 ? (
+            {tree.length === 0 ? (
               <EmptyState>この当番のタスクはありません。</EmptyState>
             ) : (
-              tasks.map((task) => {
+              tree.map((node) => {
+                const task = node.task;
+                // A row with subtasks is a heading: it opens, it is never ticked.
+                // Its done state is derived from the children (taskTree), so no
+                // stale 1 can strike it through while a child is still open.
+                if (node.children.length > 0) {
+                  const open = openParents[task.id] === true;
+                  const progress = parentProgress(node);
+                  const struck = effectiveDone(node);
+                  const listId = `subtasks-${task.id}`;
+                  return (
+                    <div
+                      key={task.id}
+                      className="border-line border-b border-dashed last:border-none"
+                    >
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        aria-controls={listId}
+                        onClick={() => setOpenParents((prev) => ({ ...prev, [task.id]: !open }))}
+                        className="flex min-h-[44px] w-full items-center gap-3 py-2.5 text-left"
+                      >
+                        <span
+                          aria-label={`サブタスク ${progress.done}/${progress.total} 完了`}
+                          className={`grid h-[21px] shrink-0 place-items-center rounded-md border-[1.6px] px-1 text-[0.62rem] tabular-nums ${struck ? 'border-orange bg-orange text-onaccent' : 'border-orange-light text-ink-light'}`}
+                        >
+                          {progress.done}/{progress.total}
+                        </span>
+                        <span
+                          className={`flex-1 text-[0.9rem] ${struck ? 'text-ink-mute line-through' : ''}`}
+                        >
+                          {task.title}
+                        </span>
+                        <span className="shrink-0 text-ink-mute">
+                          {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        </span>
+                      </button>
+                      {open ? (
+                        <div id={listId} className="pb-1 pl-7">
+                          {node.children.map((child) => {
+                            const childChecked = intToBool(child.done);
+                            return (
+                              <button
+                                key={child.id}
+                                type="button"
+                                onClick={() => setTaskDone(child, !childChecked)}
+                                className="flex min-h-[44px] w-full items-center gap-3 border-line border-t border-dashed py-2.5 text-left"
+                              >
+                                <span
+                                  className={`grid h-[21px] w-[21px] shrink-0 place-items-center rounded-md border-[1.6px] ${childChecked ? 'border-orange bg-orange' : 'border-orange-light'}`}
+                                >
+                                  {childChecked ? (
+                                    <Check size={14} className="text-onaccent" />
+                                  ) : null}
+                                </span>
+                                <span
+                                  className={`flex-1 text-[0.86rem] ${childChecked ? 'text-ink-mute line-through' : ''}`}
+                                >
+                                  {child.title}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                }
                 const checked = intToBool(task.done);
                 return (
                   <button
