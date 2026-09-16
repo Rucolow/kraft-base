@@ -3,6 +3,7 @@ import { shiftBoundaryIso, shiftDate } from '../lib/date';
 import { addDays } from '../lib/month';
 import type {
   BentoOrderRow,
+  CashExpenseRow,
   ContentRow,
   EquipmentIssueRow,
   FollowupRow,
@@ -132,25 +133,25 @@ export function useOpenFollowups() {
   );
 }
 
+// R12: every task; the タスク screen splits the rows into 先当番/後当番/単発 itself,
+// so this only has to make the order WITHIN a duty stable.
 export function useTasks() {
-  return useQuery<TaskRow>(
-    'SELECT * FROM task ORDER BY "group", COALESCE(phase, \'\'), created_at',
-  );
+  return useQuery<TaskRow>('SELECT * FROM task ORDER BY slot, sort, created_at, id');
 }
 
-// Cockpit checklist: the routine tasks for the current phase(s), PLUS one-off
-// tasks staff add during a shift. Those are stored with source='adhoc' and no
-// phase, so a phase-and-source filter alone made them invisible on 本日 forever —
-// they only ever showed on the タスク tab. Done one-offs stay listed for the rest
-// of the shift-day (like routine ones) so ticking a task doesn't make it vanish.
-export function useManualTasks(phases: string[]) {
-  const placeholders = phases.map(() => '?').join(', ') || 'NULL';
+// Cockpit checklist: the routine tasks of the duty on now (先当番/後当番), PLUS
+// one-off tasks staff add during a shift. One-offs are stored with source='adhoc',
+// group='oneoff' and slot=NULL; without the second branch they would only ever
+// show on the タスク tab. Done one-offs stay listed for the rest of the shift-day
+// (like routine ones) so ticking a task doesn't make it vanish. The slot IS NULL
+// guard keeps a routine row from appearing twice.
+export function useSlotTasks(slot: string) {
   return useQuery<TaskRow>(
     `SELECT * FROM task
-       WHERE (source = 'manual' AND phase IN (${placeholders}))
-          OR ("group" = 'oneoff' AND (done = 0 OR done_at >= ?))
-     ORDER BY CASE WHEN "group" = 'oneoff' THEN 1 ELSE 0 END, phase, created_at`,
-    [...phases, shiftBoundaryIso()],
+       WHERE (source = 'manual' AND slot = ?)
+          OR (slot IS NULL AND "group" = 'oneoff' AND (done = 0 OR done_at >= ?))
+     ORDER BY CASE WHEN "group" = 'oneoff' THEN 1 ELSE 0 END, sort, created_at, id`,
+    [slot, shiftBoundaryIso()],
   );
 }
 
@@ -162,13 +163,6 @@ export function useContentByKind(kind: string) {
 
 export function useContentBySlug(slug: string) {
   return useQuery<ContentRow>('SELECT * FROM content WHERE slug = ?', [slug]);
-}
-
-export function useProcedureForPhase(phase: string) {
-  return useQuery<ContentRow>(
-    "SELECT * FROM content WHERE kind = 'procedure' AND phase = ? ORDER BY title",
-    [phase],
-  );
 }
 
 export function useGrowItems() {
@@ -192,5 +186,14 @@ export function useMentions(staffId: string | null) {
        WHERE mentions LIKE ? AND (read_by NOT LIKE ? OR read_by IS NULL)
        ORDER BY created_at DESC`,
     [`%"${staffId ?? ''}"%`, `%"${staffId ?? ''}"%`],
+  );
+}
+
+// R13: 現金出納 for a calendar month ('YYYY-MM'). `date` is a calendar date, so a
+// string range covers the month; '-31' is a safe upper bound for every month.
+export function useCashExpensesInMonth(ym: string) {
+  return useQuery<CashExpenseRow>(
+    'SELECT * FROM cash_expense WHERE date >= ? AND date <= ? ORDER BY date DESC, created_at DESC',
+    [`${ym}-01`, `${ym}-31`],
   );
 }

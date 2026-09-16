@@ -5,9 +5,9 @@ import { headcount } from '../components/GuestCard';
 import { Badge, Card, CardHead, EmptyState, Screen } from '../components/ui';
 import {
   useGuestsOnDate,
-  useManualTasks,
   useMentions,
   useOpenFollowups,
+  useSlotTasks,
   useTodaysGuests,
 } from '../data/queries';
 import { usedBedChips } from '../lib/beds';
@@ -15,21 +15,22 @@ import { formatClock, jstHour, nowIso, shiftDate } from '../lib/date';
 import { intToBool } from '../lib/db';
 import { addDays } from '../lib/month';
 import { useSession } from '../lib/session';
-import { cockpitPhases, shiftContextLabel } from '../lib/shift';
+import { cockpitSlot, shiftContextLabel } from '../lib/shift';
 import { setTaskDone } from '../lib/shiftOps';
 
-const PHASE_LABEL: Record<string, string> = {
-  midday_prep: '受付準備',
-  cleaning: '清掃',
-  evening_close: 'クローズ前',
-  morning_prep: '翌朝セット',
+// R12: 先当番 04:00–15:59 / 後当番 16:00–03:59.
+const SLOT_LABEL: Record<string, string> = {
+  first: '先当番のタスク',
+  second: '後当番のタスク',
 };
 
 export function Today() {
   const navigate = useNavigate();
   const { currentStaff } = useSession();
+  // Recomputed every render: the 30s clock below re-renders this screen, so the
+  // list flips to 後当番 within half a minute of 16:00 without a reload.
   const hour = jstHour();
-  const phases = cockpitPhases(hour);
+  const slot = cockpitSlot(hour);
   const [clock, setClock] = useState(() => formatClock(nowIso()));
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function Today() {
     return () => clearInterval(timer);
   }, []);
 
-  const { data: tasks } = useManualTasks(phases);
+  const { data: tasks } = useSlotTasks(slot);
   const { data: guests } = useTodaysGuests();
   // R8: beds slept in last night — the cleaning/linen signal モーリー asked for.
   const { data: lastNightGuests } = useGuestsOnDate(addDays(shiftDate(), -1));
@@ -78,7 +79,7 @@ export function Today() {
             <CardHead
               icon={<ListChecks size={17} />}
               tone="orange"
-              title={phases.map((phase) => PHASE_LABEL[phase]).join('・')}
+              title={SLOT_LABEL[slot] ?? 'タスク'}
               trailing={
                 <span className="text-[0.72rem] text-ink-mute">
                   {done} / {tasks.length}
@@ -92,7 +93,7 @@ export function Today() {
               </div>
             ) : null}
             {tasks.length === 0 ? (
-              <EmptyState>この時間帯の定型はありません。</EmptyState>
+              <EmptyState>この当番のタスクはありません。</EmptyState>
             ) : (
               tasks.map((task) => {
                 const checked = intToBool(task.done);

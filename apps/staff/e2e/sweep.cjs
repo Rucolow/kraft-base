@@ -102,8 +102,8 @@ const BASE = 'http://localhost:4173';
   await page.goto(`${BASE}/tasks`,{waitUntil:'networkidle'}); await record('tasks');
   await page.getByPlaceholder('単発タスクを追加…').fill('スイープ削除テスト'); await page.getByRole('button',{name:'タスクを追加'}).click(); await page.waitForTimeout(400);
   await page.getByRole('button',{name:'タスクを削除'}).last().click(); await page.waitForTimeout(400);
-  // toggle first task
-  await page.locator('button:has-text("ドミトリーを清掃"), button:has-text("火の始末")').first().click().catch(()=>{}); await page.waitForTimeout(200);
+  // toggle first task (R12 list: 先当番 / 後当番)
+  await page.locator('button:has-text("ベッドメイキング"), button:has-text("ゴミ出し")').first().click().catch(()=>{}); await page.waitForTimeout(200);
   await record('tasks-after');
 
   // handover
@@ -124,6 +124,7 @@ const BASE = 'http://localhost:4173';
   // create a lost item if form present
   await page.locator('input,textarea').first().fill('忘れ物：黒い傘').catch(()=>{});
   await page.getByRole('button',{name:/追加|登録|記録|保存/}).first().click().catch(()=>{}); await page.waitForTimeout(300); await record('records-lost-added');
+  await visit('records-cash','/records/cash','今月合計');
   await visit('records-equipment','/records/equipment');
   await page.locator('input,textarea').first().fill('設備：シャワーの水圧低下').catch(()=>{});
   await page.getByRole('button',{name:/追加|登録|記録|報告|保存/}).first().click().catch(()=>{}); await page.waitForTimeout(300); await record('records-equipment-added');

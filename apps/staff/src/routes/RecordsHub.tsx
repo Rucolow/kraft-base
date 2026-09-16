@@ -1,19 +1,27 @@
 import { useQuery } from '@powersync/react';
-import { ChevronRight, Package, Wrench } from 'lucide-react';
+import { ChevronRight, Package, Wallet, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Screen, SectionLabel } from '../components/ui';
+import { formatYen, monthKey } from '../lib/cash';
+import { jstDate } from '../lib/date';
 
 interface Counts {
   lost_open: number;
   equip_open: number;
+  cash_month: number;
 }
 
 export function RecordsHub() {
   const navigate = useNavigate();
+  // Computed on every render, NOT memoised on mount: the reception iPad stays
+  // open for days, so a month pinned at mount would keep showing 8月 in 9月.
+  const ym = monthKey(jstDate());
   const { data } = useQuery<Counts>(
     `SELECT
        (SELECT count(*) FROM lost_item WHERE status NOT IN ('returned', 'disposed')) AS lost_open,
-       (SELECT count(*) FROM equipment_issue WHERE status != 'resolved') AS equip_open`,
+       (SELECT count(*) FROM equipment_issue WHERE status != 'resolved') AS equip_open,
+       (SELECT COALESCE(sum(amount_yen), 0) FROM cash_expense WHERE date LIKE ?) AS cash_month`,
+    [`${ym}-%`],
   );
   const counts = data[0];
 
@@ -31,6 +39,13 @@ export function RecordsHub() {
       title: '設備・備品',
       hint: '不具合と補充・発注を写真付きで起票し、対応状況を追う。',
       open: counts?.equip_open ?? 0,
+    },
+    {
+      to: '/records/cash',
+      icon: Wallet,
+      title: '現金出納',
+      hint: `買い物の内容と金額を記録。今月 ${formatYen(counts?.cash_month ?? 0)}`,
+      open: 0,
     },
   ];
 

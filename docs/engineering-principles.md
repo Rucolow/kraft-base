@@ -49,7 +49,7 @@ PowerSync は書き込みを即ローカル反映→非同期アップロード�
 | guest INSERT/DELETE | owner | 追加/削除UIは isOwner |
 | guest UPDATE | **org member**（0014でstatus変更のため開放） | 編集フォームは isOwner（UIのみの絞り） |
 | task INSERT | org member (0013) | 全員追加可 |
-| task UPDATE | org member・**列grantは done/done_at のみ** (0006) | チェックのみ。タイトル編集UIを作るならgrant拡張が先 |
+| task UPDATE | org member・**列grantは done/done_at/title/slot/sort** (0006→0026で拡張) | チェックは全員。タイトル改名・↑↓（並べ替え）・当番への追加は **タスク画面の「編集」トグル内**で、トグル自体を isOwner でのみ表示（content 0007 と同じ信頼モデル: 権限は org member に開くが UI を絞る）。削除ボタンはトグル外に据え置き |
 | task DELETE | owner | 削除ボタンは isOwner |
 | checkin_record INSERT | org member | 誰でも記入可（再入力含む） |
 | checkin_record UPDATE/DELETE | owner | 修正UIは未実装（再入力=新規INSERTで代替） |
@@ -59,6 +59,8 @@ PowerSync は書き込みを即ローカル反映→非同期アップロード�
 | shift_plan SELECT | org member (0018) | シフトビューは全員閲覧可 |
 | shift_plan INSERT/UPDATE/DELETE | **owner** (0018) | 追加/削除/期間一括/前週コピーのUIは isOwner のみ表示（R11で GuestCalendar から `/shifts` の「シフト作成」タブへ移設。GuestCalendar は閲覧専用） |
 | shift_unavailable SELECT/INSERT/DELETE | **org member** (0025・UPDATEは付与なし) | 「休み希望」タブは自分の行だけ書く（`toggleUnavailable` に渡すのは常に currentStaff.id）。誰の行かは currentStaff で決まり RLS では固定できない（共有iPadの auth は device アカウント＝shift_session と同じ信頼モデル）。閲覧はオーナーが全員分（シフト作成の除外判定・ゲストカレンダーの `×n`） |
+| cash_expense SELECT/INSERT/UPDATE | **org member** (0026) | 追加・訂正は全員（10秒後の打ち間違いを本人以外も直せる）。誰が記録したか（created_by）は currentStaff で決まり RLS では固定できない（shift_unavailable と同じ信頼モデル） |
+| cash_expense DELETE | **owner** (0026) | 削除ボタンは isOwner（confirm あり） |
 | bento_order SELECT | org member (0019) | 弁当パネルは全員閲覧可 |
 | bento_order UPDATE | org member・**列grantは guest_id/match のみ** (0019)。他列は koguchi の bento_writer ロール専用＋stale-writeガードトリガー | 照合UI（BentoOrders）のみ。INSERT/DELETE はクライアントから不可 |
 
@@ -121,3 +123,4 @@ PowerSync は書き込みを即ローカル反映→非同期アップロード�
 | 権限（RLS）変更 | 上の §4 対応表＋UIゲート |
 | BEDS/弁当などのプリセット | GuestEdit のパース/保存は**非プリセット値を破壊しない**実装を維持 |
 | 新ルート追加 | AppShell タブ設計（モバイル6タブ上限）＋ e2e/sweep.cjs の巡回対象 |
+| 定型タスクのリスト（先当番／後当番） | `src/content/seed.ts` の `seedTasks` が正本 → `scripts/gen-content-seed.ts` を2回走らせる（無印＝`supabase/seed_content.sql` 再生成、`--migration`＝再投入 migration の DELETE→INSERT ブロックを出力して貼る）。devSeed は seedTasks を直接読むので追随不要 |

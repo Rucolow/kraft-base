@@ -5,12 +5,15 @@
 
 export type ContentStatus = 'ready' | 'needs_input';
 export type TaskGroup = 'daily' | 'per_checkout' | 'oneoff';
+// Phase survives for the CONTENT procedures only (手順文書). Tasks moved to
+// 先当番/後当番 (slot) in R12 / migration 0026 and no longer read phase.
 export type Phase = 'midday_prep' | 'cleaning' | 'evening_close' | 'morning_prep';
+export type Slot = 'first' | 'second';
 
 export interface SeedTask {
   title: string;
-  group: TaskGroup;
-  phase: Phase | null;
+  slot: Slot;
+  sort: number;
 }
 
 export interface SeedContent {
@@ -23,28 +26,36 @@ export interface SeedContent {
   status: ContentStatus;
 }
 
-// Manual-derived checklists surfaced on the cockpit by phase (spec §7.0).
+// R12: モーリー's two duty lists (先当番 = 04:00–15:59, 後当番 = 16:00–03:59).
+// Order matters and is carried by `sort` (10 apart, so a row can be slipped in
+// between without renumbering); every row is group='daily', phase=null.
+// This array also generates BOTH supabase/seed_content.sql and the DELETE→INSERT
+// block of migration 0026 (scripts/gen-content-seed.ts --migration), so the list
+// is never maintained twice.
 export const seedTasks: SeedTask[] = [
-  { title: 'ウェルカムドリンク（梅ジュース・みかん）を用意', group: 'daily', phase: 'midday_prep' },
-  { title: '共用部を清掃', group: 'daily', phase: 'midday_prep' },
-  { title: 'ベッドメイク（本日の宿泊数分）', group: 'daily', phase: 'midday_prep' },
-  { title: 'アメニティを補充', group: 'daily', phase: 'midday_prep' },
-  { title: 'コーヒー豆の容器を補充', group: 'daily', phase: 'midday_prep' },
-  { title: '和室ちゃぶ台のみかんを補充', group: 'daily', phase: 'midday_prep' },
-  { title: 'ドミトリーを清掃', group: 'daily', phase: 'cleaning' },
-  { title: 'シャワー・トイレを清掃', group: 'daily', phase: 'cleaning' },
-  { title: '使用済みリネンを洗濯 → 乾燥', group: 'per_checkout', phase: 'cleaning' },
-  { title: '火の始末（BBQ・焚き火）', group: 'daily', phase: 'evening_close' },
-  { title: 'スタッフルームを施錠', group: 'daily', phase: 'evening_close' },
+  { title: 'のれんと提灯を準備', slot: 'first', sort: 10 },
+  { title: 'ライト類の充電確認', slot: 'first', sort: 20 },
+  { title: 'リネン類の洗濯と乾燥', slot: 'first', sort: 30 },
+  { title: 'ベッドメイキング', slot: 'first', sort: 40 },
+  { title: 'ベッドルームの清掃', slot: 'first', sort: 50 },
+  { title: 'キッチンの清掃', slot: 'first', sort: 60 },
+  { title: 'トイレとシャワーの清掃', slot: 'first', sort: 70 },
+  { title: '共用部の清掃', slot: 'first', sort: 80 },
+  { title: 'アメニティ補充', slot: 'first', sort: 90 },
+  { title: '食品、ドリンク類の補充', slot: 'first', sort: 100 },
+  { title: 'コーヒー退却', slot: 'first', sort: 110 },
+  { title: '引き継ぎを記入', slot: 'first', sort: 120 },
+  { title: '弁当の配達', slot: 'second', sort: 10 },
+  { title: 'コーヒーの補充', slot: 'second', sort: 20 },
+  { title: 'バナナの準備', slot: 'second', sort: 30 },
+  { title: '火の元の確認', slot: 'second', sort: 40 },
+  { title: 'ゴミ出し', slot: 'second', sort: 50 },
   {
-    title: '玄関の戸締りを確認（遅着がいる日は施錠しない）',
-    group: 'daily',
-    phase: 'evening_close',
+    title: '遅着がある場合はチェックイン記入用紙とウェルカムドリンクを受付に設置',
+    slot: 'second',
+    sort: 60,
   },
-  { title: '引き継ぎを投稿', group: 'daily', phase: 'evening_close' },
-  { title: '翌朝バナナをセット（宿泊数 +2）', group: 'daily', phase: 'morning_prep' },
-  { title: '翌朝のコーヒーを準備', group: 'daily', phase: 'morning_prep' },
-  { title: 'ゴミ出し（最後に帰る人）', group: 'daily', phase: 'morning_prep' },
+  { title: '引き継ぎを投稿', slot: 'second', sort: 70 },
 ];
 
 const manual: Array<[string, string, string]> = [
